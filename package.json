@@ -1,0 +1,42 @@
+{
+  "name": "classjs",
+  "version": "1.0.0",
+  "description": "A JS library for defining enumerations, constructor-based classes, and class hierarchies, with semantic meta-data for declarative constraint validation and for generating model-based CRUD user interfaces.",
+  "main": "gulpfile.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "gulp": "^3.9.1"
+  },
+  "devDependencies": {
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-if": "^2.0.2",
+    "gulp-jshint": "^2.0.4",
+    "gulp-notify": "^3.0.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-tap": "^1.0.1",
+    "gulp-uglify": "^3.0.0",
+    "jshint": "^2.9.5",
+    "yargs": "^9.0.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gwagner57/cLASSjs.git"
+  },
+  "keywords": [
+    "model-based",
+    "development"
+  ],
+  "author": "Gerd Wagner",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gwagner57/cLASSjs/issues"
+  },
+  "homepage": "https://github.com/gwagner57/cLASSjs#readme"
+}

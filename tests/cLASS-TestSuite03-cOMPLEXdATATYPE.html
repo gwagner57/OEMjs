@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title>cLASS-Test</title>
+  <meta charset="UTF-8" />
+  <script src="../lib/browserShims.js"></script>
+  <script src="../lib/dom.js"></script>
+<!--
+  <script src="../lib/util.js"></script>
+-->
+  <script src="../lib/errorTypes.js"></script>
+  <script src="../src/eNUMERATION.js"></script>
+  <script src="../src/cLASS.js"></script>
+  <!-- ****************************************
+       *** General test framework code ********
+       **************************************** -->
+  <script>
+    var okay=true;
+    function showFailureMessage(txt) {
+      document.body.appendChild( dom.createElement("p",
+          {classValues:"failure", content:"Failure: "+ txt}));
+    }
+    function showSuccessMessage() {
+      document.body.appendChild( dom.createElement("p",
+          {classValues:"okay", content:"All tests successfully passed!"}));
+    }
+    function showInfo(txt) {
+      document.body.appendChild( dom.createElement("p",
+          {classValues:"info", content:"Info: "+ txt}));
+    }
+    function test( message, condition) {
+      if (!condition) {
+        okay = false;
+        showFailureMessage( message);
+      }
+    }
+  </script>
+ </head>
+ <body>
+  <h1>cLASS Test Ring Buffer</h1>
+
+  <script>//<![CDATA[
+  var i=0, j=0, failure=false;
+
+  const GenderEL = new eNUMERATION("GenderEL",  ["male","female","other"]);
+try {
+  var Person = new cLASS({
+    Name: "Person",
+    properties: {
+      personId: {range:"NonNegativeInteger", isStandardId: true, label:"Person identifier"},
+      name: {range:"NonEmptyString", min: 2, max: 20, label:"Name"},
+      gender: {range: GenderEL, label:"Gender", historySize:3},
+      dateOfbirth: {range:"Date", label:"Date of birth"},
+      age: {range:"NonNegativeInteger", max: 130, optional: true, label:"Age"}
+    },
+    methods: {
+      sayHello: function () {
+        return "My name is " + this.name + ". ";
+      }
+    }
+  });
+} catch (e) {
+  console.log( e.constructor.name +": "+ e.message);
+}
+
+  // create test data
+  document.write( "Test <strong>new Person</strong> with flawed data: ");
+  try {
+    var gw = new Person({
+      personId: 11, name:"Gerd Wagner",
+      gender: 1,
+      birthDate:"1957-05-15"
+    });
+  } catch (e) {
+    console.log(e.constructor.name +": "+ e.message);
+  }
+
+var numberHistory = new cLASS.RingBuffer( "Integer", 5);
+var genderHistory = new cLASS.RingBuffer( GenderEL, 5);
+
+//*** Test Suite 1 ***************************
+document.body.appendChild( dom.createElement("h2",{content:"Test Suite 1: Fill buffer and test serialization"}));
+
+numberHistory.add( 1);
+numberHistory.add( 2);
+numberHistory.add( 3);
+/*
+document.body.appendChild( dom.createElement("p",
+    {classValues:"failure", content:"Correct/real output: [1, 2, 3] / "+ numberHistory.toString()}));
+*/
+test( "serialization of buffer should be '[1, 2, 3]'",
+    numberHistory.toString() === "[1, 2, 3]"
+);
+numberHistory.add( 4);
+numberHistory.add( 5);
+numberHistory.add( 6);
+test( "serialization of buffer should be '[2, 3, 4, 5, 6]'",
+    numberHistory.toString() === "[2, 3, 4, 5, 6]"
+);
+
+//*** Test Suite 2 ***************************
+document.body.appendChild( dom.createElement("h2",{content:"Test Suite 2: Test serialization of enum values"}));
+
+genderHistory.add( 1);
+genderHistory.add( 2);
+genderHistory.add( 3);
+test( "serialization of buffer should be '[male, female, other]'",
+    genderHistory.toString() === "[male, female, other]"
+);
+
+/*
+test( "sD.constructor.Name should be 'ServiceDesk'",
+    sD.constructor.Name === "ServiceDesk"
+);
+*/
+
+if (okay) showSuccessMessage();
+else okay = true;  // reset okay
+
+  //]]></script> 
+ </body>
+</html>

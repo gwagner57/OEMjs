@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="http://www.oasis-open.org/docbook/xml/5.0/rng/docbookxi.rng" type="xml"?>
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude"
+	xmlns:xlink="http://www.w3.org/1999/xlink">
+	<title>The Model-Based Development Framework cLASSjs</title>
+ <para>Using a model-based approach, <emphasis role="bold"><emphasis role="italic">the model classes
+    of an app are obtained by coding the app's data model</emphasis></emphasis>, which is typically
+  expressed in the form of a UML class diagram. Since it is the task of the <emphasis role="italic"
+   >model</emphasis> and <emphasis role="italic">data storage</emphasis> layers to define and
+  validate constraints and to manage persistent data, we need reusable model code taking care of
+  this in a generic manner for avoiding per-class and per-property boilerplate code for constraint
+  validation, and per-class boilerplate code for data storage management. cLASSjs provides <orderedlist>
+   <listitem>
+    <para>a generic <emphasis role="bold"><emphasis role="italic">check</emphasis></emphasis> method
+     for validating property constraints, and</para>
+   </listitem>
+   <listitem>
+    <para>the generic storage management methods <emphasis role="bold"><emphasis role="italic"
+       >add</emphasis></emphasis> and <emphasis role="bold"><emphasis role="italic"
+       >retrieve</emphasis></emphasis>, <emphasis role="bold"><emphasis role="italic"
+       >update</emphasis></emphasis> and <emphasis role="bold"><emphasis role="italic"
+       >destroy</emphasis></emphasis> for creating new persistent objects (or records) and for
+     retrieving, updating and deleting existing ones.</para>
+   </listitem>
+  </orderedlist></para>
+ <section>
+  <title>A Quick Tour of cLASSjs</title>
+  <para>For using the functionality of cLASSjs in your app, you have to include its code,
+   either by <link xlink:href="https://bitbucket.org/gwagner57/ontojs/downloads">downloading
+    cLASS.js</link> to the lib folder and use a local script loading element like the
+   following:<programlisting>&lt;script src="lib/cLASSjs.js">&lt;/script></programlisting> or
+   with the help of a remote script loading element like the following:
+   <programlisting>&lt;script src="http://web-engineering.info/tech/JsMODELvIEW/cLASS.js">&lt;/script></programlisting>Then
+   you can create your app's model classes (with property and method declarations) as instances of
+   the meta-class cLASS:
+   <programlisting><emphasis role="bold">Book</emphasis> = new <emphasis role="bold">cLASS</emphasis>({
+  name: "Book",
+  properties: {
+    <emphasis role="bold">isbn</emphasis>: {range:"NonEmptyString", isStandardId: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/, 
+        patternMessage:'The ISBN must be a 10-digit string or a 9-digit string followed by "X"!'},
+    <emphasis role="bold">title</emphasis>: {range:"NonEmptyString", min: 2, max: 50, label:"Title"}, 
+    <emphasis role="bold">year</emphasis>: {range:"Integer", min: 1459, max: util.nextYear(), label:"Year"}
+  },
+  methods: {
+    ...
+  }
+});</programlisting></para>
+  <para>Notice that the declaration of a property includes the constraints that apply to it. For
+   instance, the declaration of the property <code>isbn</code> includes a pattern constraint
+   requiring that the ISBN must be a 10-digit string or a 9-digit string followed by "X".</para>
+  <para>After defining a model class, you can create new 'model objects' instantiating it by
+   invoking its <code>create</code> method pre-defined by
+   cLASS:<programlisting>var book1 = Book.<emphasis role="bold">create</emphasis>({isbn:"006251587X", title:"Weaving the Web", year: 2000});</programlisting></para>
+  <para>You can then apply the following properties and methods, all pre-defined by cLASS<orderedlist>
+    <listitem>
+     <para>the property <code>type</code> for retrieving the object's direct type,</para>
+    </listitem>
+    <listitem>
+     <para>the method <code>set(</code>
+      <emphasis role="italic">prop</emphasis>, <emphasis role="italic">val</emphasis>
+      <code>)</code> for setting an object property after checking all property constraints, </para>
+    </listitem>
+    <listitem>
+     <para>the method <code>isInstanceOf(</code>
+      <emphasis role="italic">Class</emphasis><code>)</code> for testing if an object is an instance
+      of a certain model class.</para>
+    </listitem>
+    <listitem>
+     <para>the method <code>toString()</code> for serializing an object,</para>
+    </listitem>
+    <listitem>
+     <para>the method <code>toRecord()</code> for converting an object to a record,</para>
+    </listitem>
+   </orderedlist>The use of these cLASS features is illustrated by the following
+   examples:<programlisting>console.log( book1.<emphasis role="bold">type</emphasis>.name);  // "Book"
+book1.<emphasis role="bold">set</emphasis>("year", 1001);  // "<emphasis role="bold">IntervalConstraintViolation</emphasis>: Year must not be smaller than 1459"
+book1.<emphasis role="bold">set</emphasis>("year", 2001);  // change the year to 2001
+console.log( book1.<emphasis role="bold">isInstanceOf</emphasis>( Book));  // true
+console.log( book1.<emphasis role="bold">toString</emphasis>());  // "Book{ isbn:"006251587X", ...}"</programlisting></para>
+  <para>You can also invoke the generic check method provided by cLASS in the user interface
+   code. For instance, for responsive validation with the HTML5 constraint validation API, you may
+   do the
+   following:<programlisting>var formEl = document.forms["Book"];
+formEl.<emphasis role="bold">isbn</emphasis>.addEventListener("input", function () {
+  formEl.<emphasis role="bold">isbn</emphasis>.setCustomValidity( 
+      <emphasis role="bold">Book.check</emphasis>( "<emphasis role="bold">isbn</emphasis>", formEl.<emphasis role="bold">isbn</emphasis>.value).message);
+});</programlisting>Here
+   we define an event handler for <code>input</code> events on the ISBN input field. It invokes the
+    <code>setCustomValidity</code> method of the HTML5 constraint validation API for setting a
+   validation error message that results from invoking <code>Book.check</code> for validating the
+   constraints defined for the <code>isbn</code> property for the user input value from the form
+   field <code>formEl.isbn</code>. The <code>check</code> method returns a constraint violation
+   object with a message property. If no constraint is violated, the message is an empty string, so
+   nothing happens. Notice that you don't have to write the code of the <code>check</code> method,
+   as it is pre-defined by cLASSjs.</para>
+  <para>For managing data storage, a sTORAGEmANAGER object has to be created first:</para>
+  <programlisting>storageManager = new sTORAGEmANAGER();</programlisting>
+  <para>By default, when providing no argument in the invocation of <code>new
+    sTORAGEmANAGER()</code>, data is stored locally with the help of JavaScript's <emphasis
+    role="italic">Local Storage</emphasis> API in the form of 'stringified' JSON tables. </para>
+  <para>With the help of the created storage manager, you can then, for instance, create new model
+   objects and store them using the storage manager's <code>add</code> method, like
+   so,<programlisting>storageManager.add( Book, {isbn:"006251587X",
+    title:"Weaving the Web", year: 2000});</programlisting></para>
+  <para>Notice that the first parameter of all data management methods is the model class concerned,
+   which is <code>Book</code> in the example code.</para>
+ </section>
+	<section>
+		<title>Model-Based Development</title>
+		<para>We must not confuse the term <emphasis role="italic">model</emphasis> as used in the MVC
+   metaphor, and adopted by many web application frameworks, and the term <emphasis role="italic"
+    >model</emphasis> as used in UML and other modeling languages. While the former refers to the
+   model classes of an app, the latter refers to the concept of a model either as a simplified
+   description of some part of the real world, or as a design blueprint for construction.</para>
+		<para>In model-based engineering, models are the basis for designing and implementing a system,
+			no matter if the system to be built is a software system or another kind of complex system
+			such as a manufacturing machine, a car, or an organisation.</para>
+		<para>In model-based software development, we distinguish between three kinds of models: </para>
+		<para>
+			<orderedlist>
+				<listitem>
+					<para>solution-independent <emphasis role="bold"><emphasis role="italic">domain
+								models</emphasis></emphasis> describing a specific part of the real-world and
+						resulting from requirements and domain engineering in the system analysis, or inception,
+						phase of a development project;</para>
+				</listitem>
+				<listitem>
+					<para>platform-independent <emphasis role="bold"><emphasis role="italic">design
+								models</emphasis></emphasis> specifying a logical system design resulting from the
+						design activities in the elaboration phase;</para>
+				</listitem>
+				<listitem>
+					<para>platform-specific <emphasis role="bold"><emphasis role="italic">implementation
+        models</emphasis></emphasis> as the result of technical system design in the implementation
+      phase.</para>
+				</listitem>
+			</orderedlist>
+		</para>
+		<para><emphasis role="italic">Domain models</emphasis> are the basis for designing a software
+   system by making a platform-independent <emphasis role="italic">design model</emphasis>, which is
+   in turn the basis for implementing a system by making an <emphasis role="italic">implementation
+    model</emphasis> and coding it in the language of the chosen platform. Concerning information
+   modeling, we first make a (conceptual) <emphasis role="italic">domain information
+    model</emphasis>, then we derive an <emphasis role="bold"><emphasis role="italic">information
+     design model</emphasis></emphasis> from it, and finally map the information design model to a
+    <emphasis role="bold"><emphasis role="italic">data model</emphasis></emphasis> for the target
+   platform. We then code this data model in the form of <emphasis role="bold"><emphasis
+     role="italic">model classes</emphasis></emphasis>, which are the basis for any data management
+   user interface. </para>
+		<para>cLASSjs facilitates model-based app development by allowing a direct coding of an
+			information design model, including subtype/inheritance relationships.</para>
+	</section>
+	<section>
+		<title>The Philosophy and Features of cLASSjs</title>
+		<para>The concept of a <emphasis role="bold"><emphasis role="italic">class</emphasis></emphasis>
+			is fundamental in <emphasis role="italic">object-oriented</emphasis> programming. Objects
+				<emphasis role="italic">instantiate</emphasis> (or <emphasis role="italic">are classified
+				by</emphasis>) a class. A class defines the properties and methods for the objetcs that
+			instantiate it. </para>
+		<para>There is no explicit class concept in JavaScript. However, classes can be defined in two
+			ways: <orderedlist>
+				<listitem>
+					<para>In the form of a <emphasis role="bold"><emphasis role="italic"
+								>constructor</emphasis></emphasis> function that allows to create new instances of
+						the class with the help of the <code>new</code> operator. This is the classical approach
+						recommended in the Mozilla JavaScript documents.</para>
+				</listitem>
+				<listitem>
+					<para>In the form of a <emphasis role="bold"><emphasis role="italic"
+							>factory</emphasis></emphasis> object that uses the predefined
+							<code>Object.create</code> method for creating new instances of the class.</para>
+				</listitem>
+			</orderedlist></para>
+		<para>Since we normally need to define class hierarchies, and not just single classes, these two
+   alternative approaches cannot be mixed within a class hierarchy, and we have to make a choice
+   whenever we build an app. With cLASSjs, we choose the second approach with the following
+   benefits:</para>
+		<orderedlist>
+			<listitem>
+				<para>Properties are declared (with a property label, a range and many other
+     constraints).</para>
+			</listitem>
+			<listitem>
+				<para>Multiple inheritance and multiple classification are supported.</para>
+			</listitem>
+   <listitem>
+    <para>Object pools are supported.</para>
+   </listitem>
+		</orderedlist>
+		<para>These benefits come with a price: objects are created with lower performance, mainly due to
+			the fact that <code>Object.create</code> is slower than <code>new</code>. On the other
+			hand, for apps with lots of object creation and destruction, such as games and
+			simulations, cLASSjs provides object pools for avoiding performance problems due to
+			garbage collection.</para>
+		<para>The properties and methods of the meta-class cLASS, and the properties and methods it
+   injects in any model object created with its <code>create</code> method, are listed in the
+   following class diagram:</para>
+		<figure xml:id="figCLASS">
+			<title>The meta-class cLASS</title>
+			<mediaobject>
+				<imageobject>
+					<imagedata fileref="../fig/cLASS.svg"/>
+				</imageobject>
+			</mediaobject>
+		</figure>
+		<para>Notice that in the diagram, we use the (imaginary) type <code>mODELoBJECT</code> for showing
+   the pre-defined property <code>type</code> and several methods pre-defined for all objects that
+   instantiate a class created with cLASS. The class <code>Book</code> is an example of a
+    <code>cLASS</code>. As a subclass of <code>mODELoBJECT</code>, it inherits its property
+    <code>type</code> and all its methods.</para>
+  <para>The values of the pre-defined property <code>instances</code> are maps of
+    <code>mODELoBJECT</code>s representing the extension (or population) of a model class.</para>
+	</section>
+	<section>
+		<title>The Check Method</title>
+		<para>Any cLASS has a class-level <code>check</code> method for validating all kinds of
+   property constraints. Since this method can validate all properties of a model class, it takes as
+   its first parameter the name of the property, and as its second parameter the value to be
+   validated:</para>
+		<programlisting>cLASS.prototype.<emphasis role="bold">check</emphasis> = function (prop, val) {
+  var propDeclParams = this.properties[prop],
+      range = propDeclParams.range,
+      min = propDeclParams.min,
+      max = propDeclParams.max,
+      minCard = propDeclParams.minCard,
+      maxCard = propDeclParams.maxCard,
+      pattern = propDeclParams.pattern,
+      msg = propDeclParams.patternMessage,
+      label = propDeclParams.label || prop;</programlisting>
+		<para>Notice that the definition of a model class comes with a set of property declarations in
+    <code>properties</code>. An example of such a property declaration is the declaration of the
+   attribute
+   <code>title</code>:<programlisting><emphasis role="bold">title</emphasis>: {range:"NonEmptyString", min: 2, max: 50, label:"Title"}, </programlisting></para>
+		<para>In this example we have the property declaration parameters <code>range</code>,
+				<code>min</code>, <code>max</code> and <code>label</code>. In lines 2-10 above, all
+			these property declaration parameters are copied to local variables for having
+			convenient shortcuts.</para>
+		<para>In the <code>check</code> method, the first check is concerned with <emphasis
+				role="bold"><emphasis role="italic">mandatory value
+				constraints</emphasis></emphasis>:<programlisting>  if (!propDeclParams.optional &amp;&amp; val === undefined) {
+      return new MandatoryValueConstraintViolation("A value for "+ 
+          label +" is required!");	  
+  }</programlisting></para>
+		<para>The next check is concerned with <emphasis role="bold"><emphasis role="italic">range
+					constraints</emphasis></emphasis>:<programlisting>  switch (range) {
+  case "<emphasis role="bold">String</emphasis>":
+    if (typeof( val) !== "string") {
+      return new RangeConstraintViolation("The "+ label +
+          " must be a string!");
+    } 
+    break;
+  case "<emphasis role="bold">NonEmptyString</emphasis>":
+    if (typeof(val) !== "string" || val.trim() === "") {
+      return new RangeConstraintViolation("The "+ label +
+          " must be a non-empty string!");
+    }
+    break;
+  ...  // other cases
+  case "<emphasis role="bold">Boolean</emphasis>":
+    if (typeof( val) !== "boolean") {
+      return new RangeConstraintViolation("The value of "+ label +
+          " must be either 'true' or 'false'!");
+    }
+    break;
+  }</programlisting></para>
+		<para>Then there are several range-specific checks concerning (1) <emphasis role="bold"><emphasis
+					role="italic">string length constraints</emphasis></emphasis> and <emphasis
+				role="bold"><emphasis role="italic">pattern
+			constraints</emphasis></emphasis>:<programlisting>  if (range === "String" || range === "NonEmptyString") {
+    if (min !== undefined &amp;&amp; val.length &lt; min) {
+      return new StringLengthConstraintViolation("The length of "+
+          label + " must be greater than "+ min);
+    } else if (max !== undefined &amp;&amp; val.length > max) {
+      return new StringLengthConstraintViolation("The length of "+
+          label + " must be smaller than "+ max);  	
+    } else if (pattern !== undefined &amp;&amp; !pattern.test( val)) {
+        return new PatternConstraintViolation( msg || val +
+            "does not comply with the pattern defined for "+ label);  	
+    }  
+  }</programlisting></para>
+		<para>and (2) <emphasis role="bold"><emphasis role="italic">interval
+				constraints</emphasis></emphasis>:<programlisting>  if (range === "Integer" || range === "NonNegativeInteger" || 
+      range === "PositiveInteger") {
+    if (min !== undefined &amp;&amp; val &lt; min) {
+      return new IntervalConstraintViolation( label +
+          " must be greater than "+ min);
+    } else if (max !== undefined &amp;&amp; val > max) {
+      return new IntervalConstraintViolation( label +
+          " must be smaller than "+ max);  	
+    }
+  }</programlisting></para>
+		<para>Then the next check is concerned with <emphasis role="bold"><emphasis role="italic"
+					>cardinality constraints</emphasis></emphasis>, which may apply to list-valued
+			or map-valued properties.
+			<programlisting>  if (minCard !== undefined &amp;&amp; 
+      (Array.isArray(val) &amp;&amp; val.length &lt; minCard || 
+       typeof(val)==="object" &amp;&amp; Object.keys(val).length &lt; minCard)) {
+    return new CardinalityConstraintViolation(
+        "A set of at least "+ minCard +" values is required for "+ label);	  
+  }
+  if (maxCard !== undefined &amp;&amp; 
+      (Array.isArray(val) &amp;&amp; val.length > maxCard || 
+       typeof(val)==="object" &amp;&amp; Object.keys(val).length > maxCard)) {
+    return new CardinalityConstraintViolation("A value set for "+ label + 
+        " must not have more than "+ maxCard +" members!");	  
+  }</programlisting></para>
+		<para>The next check is concerned with <emphasis role="bold"><emphasis role="italic">uniqueness
+     constraints</emphasis></emphasis>, which can only be checked by inspecting the entire
+   population of the model class. Assuming that this population has been loaded into the main memory
+   collection <emphasis role="italic">cLASS</emphasis><code>.instances</code>, the following
+   code is
+   used:<programlisting>  if (propDeclParams.unique &amp;&amp; this.instances) {
+    keys = Object.keys( this.instances);
+    for (i=0; i &lt; keys.length; i++) {
+      if ( this.instances[keys[i]][prop] === val) {
+        return new UniquenessConstraintViolation("There is already a "+
+            this.name +" with a(n) "+ label +" value "+ val +"!");
+      }
+    }
+  }</programlisting></para>
+  <para>Finally, the <emphasis role="italic">mandatory value constraints</emphasis> and the
+    <emphasis role="italic">uniqueness constraints</emphasis> implied by a <emphasis role="bold"
+     ><emphasis role="italic">standard identifier declaration</emphasis></emphasis> are
+   checked:<programlisting>  if (propDeclParams.isStandardId) {
+    if (val === undefined) {
+      return new MandatoryValueConstraintViolation("A value for the " +
+          "standard identifier attribute "+ label +" is required!");
+    } else if (this.instances &amp;&amp; this.instances[val]) {
+      return new UniquenessConstraintViolation("There is already a "+
+          this.name +" with a(n) "+ label +" value "+ val +"!");	  
+    }
+  }</programlisting></para>
+	</section>
+ <section>
+  <title>Storage Management</title>
+  <para>cLASSjs uses a <emphasis role="italic">data mapper</emphasis> approach for separating
+   model classes and storage management. A cLASSjs application creates a sTORAGEmANAGER object
+   at application start-up time, typically in some piece of controller code, by providing parameter
+   values for a storage adapter (such as local storage or back-end storage with MariaDB).</para>
+  <para>The storage manager has a list of available storage adapters, one of which is assigned as
+			the currently used adapter. Each available storage adapter (such as <code>LocaStorage</code>
+			or <code>MariaDB</code> in the diagram below) implements the CRUD methods specified in the
+			abstract class <code>AbstractStorageAdapter</code>.</para>
+  <figure xml:id="figSTORAGEmANAGER">
+   <title>The sTORAGEmANAGER classes</title>
+   <mediaobject>
+    <imageobject>
+     <imagedata fileref="../fig/sTORAGEmANAGER.svg"/>
+    </imageobject>
+   </mediaobject>
+  </figure>
+ </section>
+
+</chapter>

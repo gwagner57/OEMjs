@@ -1,0 +1,64 @@
+<!-- ===========================================================================
+ * Test UI generation based on a model object
+ * @copyright Copyright 2016 Gerd Wagner, BTU (Germany) + ODU (VA, USA)
+ * @author Gerd Wagner
+ * @license The MIT License (MIT)
+================================================================================ -->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Test ClassPopulationWidget</title>
+  <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
+  <link rel="stylesheet" href="../css/normalize.css" />
+  <link rel="stylesheet" href="../css/vIEW.css" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/basic-styles.css">
+  <!-- Libraries -->
+  <script src="../lib/browserShims.js"></script>
+  <script src="../lib/errorTypes.js"></script>
+  <script src="../lib/util.js"></script>
+  <script src="../lib/dom.js"></script>
+  <script src="../lib/cLASS.js"></script>
+  <script src="../../oNTOjs/src/eNUMERATION.js"></script>
+  <script src="../../oNTOjs/src/cOMPLEXtYPE.js"></script>
+  <script src="../../oNTOjs/src/cOMPLEXdATAtYPE.js"></script>
+  <script src="../../oNTOjs/src/ui/oBJECTvIEW.js"></script>
+</head>
+<body>
+ <h1>Test the ClassPopulationWidgets of ObjectView</h1>
+ <script>
+   var GroupOfResidents = new cLASS({
+     Name: "GroupOfResidents",
+     properties: {
+       "id": {range: "String", label:"ID"},
+       "name": {range: "String", label:"Name"},
+       "testProp": {range: "Boolean", label:"Test prop.", optional:true},
+       "toleranceLevel": {range: "ClosedUnitInterval", label:"Tolerance level",
+         hint:"The different-neighbor percentage tolerated for being content"}
+     },
+     methods: {
+     }
+   });
+   var g1 = new GroupOfResidents({id:1, name: "A", testProp: true, toleranceLevel: 0.1});
+   var g2 = new GroupOfResidents({id:2, name: "B", toleranceLevel: 0.2});
+   var g3 = new GroupOfResidents({id:3, name: "C", testProp: true, toleranceLevel: 0.3});
+   var uiPanelEl = dom.createExpandablePanel({id:"InitialStateObjectsUI", heading:"Groups"});
+   var mainContentEl = uiPanelEl.lastElementChild;
+   var userActions = {
+     "test": function () {
+       alert("Population: "+ JSON.stringify( GroupOfResidents.instances));
+     }
+   };
+   var classPopWidget = oBJECTvIEW.createClassPopulationWidget(
+       cLASS["GroupOfResidents"], ["testProp","toleranceLevel"]);
+   //classPopWidget = oBJECTvIEW.createClassPopulationWidget( cLASS[className], editProps);
+   mainContentEl.appendChild( classPopWidget);
+   // create buttons for userActions
+   mainContentEl.appendChild( oBJECTvIEW.createUiElemsForUserActions( userActions));
+   document.body.appendChild( uiPanelEl);
+
+ </script>
+</body>
+</html>
+

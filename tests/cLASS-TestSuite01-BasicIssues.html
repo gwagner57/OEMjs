@@ -1,0 +1,155 @@
+<!-- ===========================================================================
+ * Test cLASS
+ * @copyright Copyright 2016 Gerd Wagner, BTU (Germany) + ODU (VA, USA)
+ * @author Gerd Wagner
+ * @license The MIT License (MIT)
+================================================================================ -->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>cLASS-TestSuite01</title>
+  <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
+  <link rel="stylesheet" href="../css/normalize.css" />
+  <style>
+    .failure {color: red;}
+    .info {color: darkorange;}
+    .okay {color: green;}
+  </style>
+  <!-- Basic libraries -->
+  <script src="../lib/browserShims.js"></script>
+  <script src="../lib/dom.js"></script>
+  <!-- cLASS Libraries -->
+  <script src="../lib/errorTypes.js"></script>
+  <script src="../src/eNUMERATION.js"></script>
+  <script src="../src/cLASS.js"></script>
+
+  <script src="test.js"></script>
+</head>
+<body>
+ <h1>cLASS Test Suite 01: Basic Issues</h1>
+ <p>Testing if a JS object <code>C</code> is a cLASS can only be done with
+   <code>(C.constructor === cLASS)</code> and not with <code>(C instanceof cLASS)</code>.</p>
+
+ <script>
+
+/****************************************
+ *** Test code **************************
+ ****************************************/
+ try {
+   var ServiceDesk = new cLASS({
+     Name: "ServiceDesk",
+     properties: {
+       "id": {range: "PositiveInteger", label: "ID"},
+       "queueLength": { range: "NonNegativeInteger", initialValue: 0, label: "Queue length"},
+       "isBusy": { range: "Boolean", initialValue: false},
+       "pos": {range: cLASS.Array("Decimal",2)}
+     }
+   });
+   var sD = new ServiceDesk({id: 1, queueLength: 7, isBusy: false});
+   var CustomerArrival = new cLASS({
+     Name: "CustomerArrival",
+     properties: {
+       "occTime": {range: "NonNegativeInteger"},
+       "serviceDesk": {range: "ServiceDesk"}
+     },
+     methods: {
+       "toString": function () {  //?? calling the supertype's toString method? (not used/tested below!?)
+         return cLASS[this.constructor.supertypeName].prototype.toString.call( this) +"@"+ this.occTime;
+       }
+     }
+   });
+   var custArrEvt = new CustomerArrival({occTime:1, serviceDesk: 1});
+} catch (e) {
+  console.log( e.constructor.name +": "+ e.message);
+}
+
+
+   //*** Test Suite 1 ***************************
+   document.body.appendChild( dom.createElement("h2",{content:"Test Suite 1: Accessing properties"}));
+
+   test( "sD.constructor.Name should be 'ServiceDesk'",
+       sD.constructor.Name === "ServiceDesk"
+   );
+   test( "sD  (should be) instanceof ServiceDesk",
+       sD instanceof ServiceDesk
+   );
+   test( "custArrEvt.serviceDesk.queueLength should be 7",
+       custArrEvt.serviceDesk.queueLength === 7
+   );
+
+   if (test.okay) showSuccessMessage();
+   else test.okay = true;  // reset test.okay
+
+   //*** Test Suite 2 ***********************************************************
+   document.body.appendChild( dom.createElement("h2",{content:"Test Suite 2: Class Hierarchies and Inheritance"}));
+
+   test( "ServiceDesk.constructor should be cLASS",
+       ServiceDesk.constructor === cLASS
+   );
+   test( "ServiceDesk.constructor.name should be 'cLASS'",
+       ServiceDesk.constructor.name === "cLASS"
+   );
+   test("ServiceDesk.Name should be 'ServiceDesk'",
+       ServiceDesk.Name === "ServiceDesk"
+   );
+
+   var ATM = new cLASS({
+     Name: "ATM",
+     supertypeName: "ServiceDesk",
+     properties: {
+       "model": {range: "String", label: "Model"}
+     }
+   });
+   var atm1 = new ATM({id: 2, queueLength: 3, isBusy: false, model:"Siemens"});
+
+   test( "atm1.id should be 2",
+       atm1.id === 2
+   );
+   test( "atm1.model should be 'Siemens'",
+       atm1.model === "Siemens"
+   );
+
+   var SiemensATM = new cLASS({
+     Name: "SiemensATM",
+     supertypeName: "ATM",
+     properties: {
+       "model": {range: "String", label: "Model", initialValue:"Siemens", frozen:true},
+       "specialFeature": {range: "String", label: "Special feature"}
+     }
+   });
+   var atm2 = new SiemensATM({id: 3, queueLength: 3, isBusy: false, specialFeature:"Durable"});
+
+   showInfo("atm2.toString() = "+ atm2.toString());
+
+   test( "The class SiemensATM should have the property 'queueLength'",
+       SiemensATM.properties['queueLength']
+   );
+   test( "The class SiemensATM should have the property 'specialFeature'",
+       SiemensATM.properties['specialFeature']
+   );
+
+   if (test.okay) showSuccessMessage();
+   else test.okay = true;  // reset test.okay
+
+   //*******************************************************************
+   document.body.appendChild( dom.createElement("h2",{content:
+       "Test Suite 3: Creating objects with slots for non-declared poperties and with instance-level method slots"}));
+   var sD2 = new ServiceDesk({id: 12, testProp:"testPropValue",
+       testMethod: function () {return true;}});
+   showInfo("sD2.toString() = "+ sD2.toString());
+   test( "The object sD2 should have the property 'testProp'", sD2.testProp);
+   test( "The object sD2 should have the method 'testMethod'", sD2['testMethod']);
+   test( "The invocation sD2.testMethod() should return true",  sD2.testMethod());
+   if (test.okay) showSuccessMessage();
+   else test.okay = true;  // reset test.okay
+
+   //*******************************************************************
+   /*
+   document.body.appendChild( dom.createElement("h2",{content:
+       "Test Suite 4: "}));
+   */
+ </script>
+</body>
+</html>
+

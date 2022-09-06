@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="http://www.oasis-open.org/docbook/xml/5.0/rng/docbookxi.rng" type="xml"?>
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Application Architecture</title>
+ <para>Web application systems, like any other complex engineering artefacts, need an architecture
+  that helps master their complexity by breaking them down into smaller parts with manageable
+  inter-dependencies. Software architecture is a computer science field that is concerned with the
+  following issues:
+  <orderedlist>
+   <listitem>
+    <para>The overall program code of an application needs to be structured and partitioned in
+     such a way that the fundamental software quality goal of maintainability is achieved.</para>
+   </listitem>
+   <listitem>
+    <para>The state structure of the application system to be designed is defined in the form of
+     information models describing its <emphasis role="italic">information
+      architecture</emphasis>.</para>
+   </listitem>
+   <listitem>
+    <para>The distribution of the application system's runtime components within a computer
+     network is defined by a <emphasis role="italic">distribution architecture</emphasis>. A web
+     app is distributed on the web, which is a world-wide client-server network system with
+     HTTP-based communication.</para>
+   </listitem>
+  </orderedlist>
+ </para>
+ <para>As in all cases of designing a complex system, no matter if a new building, a new space
+  shuttle, a new computer or a new software application is to be designed, an architecture provides
+  a kind of master plan for defining the structure of the system. Any good architecture is based on
+  the fundamental engineering principle of <emphasis role="bold"><emphasis role="italic">separation
+    of concerns</emphasis></emphasis>, which helps in managing complexity by breaking a system down
+  into smaller, functionally defined parts such that their <emphasis role="bold"><emphasis
+    role="italic">interdependencies are minimized</emphasis></emphasis>, keeping the more
+  fundamental parts independent of the less fundamental parts (according to the <emphasis
+   role="italic">onion principle</emphasis> where the innermost parts of an onion are the most
+  fundamental parts). Such an architecture also makes it easier to develop, or source, and update
+  certain system parts independently of others.</para>
+ <section>
+  <title>The Model-View-Controller (MVC) Architecture Metaphor</title>
+  <para>The most popular and most widely used approach in software application architecture is the
+    <emphasis role="bold"> M</emphasis>odel-<emphasis role="bold">V</emphasis>iew-<emphasis
+    role="bold">C</emphasis>ontroller code partitioning pattern. Although it has not been precisely
+   defined, and has been implemented in many different ways, especially in web application
+   frameworks, it is based on the principle of <emphasis role="italic">separation of
+    concerns</emphasis> and on the fundamental insight that the <emphasis role="bold"><emphasis
+     role="italic">model</emphasis></emphasis> is the foundation for all other parts of an
+   application, in particular for the user interface. Consequently, even if the MVC approach doesn't
+   provide a precise definition of what a 'model' is, we can consider it to be a <emphasis
+    role="bold"><emphasis role="italic">model-based</emphasis></emphasis> approach. </para>
+  <para>According to Wikipedia, the first MVC architecture was introduced to application programming
+   with <emphasis role="italic">Smalltalk-76</emphasis> by <link
+    xlink:href="https://en.wikipedia.org/wiki/Trygve_Reenskaug">Trygve Reenskaug</link> in the
+   1970s. In a later <link
+    xlink:href="https://web.archive.org/web/20100921030808/http://www.itu.dk/courses/VOP/E2005/VOP2005E/8_mvc_krasner_and_pope.pdf"
+    >article about Smalltalk-80</link>, MVC is explained as a "three-way division of an application"
+   that entails "separating (1) the parts that represent the model of the underlying application
+   domain from (2) the way the model is presented to the user and from (3) the way the user
+   interacts with it". The authors, who also use the term "MVC metaphor", point out that their
+   approach would allow programmers to "write an application model by first defining new classes
+   that would embody the special application domain-specific information".</para>
+  <para>Notice that the <emphasis role="italic">model</emphasis> is defined to consist of classes
+   that capture the required domain information. We call them <emphasis role="bold"><emphasis
+     role="italic">model classes</emphasis></emphasis>. Notice also that in this early MVC approach,
+   there is no well-defined concept of a user interface (UI). The 'view' is defined as comprising
+   the output side of a UI, only, while the user input side is separated from it and subsumed under
+   the term 'controller'. This does not reflect how a UI is really organized: by combining certain
+   forms of application output with certain forms of user input like two sides of the same coin. A
+   general UI concept includes both the output (the information output provided to the user, as well
+   as system actions) and the input (including information input provided, as well as actions
+   performed, by the user).</para>
+  <para>The original Smalltalk MVC metaphor was developed for (monochromatic) text-screen-based user
+   interfaces with no general notion of UI events. This may explain why they did not consider an
+   integral concept of a UI. While they distinguished between the state of objects in the model and
+   their state in the UI, which are both in the scope of a user session, they did not consider the
+   distinction between the model state and the database state.</para>
+  <para>In his web essay <link xlink:href="http://martinfowler.com/eaaDev/uiArchs.html">GUI
+    Architectures</link> (2006), Martin Fowler summarizes the main principles of the original MVC
+   approach in the following way:<orderedlist>
+    <listitem>
+     <para>Separation between UI and model.</para>
+    </listitem>
+    <listitem>
+     <para>Divide UI into a 'controller' and 'view'.</para>
+    </listitem>
+    <listitem>
+     <para>Views are synchronized with the model (by means of a data binding mechanism).</para>
+    </listitem>
+   </orderedlist>While the first and third principles are fundamental for the architecture of
+   software applications, the second principle has just a historic meaning and was soon abandoned by
+   the developers of Smalltalk. </para>
+  <para>Compared to the 1980s, computers, human-computer interaction and software application
+   architecture have evolved. In particular, the establishment of the web as the pre-dominant
+   computing platform has made web browsers to be the most important infrastructure for user
+   interfaces. </para>
+  <para>The MVC terminology is still widely used today, especially by web application frameworks,
+   but with different meanings ascribed to "M", "V" and "C". Typically, the "view" denotes the app's
+   code for the HTML-forms-based user interface, and the "controller" denotes the code that is in
+   charge of mediating between the "view" and the "model".</para>
+  <para>In many MVC approaches, the "model" is tightly coupled with the underlying database
+   technology, often via an <emphasis role="italic">object-relational mapping</emphasis> (ORM)
+   approach mapping classes to tables and objects to table rows. This tight coupling between model
+   classes and database tables violates the fundamental principle of minimizing
+   interdependencies.</para>
+  <para>For instance, in the <emphasis role="italic"><link
+     xlink:href="http://martinfowler.com/eaaCatalog/activeRecord.html">Active
+    Record</link></emphasis> paradigm of the influential <emphasis role="italic"
+    >Ruby-on-Rails</emphasis> framework, which has been adopted by many other web application
+   frameworks (such as by <emphasis role="italic">CakePHP</emphasis>), the "model" is a direct
+   representation of the schema of the underlying database system, where each entity table of the
+   database is represented by a "model" class that inherits data manipulation methods for performing
+   Create/Retrieve/Update/Delete (CRUD) operations. In this table-to-model-class mapping approach,
+   the "model" depends on the schema of the underlying database and is therefore tightly coupled
+   with the underlying ORM data storage technology. While this may be a suitable approach for a
+    <emphasis role="italic">database-first</emphasis> development methodology, where an SQL database
+   is the foundation of an application, it is certainly not a general approach and it turns the
+    <emphasis role="italic">model</emphasis> into a secondary asset.</para>
+  <para>Also in frameworks based on ORM annotations, such as <emphasis role="italic"
+    >JavaEE</emphasis> with <emphasis role="italic">JPA</emphasis> annotations, the C# framework
+    <emphasis role="italic">ASP.NET MVC</emphasis> with <emphasis role="italic">Entity
+    Framework</emphasis> and <emphasis role="italic">Data Annotations</emphasis>, or the PHP
+   framework <emphasis role="italic">Symfony</emphasis> with <emphasis role="italic"
+    >Doctrine</emphasis> annotations, the "model" is coupled with the underlying ORM technology
+   through the ORM annotations woven into the model code, thus making the model dependent on the ORM
+   technology used. All these frameworks use the <emphasis role="italic"><link
+     xlink:href="http://martinfowler.com/eaaCatalog/dataMapper.html">Data Mapper</link></emphasis>
+   approach for performing CRUD operations based on ORM annotations.</para>
+ </section>
+ <section>
+  <title>"Logical" versus "Physical" User Interface</title>
+  <para>The idea of a logical UI model, also called "view model", was first proposed (under a
+   different name) by Martin Fowler in his post on the <link
+    xlink:href="http://martinfowler.com/eaaDev/PresentationModel.html">Presentation Model</link> in
+   2004, where he stated that the view model "pulls the state and behavior of the view out into a
+   [view] model class". This means that the logical content of a UI is abstracted out from a
+   concrete "physical" UI, which has specific renderings of the logical UI fields and "commands"
+   (user actions). Logical UI fields are rendered in the form of UI widgets that may have their own
+   state, while logical UI commands are rendered in the form of suitable UI events.</para>
+  <para> Later, in 2005, the view model concept was adopted by John Gossman (from Microsoft) in his
+   blog post <link xlink:href="http://blogs.msdn.com/johngossman/archive/2005/10/08/478683.aspx"
+    >Introduction to Model/View/ViewModel pattern for building WPF Apps</link> and popularized under
+   the architecture pattern acronym "MVVM". </para>
+  <para>In a user interface for a Create/Retrieve/Update/Delete (CRUD) data management operation, a
+    <emphasis role="italic"><emphasis role="bold">view model class</emphasis></emphasis> would be
+   bound to exactly one model class, but could support more than one view (class). A view model
+   class would have properties that are bound to the widgets of the supported view(s), using either
+   one-way or two-way <emphasis role="italic"><emphasis role="bold">data
+    binding</emphasis></emphasis>, and methods that are bound to corresponding commands (<emphasis
+    role="italic"><emphasis role="bold">command binding</emphasis></emphasis>).</para>
+  <para>Typically, most view fields directly correspond to properties of the underlying model class,
+   although they may have a different name. For these fields (or view model properties), a data
+   binding to the corresponding model properties is needed. But a view model class may also have
+   additional properties, some of them may represent view fields that are not bound to a model class
+   property, while others may represent auxiliary fields that are not shown in the UI.</para>
+  <para>The methods of a view model class are invoked when a corresponding command has been issued
+   by the user through creating a UI event, to which the command has been bound.</para>
+  <para>Dividing up the overall UI code into a view model part and a view part creates a certain
+   overhead that may not be justified in certain cases. While the use of a view model is justified
+   for all apps with CRUD data management operations, it may, for instance, not be justified for
+   visualization user interfaces.</para>
+  <para>The main benefits of view models are: (1) they facilitate UI design, (2) they facilitate the
+   testing of the UI logic, and (3) they facilitate the maintenance of the UI.</para>
+ </section>
+ <section>
+  <title>The Onion Architecture Metaphor</title>
+  <para>The term “onion architecture” was coined by Jeffry Palermo in <link
+    xlink:href="http://jeffreypalermo.com/blog/the-onion-architecture-part-1/">a series of blog
+    posts</link> in 2008. The main principles of this architecture metaphor are (1) to use a
+   hierarchy of dependencies, where less fundamental (or central) parts depend on more fundamental
+   parts, but never the other way around, and (2) the most fundamental part is the <emphasis
+    role="italic">model</emphasis>, which implements the application's <emphasis role="italic">data
+    model</emphasis> in the form of <emphasis role="italic">model classes</emphasis> while <emphasis
+    role="italic">data storage</emphasis> is a separate and less fundamental part that must not be
+   coupled with the <emphasis role="italic">model</emphasis>. </para>
+  <para>In fact, Palermo and his followers put a lot more into this architecture metaphor, such as
+   using "repository interfaces" and "service interfaces", but I don't think that's really essential
+   for the onion metaphor. Also, they are using a different terminology. When they are using the
+   term "domain model" instead of simply <emphasis role="italic">model</emphasis>, they are
+   confusing the term "domain model" with "implementation of <emphasis role="italic">data
+    model"</emphasis>, which is what <emphasis role="italic">model classes</emphasis> do. A
+    <emphasis role="italic">data model</emphasis> is derived from an <emphasis role="italic"
+    >information design model</emphasis>, which may itself be derived from a <emphasis role="italic"
+    >domain information model</emphasis>. This is the basic development chain in model-based
+   software engineering.</para>
+  <para>In principle, a <emphasis role="italic">Data Mapper</emphasis> approach, if it is not based
+   on a platform-specific ORM (annotation) technology, but rather on some form of
+   platform-independent mapping logic, can be used for storage management in an onion
+   architecture.</para>
+ </section>
+ <section xml:id="secMSVC">
+  <title>The Model-Storage-View-Controller (MSVC) Architecture Pattern</title>
+  <para>The cLASSjs architecture is based on a pattern called <emphasis role="italic"
+    >Model-Storage-View-Controller (MSVC)</emphasis>, which combines the MVC metaphor with the onion
+   metaphor.</para>
+  <para>It should be clear that the three most important parts of any software application involving
+   data management are:<orderedlist>
+    <listitem>
+     <para>the <emphasis role="italic"><emphasis role="bold">model</emphasis> classes</emphasis>,
+      which implement the application's data model, defining data structures and constraints;</para>
+    </listitem>
+    <listitem>
+     <para>the <emphasis role="italic">data <emphasis role="bold">storage</emphasis>
+       system</emphasis>, which is typically, but not necessarily, an SQL database system;</para>
+    </listitem>
+    <listitem>
+     <para>the <emphasis role="bold"><emphasis role="italic">user interface</emphasis></emphasis>
+      (UI), including both information provision (or output) to the user, e.g., on the computer
+      screen, and user input provided by user actions in the form of UI events, e.g., keyboard or
+      mouse events, such that all required user interactions are supported.</para>
+    </listitem>
+   </orderedlist></para>
+  <para>The MSVC architecture pattern follows the basic principles of the onion architecture
+   metaphor by separating the <emphasis role="italic">model</emphasis> layer not only from the UI
+   layer, but also from the <emphasis role="italic">data storage</emphasis> layer, and by making the
+    <emphasis role="italic">model</emphasis> the most fundamental part, which must not depend on any
+   other part. The MSVC architecture pattern also follows the good parts of the MVC architecture
+   metaphor and its widely used terminology by using the term <emphasis role="italic"
+    >view</emphasis> interchangeably with <emphasis role="italic">user interface (UI)</emphasis>,
+   and the term <emphasis role="italic">controller</emphasis> for denoting the glue code layer
+   needed for integrating the UI code with the underlying model classes and storage management code,
+   or, in MVC jargon, for integrating the <emphasis role="italic">view</emphasis> with the <emphasis
+    role="italic">model</emphasis>. </para>
+  <para>Using a model-based approach, <emphasis role="bold"><emphasis role="italic">the model
+     classes of an app are obtained by coding the app's data model</emphasis></emphasis>, which is
+   typically expressed in the form of a UML class diagram. Since it is the task of the <emphasis
+    role="italic">model</emphasis> and <emphasis role="italic">data storage</emphasis> layers to
+   define and validate constraints and to manage persistent data, we need reusable model code taking
+   care of this in a generic manner for avoiding per-class and per-property boilerplate code for
+   constraint validation, and per-class boilerplate code for data storage management.</para>
+ </section>
+</chapter>

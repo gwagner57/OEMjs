@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test IndexedDB Storage Manager</title>
+
+  <script src="../lib/errorTypes.js"></script>
+  <script src="../src/eNUMERATION.js"></script>
+  <script src="../src/cLASS.js"></script>
+  <script src="../lib/idb.js"></script>
+  <script src="../src/storage/sTORAGEmANAGER.js"></script>
+  <script src="../src/storage/sTORAGEmANAGER_IndexedDB.js"></script>
+
+  <script src="../lib/util.js"></script>
+  <script src="../lib/dom.js"></script>
+  <script src="test.js"></script>
+
+
+</head>
+<body>
+<h1>Test IndexedDB Storage Manager</h1>
+<script>
+  let oes = {};
+
+  oes.ExperimentRun = new cLASS({
+    Name: "eXPERIMENTrUN",
+    properties: {
+      "id": {range: "AutoNumber"},  // possibly a timestamp
+      "experimentDef": {range: "PositiveInteger"},
+      "dateTime": {range: "DateTime"}
+    }
+  });
+  oes.ExperimentRun.getAutoId = function () {
+    return (new Date()).getTime();
+  };
+  oes.ExperimentScenarioRun = new cLASS({
+    Name: "eXPERIMENTsCENARIOrUN",
+    properties: {
+      "id": {range: "AutoNumber"},  // possibly a timestamp
+      "experimentRun": {range: "eXPERIMENTrUN"},
+      "experimentScenarioNo": {range: "PositiveInteger"},
+      "parameterValueCombination": {range: Array},
+      "outputStatistics": {range: Object}
+    }
+  });
+  oes.ExperimentScenarioRun.getAutoId = function () {
+    return (new Date()).getTime();
+  };
+
+  //*** Test Suite 1 ***************************
+  document.body.appendChild( dom.createElement("h2",{content:"Test Suite 1: Retrieving all records"}));
+
+  let storageAdapter = {name:"IndexedDB", dbName: "Test-IDB-SM"};
+  let storeMan = new sTORAGEmANAGER( storageAdapter);
+
+  storeMan.retrieveAll( oes.ExperimentRun).then( function (records) {
+    var tableEl = document.createElement("table");
+    var tableHeadEl = document.createElement("tHead");
+    var tableBodyEl = document.createElement("tBody");
+    var row=null;
+    tableEl.appendChild( tableHeadEl);
+    tableEl.appendChild( tableBodyEl);
+    document.body.appendChild( tableEl);
+
+    row = tableHeadEl.insertRow(-1);
+    Object.keys( oes.ExperimentRun.properties).forEach( function (prop) {
+      row.insertCell(-1).textContent = oes.ExperimentRun.properties[prop].label || prop;
+    });
+    for (let i=0; i < records.length; i++) {
+      row = tableBodyEl.insertRow(-1);
+      Object.keys( oes.ExperimentRun.properties).forEach( function (prop) {
+        row.insertCell(-1).textContent = records[i][prop];
+      });
+    }
+  }).catch( function (err) {console.log( err.name +": "+ err.message);});
+
+/*
+  test( "sD.constructor.Name should be 'ServiceDesk'",
+      sD.constructor.Name === "ServiceDesk"
+  );
+
+  if (test.okay) showSuccessMessage();
+  else test.okay = true;  // reset test.okay
+*/
+
+</script>
+</body>
+</html>

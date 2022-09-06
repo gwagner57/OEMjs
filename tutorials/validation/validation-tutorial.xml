@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbookxi.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="http://docbook.org/xml/5.0/rng/docbook.rng" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<book xmlns="http://docbook.org/ns/docbook" 
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0"
+	xmlns:svg="http://www.w3.org/2000/svg"
+	xml:lang="en"
+	>
+	<info>
+		<title>Declarative and Responsive Constraint Validation with cLASSjs</title>
+		<pubdate>2016-01-16</pubdate>
+		<authorgroup>
+			<author>
+				<personname><firstname>Gerd</firstname><surname>Wagner</surname></personname>
+				<email>G.Wagner@b-tu.de</email>
+			</author>
+		</authorgroup>
+		<org>
+			<orgname>Chair of Internet Technology, Brandenburg University of Technology</orgname>
+			<address><city>Cottbus</city><street>Walther-Pauer Street 2</street><postcode>03046</postcode><country>Germany</country></address>
+		</org>
+		<releaseinfo>Warning: This tutorial manuscript may contain errors and may still be incomplete.
+			Please report any issue to Gerd Wagner at G.Wagner@b-tu.de.</releaseinfo>
+		<releaseinfo>This tutorial is also available in the following formats: <link
+			xlink:href="validation-tutorial.pdf">PDF</link>. See also the <link
+				xlink:href="http://web-engineering.info/index.html">project page</link>, or <link
+					xlink:href="ValidationApp/index.html">run the example app</link> from our server, or <link
+						xlink:href="ValidationApp.zip">download the code</link> as a ZIP archive file.</releaseinfo>
+		<copyright>
+			<year>2015-2016</year>
+			<holder>Gerd Wagner</holder>
+		</copyright>
+		<legalnotice>
+			<para>This tutorial article, along with any associated source code, is licensed under <link
+					xlink:href="http://www.codeproject.com/info/cpol10.aspx">The Code Project Open License
+					(CPOL)</link>, implying that the associated code is provided "as-is", can be modified to
+				create derivative works, can be redistributed, and can be used in commercial applications,
+				but the article must not be distributed or republished without the author's consent.</para>
+		</legalnotice>
+		<revhistory>
+			<revision>
+				<revnumber>0.2</revnumber>
+				<date>20160116</date>
+				<authorinitials>gw</authorinitials>
+				<revremark>Add section on architecture; move CRUD operations to a storage manager, such that the "model" no longer 
+				 depends on storage technology.</revremark>
+			</revision>
+		 <revision>
+		  <revnumber>0.1</revnumber>
+		  <date>20141021</date>
+		  <authorinitials>gw</authorinitials>
+		  <revremark>create first version</revremark>
+		 </revision>
+		</revhistory>
+	</info>
+	<preface><title>Foreword</title>
+		<para>This tutorial is Part 1 of a series of tutorials about
+			model-based development of JavaScript web applications using the libraries cLASSjs and
+			mODELvIEWjs, which help to avoid repetitive ("boilerplate") code. cLASSjs and mODELvIEWjs
+			support both front-end JavaScript web apps with local or cloud storage and distributed
+			JavaScript web apps with NodeJS-based back-end components and remote storage.</para>
+		<para>The tutorial shows how to express integrity constraints declaratively in a model class
+   defined as an instance of the meta-class cLASS, and how to validate data in the model layer
+   of the app as well as perform <emphasis role="italic">responsive constraint validation</emphasis>
+   in the user interface. </para>
+		<para>The simple form of a JavaScript data management application presented in this tutorial takes
+			care of only one object type ("books") for which it supports the four standard data management
+			operations (<emphasis role="bold">C</emphasis>reate/<emphasis role="bold"
+				>R</emphasis>etrieve/<emphasis role="bold">U</emphasis>pdate/<emphasis role="bold"
+				>D</emphasis>elete). It improves the validation app discussed in the <link
+				 xlink:href="http://web-engineering.info/tech/JsFrontendApp/validation-tutorial.html">plain 
+				 JavaScript validation tutorial</link> by
+				<emphasis role="italic"><emphasis role="bold">avoiding boilerplate
+				code</emphasis></emphasis> in <orderedlist>
+				<listitem>
+					<para>the model layer for checks and setters, and</para>
+				</listitem>
+				<listitem>
+					<para>the storage layer for the standard (CRUD) storage management operations.</para>
+				</listitem>
+			</orderedlist> It needs to be enhanced by adding further object types with associations and
+			subtype/inheritance relationships between them.</para>
+		<para>You may also want to take a look at the book <link
+    xlink:href="http://web-engineering.info/JsFrontendApp-Book">Building Front-End Web Apps with
+    Plain JavaScript</link>, which explains how to deal with multiple object types ("books",
+   "publishers" and "authors"), taking care of constraint validation, association management and
+   subtyping/inheritance.</para>
+  <para>The three most important parts of any software application involving data management are:<orderedlist>
+    <listitem>
+     <para>the <emphasis role="italic"><emphasis role="bold">model</emphasis> classes</emphasis>,
+      which implement the application's data model, defining data structures and constraints;</para>
+    </listitem>
+    <listitem>
+     <para>the <emphasis role="italic">data <emphasis role="bold">storage</emphasis>
+       system</emphasis>, which is typically, but not necessarily, an SQL database system;</para>
+    </listitem>
+    <listitem>
+     <para>the <emphasis role="italic"><emphasis role="bold">user interface</emphasis>
+       (UI)</emphasis>, or <emphasis role="italic">view</emphasis>, including both information
+      provision (or output) to the user, e.g., on the computer screen, and user input provided by
+      user actions in the form of UI events, e.g., keyboard or mouse events, such that all required
+      user interactions are supported.</para>
+    </listitem>
+   </orderedlist></para>
+  <para>The architecture of apps built with cLASSjs is based on the <emphasis role="italic"
+    >Model-Storage-View-Controller (MSVC)</emphasis> pattern, which follows the basic principles of
+   the onion architecture metaphor by separating the <emphasis role="italic">model</emphasis> layer
+   not only from the UI layer, but also from the <emphasis role="italic">data storage</emphasis>
+   layer, and by making the <emphasis role="italic">model</emphasis> the most fundamental part,
+   which must not depend on any other part. The MSVC architecture pattern also follows the MVC
+   architecture metaphor and its widely used terminology by using the term <emphasis role="italic"
+    >view</emphasis> interchangeably with <emphasis role="italic">user interface (UI)</emphasis>,
+   and the term <emphasis role="italic">controller</emphasis> for denoting the glue code layer
+   needed for integrating the UI code with the underlying model classes and storage management code,
+   or, in MVC jargon, for integrating the <emphasis role="italic">view</emphasis> with the <emphasis
+    role="italic">model</emphasis>. </para>
+  <para>Using a model-based approach, <emphasis role="bold"><emphasis role="italic">the model
+     classes of an app are obtained by coding the app's data model</emphasis></emphasis>, which is
+   typically expressed in the form of a UML class diagram. Since it is the task of the <emphasis
+    role="italic">model</emphasis> and <emphasis role="italic">data storage</emphasis> layers to
+   define and validate constraints and to manage persistent data, we need re-usable code taking care
+   of this in a generic manner for avoiding per-class and per-property boilerplate code for
+   constraint validation, and per-class boilerplate code for data storage management.</para>
+	</preface>
+ <xi:include href="cLASS.xml">
+  <xi:fallback>
+   <emphasis>MISSING XINCLUDE CONTENT</emphasis>
+  </xi:fallback>
+ </xi:include>
+ <xi:include href="ValidationWithcLASS.xml">
+		<xi:fallback>
+			<emphasis>MISSING XINCLUDE CONTENT</emphasis>
+		</xi:fallback>
+	</xi:include>
+	<?dbhtml-include href="GoogleWebsiteTrackingScript.html"?>	
+</book>

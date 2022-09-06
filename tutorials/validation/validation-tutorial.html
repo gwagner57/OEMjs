@@ -1,0 +1,508 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" vocab="http://schema.org/" typeof="TechArticle WebPage">
+<head>
+  <meta charset="UTF-8" />
+  <meta property="proficiencyLevel" content="Beginner">
+  <title>mODELcLASSjs Validation Tutorial</title>
+  <link rel="stylesheet" type="text/css" href="../docbook.css">
+  <meta name="description" content="A tutorial about developing a front-end web application with constraint validation using the mODELcLASSjs library." />  
+  <meta name="keywords" content="JavaScript web app, plain JavaScript web app, pure JavaScript web app, front-end web app, MVC web app, CRUD web app, web app development tutorial, constraint validation, UML constraint, SQL constraint" />
+  <meta property="isPartOf" content="http://web-engineering.info">
+  <meta property="specialty" content="http://web-engineering.info/WebAppEngineering.html">
+</head>
+<body property="articleBody">
+<aside>
+ <nav>
+  <ul>
+  <li><a href="ValidationApp/index.html"><button type="button">Run the app</button></a></li>
+  <li><a href="ValidationApp.zip"><button type="button">Get the code</button></a></li>
+  <li><a href="http://web-engineering.info/forum/12"><button type="button">Ask a question</button></a></li>
+  </ul>
+ </nav>
+ <div id="supportUs">
+  <p>Please support <em>web-engineering.info</em> and buy our e-book <a href="https://gumroad.com/l/YyWka">Building Front-End Web Apps with Plain JavaScript</a>.</p>
+  <a href="https://gumroad.com/l/YyWka"><img src="book-cover-180x270.png" /></a>
+ </div>
+</aside>
+   
+   <div lang="en" class="book"><div class="titlepage"><div><div>
+   <h3 style="color:grey"><em>Understanding</em> and <code>Implementing</code> Information Management Concepts and Techniques</h3>
+   <h1 class="title"><a name="d5e1"></a>Declarative and Responsive Constraint Validation with mODELcLASSjs</h1></div><div><div class="authorgroup"><div class="author"><h3 class="author"><span class="firstname">Gerd</span> <span class="surname">Wagner</span></h3><code class="email">&lt;<a class="email" href="mailto:G.Wagner@b-tu.de">G.Wagner@b-tu.de</a>&gt;</code></div></div></div><div><p class="releaseinfo">Warning: This tutorial manuscript may contain errors and may still be incomplete.
+			Please report any issue to Gerd Wagner at G.Wagner@b-tu.de.</p></div><div><p class="releaseinfo">This tutorial is also available in the following formats: <a class="link" href="validation-tutorial.pdf" target="_top">PDF</a>. See also the <a class="link" href="http://web-engineering.info/index.html" target="_top">project page</a>, or <a class="link" href="ValidationApp/index.html" target="_top">run the example app</a> from our server, or <a class="link" href="ValidationApp.zip" target="_top">download the code</a> as a ZIP archive file.</p></div><div><p class="copyright">Copyright &copy; 2015-2016 Gerd Wagner</p></div><div><div class="legalnotice"><a name="d5e27"></a><p>This tutorial article, along with any associated source code, is licensed under <a class="link" href="http://www.codeproject.com/info/cpol10.aspx" target="_top">The Code Project Open License
+					(CPOL)</a>, implying that the associated code is provided "as-is", can be modified to
+				create derivative works, can be redistributed, and can be used in commercial applications,
+				but the article must not be distributed or republished without the author's consent.</p></div></div><div><p class="pubdate">2016-01-16</p></div><div><div class="revhistory"><table style="border-style:solid; width:100%;" summary="Revision History"><tr><th align="left" valign="top" colspan="3"><b>Revision History</b></th></tr><tr><td align="left">Revision 0.2</td><td align="left">20160116</td><td align="left">gw</td></tr><tr><td align="left" colspan="3">Add section on architecture; move CRUD operations to a storage manager, such that the "model" no longer 
+				 depends on storage technology.</td></tr><tr><td align="left">Revision 0.1</td><td align="left">20141021</td><td align="left">gw</td></tr><tr><td align="left" colspan="3">create first version</td></tr></table></div></div></div><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl class="toc"><dt><span class="preface"><a href="#d5e41">Foreword</a></span></dt><dt><span class="chapter"><a href="#d5e61">1. The Model-Based Development Framework mODELcLASSjs</a></span></dt><dd><dl><dt><span class="section"><a href="#d5e63">1. Application Architecture</a></span></dt><dd><dl><dt><span class="section"><a href="#d5e70">1.1. The Model-View-Controller (MVC) architecture metaphor</a></span></dt><dt><span class="section"><a href="#d5e119">1.2. The Onion architecture metaphor</a></span></dt><dt><span class="section"><a href="#secMSVC">1.3. The Model-Storage-View-Controller (MSVC) architecture pattern</a></span></dt></dl></dd><dt><span class="section"><a href="#d5e184">2. A Quick Tour of mODELcLASSjs</a></span></dt><dt><span class="section"><a href="#d5e255">3. Model-Based Development</a></span></dt><dt><span class="section"><a href="#d5e288">4. The Philosophy and Features of mODELcLASSjs</a></span></dt><dt><span class="section"><a href="#d5e336">5. The Check Method</a></span></dt><dt><span class="section"><a href="#d5e390">6. Storage Management</a></span></dt></dl></dd><dt><span class="chapter"><a href="#d5e404">2. Constraint Validation with mODELcLASSjs</a></span></dt><dd><dl><dt><span class="section"><a href="#d5e422">1. Encoding the Design Model</a></span></dt><dt><span class="section"><a href="#d5e478">2. Project Set-Up </a></span></dt><dt><span class="section"><a href="#d5e499">3. The View and Controller Layers</a></span></dt><dt><span class="section"><a href="#d5e519">4. Run the App and Get the Code</a></span></dt><dt><span class="section"><a href="#d5e524">5. Concluding Remarks</a></span></dt></dl></dd></dl></div><div class="list-of-figures"><p><b>List of Figures</b></p><dl><dt>1.1. <a href="#figCLASS">The meta-class mODELcLASS</a></dt><dt>1.2. <a href="#figSTORAGEmANAGER">The sTORAGEmANAGER classes</a></dt><dt>2.1. <a href="#figBookCLASSvalidationAppModel">A platform-independent design model with the class <code class="code">Book</code> and two
+			invariants</a></dt><dt>2.2. <a href="#d5e490">The mODELcLASSjs validation app's start page <code class="code">index.html</code>.</a></dt></dl></div><div class="preface"><div class="titlepage"><div><div><h1 class="title"><a name="d5e41"></a>Foreword</h1></div></div></div><p>This tutorial is Part 1 of a series of tutorials about
+			model-based development of JavaScript web applications using the libraries mODELcLASSjs and
+			mODELvIEWjs, which help to avoid repetitive ("boilerplate") code. mODELcLASSjs and mODELvIEWjs
+			support both front-end JavaScript web apps with local or cloud storage and distributed
+			JavaScript web apps with NodeJS-based back-end components and remote storage.</p><p>The tutorial shows how to express integrity constraints declaratively in a model class
+   defined as an instance of the meta-class mODELcLASS, and how to validate data in the model layer
+   of the app as well as perform <span class="italic">responsive constraint validation</span>
+   in the user interface. </p><p>The simple form of a JavaScript data management application presented in this tutorial takes
+			care of only one object type ("books") for which it supports the four standard data management
+			operations (<span class="bold"><strong>C</strong></span>reate/<span class="bold"><strong>R</strong></span>etrieve/<span class="bold"><strong>U</strong></span>pdate/<span class="bold"><strong>D</strong></span>elete). It improves the validation app discussed in the <a class="link" href="http://web-engineering.info/tech/JsFrontendApp/validation-tutorial.html" target="_top">plain 
+				 JavaScript validation tutorial</a> by
+				<span class="italic"><span class="bold"><strong>avoiding boilerplate
+				code</strong></span></span> in </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>the model layer for checks and setters, and</p></li><li class="listitem"><p>the storage layer for the standard (CRUD) storage management operations.</p></li></ol></div><p> It needs to be enhanced by adding further object types with associations and
+			subtype/inheritance relationships between them.</p><p>You may also want to take a look at the book <a class="link" href="http://web-engineering.info/JsFrontendApp-Book" target="_top">Building Front-End Web Apps with
+    Plain JavaScript</a>, which explains how to deal with multiple object types ("books",
+   "publishers" and "authors"), taking care of constraint validation, association management and
+   subtyping/inheritance.</p></div><div lang="" class="chapter"><div class="titlepage"><div><div><h1 class="title"><a name="d5e61"></a>Chapter&nbsp;1.&nbsp;The Model-Based Development Framework mODELcLASSjs</h1></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl class="toc"><dt><span class="section"><a href="#d5e63">1. Application Architecture</a></span></dt><dd><dl><dt><span class="section"><a href="#d5e70">1.1. The Model-View-Controller (MVC) architecture metaphor</a></span></dt><dt><span class="section"><a href="#d5e119">1.2. The Onion architecture metaphor</a></span></dt><dt><span class="section"><a href="#secMSVC">1.3. The Model-Storage-View-Controller (MSVC) architecture pattern</a></span></dt></dl></dd><dt><span class="section"><a href="#d5e184">2. A Quick Tour of mODELcLASSjs</a></span></dt><dt><span class="section"><a href="#d5e255">3. Model-Based Development</a></span></dt><dt><span class="section"><a href="#d5e288">4. The Philosophy and Features of mODELcLASSjs</a></span></dt><dt><span class="section"><a href="#d5e336">5. The Check Method</a></span></dt><dt><span class="section"><a href="#d5e390">6. Storage Management</a></span></dt></dl></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e63"></a>1.&nbsp;Application Architecture</h2></div></div></div><p>As in all cases of designing a complex system, no matter if a new building, a new space
+   shuttle, a new computer or a new software application is to be designed, an architecture provides
+   a kind of master plan for defining the structure of the system. Any good architecture is based on
+   the fundamental engineering principle of <span class="bold"><strong><span class="italic">separation
+     of concerns</span></strong></span>, which helps in managing complexity by breaking a system down
+   into smaller, functionally defined parts such that their <span class="bold"><strong><span class="italic">interdependencies are minimized</span></strong></span>, keeping the more
+   fundamental parts independent of the less fundamental parts. Such an architecture also makes it
+   easier to develop, or source, and update certain system parts independently of others.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="d5e70"></a>1.1.&nbsp;The Model-View-Controller (MVC) architecture metaphor</h3></div></div></div><p>The most popular and most widely used approach in software application architecture is the
+     <span class="bold"><strong> M</strong></span>odel-<span class="bold"><strong>V</strong></span>iew-<span class="bold"><strong>C</strong></span>ontroller code partitioning pattern. Although it has not been precisely
+    defined, and has been implemented in many different ways, especially in web application
+    frameworks, it is based on the principle of <span class="italic">separation of
+     concerns</span> and on the fundamental insight that the basis for all other parts of an
+    application, and in particular for the user interface, is the <span class="bold"><strong><span class="italic">model</span></strong></span>. Consequently, even if the MVC approach doesn't
+    provide a precise definition of what a 'model' is, we can consider it to be a <span class="bold"><strong><span class="italic">model-based</span></strong></span> approach. </p><p>According to Wikipedia, the first MVC architecture was introduced to application
+    programming with <span class="italic">Smalltalk-76</span> by <a class="link" href="https://en.wikipedia.org/wiki/Trygve_Reenskaug" target="_top">Trygve Reenskaug</a> in the
+    1970s. In a later <a class="link" href="https://web.archive.org/web/20100921030808/http://www.itu.dk/courses/VOP/E2005/VOP2005E/8_mvc_krasner_and_pope.pdf" target="_top">article about Smalltalk-80</a>, MVC is explained as a "three-way division of an
+    application" that entails "separating (1) the parts that represent the model of the underlying
+    application domain from (2) the way the model is presented to the user and from (3) the way the
+    user interacts with it". The authors, who also use the term "MVC metaphor", point out that their
+    approach would allow programmers to "write an application model by first defining new classes
+    that would embody the special application domain-specific information".</p><p>Notice that the <span class="italic">model</span> is defined to consist of classes
+    that capture the required domain information. We call them <span class="bold"><strong><span class="italic">model classes</span></strong></span>. Notice also that in this early MVC
+    approach, there is no well-defined concept of a user interface (UI). The 'view' is defined as
+    comprising the output side of a UI, only, while the user input side is separated from it and
+    subsumed under the term 'controller'. This does not reflect how a UI is really organized: by
+    combining certain forms of application output with certain forms of user input like two sides of
+    the same coin. A general UI concept includes both the output (the information output provided to
+    the user, as well as system actions) and the input (including information input provided, as
+    well as actions performed, by the user).</p><p>The original Smalltalk MVC metaphor was developed for (monochromatic) text-screen-based
+    user interfaces with no general notion of UI events. This may explain why they did not consider
+    an integral concept of a UI. While they distinguished between the state of objects in the model
+    and their state in the UI, which are both in the scope of a user session, they did not consider
+    the distinction between the model state and the database state.</p><p>In his web essay <a class="link" href="http://martinfowler.com/eaaDev/uiArchs.html" target="_top">GUI
+     Architectures</a> (2006), Martin Fowler summarizes the main principles of the original MVC
+    approach in the following way:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>Separation between UI and model.</p></li><li class="listitem"><p>Divide UI into a 'controller' and 'view'.</p></li><li class="listitem"><p>Views are synchronized with the model (by means of a data binding mechanism).</p></li></ol></div><p>While the first and third principles are fundamental for the architecture of
+    software applications, the second principle has just a historic meaning and was soon abandoned
+    by the developers of Smalltalk. </p><p>Compared to the 1980s, computers, human-computer interaction and software application
+    architecture have evolved. In particular, the establishment of the web as the pre-dominant
+    computing platform has made web browsers to be the most important infrastructure for user
+    interfaces. </p><p>The MVC terminology is still widely used today, especially by web application frameworks,
+    but with different meanings ascribed to "M", "V" and "C". Typically, the "view" denotes the
+    HTML-forms-based user interface, and the "controller" is in charge of mediating between the
+    "view" and the "model", which is often tightly coupled, via an <span class="italic">object-relational mapping</span> (ORM) approach, with the underlying SQL database
+    technology, violating the principle of minimizing interdependencies. </p><p>For instance, in the <span class="italic"><a class="link" href="http://martinfowler.com/eaaCatalog/activeRecord.html" target="_top">Active
+     Record</a></span> paradigm of the influential <span class="italic">Ruby-on-Rails</span> framework, which has been adopted by many other web application
+    frameworks (such as by <span class="italic">CakePHP</span>), the "model" is a direct
+    representation of the schema of the underlying database system, where each entity table of the
+    database is represented by a "model" class that inherits data manipulation methods for
+    performing Create/Retrieve/Update/Delete (CRUD) operations. In this table-to-model-class mapping
+    approach, the "model" depends on the schema of the underlying database and is therefore tightly
+    coupled with the underlying ORM data storage technology. While this may be a suitable approach
+    for a <span class="italic">database-first</span> development methodology, where an SQL
+    database is the foundation of an application, it is certainly not a general approach and it
+    turns the <span class="italic">model</span> into a secondary asset.</p><p>Also in frameworks based on ORM annotations, such as <span class="italic">JavaEE</span> with <span class="italic">JPA</span> annotations, the C# framework
+     <span class="italic">ASP.NET MVC</span> with <span class="italic">Entity
+     Framework</span> and <span class="italic">Data Annotations</span>, or the PHP
+    framework <span class="italic">Symfony</span> with <span class="italic">Doctrine</span> annotations, the "model" is coupled with the underlying ORM technology
+    through the ORM annotations woven into the model code, thus making the model dependent on the
+    ORM technology used. All these frameworks use the <span class="italic"><a class="link" href="http://martinfowler.com/eaaCatalog/dataMapper.html" target="_top">Data Mapper</a></span>
+    approach for performing CRUD operations based on ORM annotations.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="d5e119"></a>1.2.&nbsp;The Onion architecture metaphor</h3></div></div></div><p>The term &#8220;onion architecture&#8221; was coined by Jeffry Palermo in <a class="link" href="http://jeffreypalermo.com/blog/the-onion-architecture-part-1/" target="_top">a series of blog
+     posts</a> in 2008. The main principles of this architecture metaphor are (1) to use a
+    hierarchy of dependencies, where less fundamental (or central) parts depend on more fundamental
+    parts, but never the other way around, and (2) the most fundamental part is the <span class="italic">model</span>, which implements the application's <span class="italic">data
+     model</span> in the form of <span class="italic">model classes</span> while
+     <span class="italic">data storage</span> is a separate and less fundamental part that
+    must not be coupled with the <span class="italic">model</span>. </p><p>In fact, Palermo and his followers put a lot more into this architecture metaphor, such as
+    using "repository interfaces" and "service interfaces", but I don't think that's really
+    essential for the onion metaphor. Also, they are using a different terminology. When they are
+    using the term "domain model" instead of simply <span class="italic">model</span>, they
+    are confusing the term "domain model" with "implementation of <span class="italic">data
+     model"</span>, which is what <span class="italic">model classes</span> do. A
+     <span class="italic">data model</span> is derived from an <span class="italic">information design model</span>, which may itself be derived from a <span class="italic">domain information model</span>. This is the basic development chain in
+    model-based software engineering.</p><p>In principle, a <span class="italic">Data Mapper</span> approach, if it is not based
+    on a platform-specific ORM (annotation) technology, but rather on some form of
+    platform-independent mapping logic, can be used for storage management in an onion
+    architecture.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="secMSVC"></a>1.3.&nbsp;The Model-Storage-View-Controller (MSVC) architecture pattern</h3></div></div></div><p>The mODELcLASSjs architecture is based on a pattern called <span class="italic">Model-Storage-View-Controller (MSVC)</span>, which combines the MVC metaphor with the
+    onion metaphor.</p><p>It should be clear that the three most important parts of any software application
+    involving data management are:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>the <span class="italic"><span class="bold"><strong>model</strong></span> classes</span>,
+       which implement the application's data model, defining data structures and
+       constraints;</p></li><li class="listitem"><p>the <span class="italic">data <span class="bold"><strong>storage</strong></span>
+        system</span>, which is typically, but not necessarily, an SQL database system;</p></li><li class="listitem"><p>the <span class="bold"><strong><span class="italic">user interface</span></strong></span>
+       (UI), including both information provision (or output) to the user, e.g., on the computer
+       screen, and user input provided by user actions in the form of UI events, e.g., keyboard or
+       mouse events, such that all required user interactions are supported.</p></li></ol></div><p>The MSVC architecture pattern follows the basic principles of the onion architecture
+    metaphor by separating the <span class="italic">model</span> layer not only from the UI
+    layer, but also from the <span class="italic">data storage</span> layer, and by making
+    the <span class="italic">model</span> the most fundamental part, which must not depend on
+    any other part. The MSVC architecture pattern also follows the good parts of the MVC
+    architecture metaphor and its widely used terminology by using the term <span class="italic">view</span> interchangeably with <span class="italic">user interface (UI)</span>,
+    and the term <span class="italic">controller</span> for denoting the glue code layer
+    needed for integrating the UI code with the underlying model classes and storage management
+    code, or, in MVC jargon, for integrating the <span class="italic">view</span> with the
+     <span class="italic">model</span>. </p><p>Using a model-based approach, <span class="bold"><strong><span class="italic">the model
+      classes of an app are obtained by encoding the app's data model</span></strong></span>, which
+    is typically expressed in the form of a UML class diagram. Since it is the task of the <span class="italic">model</span> and <span class="italic">data storage</span> layers to
+    define and validate constraints and to manage persistent data, we need reusable model code
+    taking care of this in a generic manner for avoiding per-class and per-property boilerplate code
+    for constraint validation, and per-class boilerplate code for data storage management.
+    mODELcLASSjs provides </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>a generic <span class="bold"><strong><span class="italic">check</span></strong></span>
+       method for validating property constraints, and</p></li><li class="listitem"><p>the generic storage management methods <span class="bold"><strong><span class="italic">add</span></strong></span> and <span class="bold"><strong><span class="italic">retrieve</span></strong></span>, <span class="bold"><strong><span class="italic">update</span></strong></span> and <span class="bold"><strong><span class="italic">destroy</span></strong></span> for creating new persistent objects (or records) and for
+       retrieving, updating and deleting existing ones.</p></li></ol></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e184"></a>2.&nbsp;A Quick Tour of mODELcLASSjs</h2></div></div></div><p>For using the functionality of mODELcLASSjs in your app, you have to include its code,
+   either by <a class="link" href="https://bitbucket.org/gwagner57/ontojs/downloads" target="_top">downloading
+    mODELcLASS.js</a> to the lib folder and use a local script loading element like the
+   following:</p><pre class="programlisting">&lt;script src="lib/mODELcLASSjs.js"&gt;&lt;/script&gt;</pre><p> or
+   with the help of a remote script loading element like the following:
+   </p><pre class="programlisting">&lt;script src="http://web-engineering.info/tech/JsMODELvIEW/mODELcLASS.js"&gt;&lt;/script&gt;</pre><p>Then
+   you can create your app's model classes (with property and method declarations) as instances of
+   the meta-class mODELcLASS:
+   </p><pre class="programlisting"><span class="bold"><strong>Book</strong></span> = new <span class="bold"><strong>mODELcLASS</strong></span>({
+  name: "Book",
+  properties: {
+    <span class="bold"><strong>isbn</strong></span>: {range:"NonEmptyString", isStandardId: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/, 
+        patternMessage:'The ISBN must be a 10-digit string or a 9-digit string followed by "X"!'},
+    <span class="bold"><strong>title</strong></span>: {range:"NonEmptyString", min: 2, max: 50, label:"Title"}, 
+    <span class="bold"><strong>year</strong></span>: {range:"Integer", min: 1459, max: util.nextYear(), label:"Year"}
+  },
+  methods: {
+    ...
+  }
+});</pre><p>Notice that the declaration of a property includes the constraints that apply to it. For
+   instance, the declaration of the property <code class="code">isbn</code> includes a pattern constraint
+   requiring that the ISBN must be a 10-digit string or a 9-digit string followed by "X".</p><p>After defining a model class, you can create new 'model objects' instantiating it by
+   invoking its <code class="code">create</code> method pre-defined by
+   mODELcLASS:</p><pre class="programlisting">var book1 = Book.<span class="bold"><strong>create</strong></span>({isbn:"006251587X", title:"Weaving the Web", year: 2000});</pre><p>You can then apply the following properties and methods, all pre-defined by mODELcLASS</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>the property <code class="code">type</code> for retrieving the object's direct type,</p></li><li class="listitem"><p>the method <code class="code">set(</code>
+      <span class="italic">prop</span>, <span class="italic">val</span>
+      <code class="code">)</code> for setting an object property after checking all property constraints, </p></li><li class="listitem"><p>the method <code class="code">isInstanceOf(</code>
+      <span class="italic">Class</span><code class="code">)</code> for testing if an object is an instance
+      of a certain model class.</p></li><li class="listitem"><p>the method <code class="code">toString()</code> for serializing an object,</p></li><li class="listitem"><p>the method <code class="code">toRecord()</code> for converting an object to a record,</p></li></ol></div><p>The use of these mODELcLASS features is illustrated by the following
+   examples:</p><pre class="programlisting">console.log( book1.<span class="bold"><strong>type</strong></span>.name);  // "Book"
+book1.<span class="bold"><strong>set</strong></span>("year", 1001);  // "<span class="bold"><strong>IntervalConstraintViolation</strong></span>: Year must not be smaller than 1459"
+book1.<span class="bold"><strong>set</strong></span>("year", 2001);  // change the year to 2001
+console.log( book1.<span class="bold"><strong>isInstanceOf</strong></span>( Book));  // true
+console.log( book1.<span class="bold"><strong>toString</strong></span>());  // "Book{ isbn:"006251587X", ...}"</pre><p>You can also invoke the generic check method provided by mODELcLASS in the user interface
+   code. For instance, for responsive validation with the HTML5 constraint validation API, you may
+   do the
+   following:</p><pre class="programlisting">var formEl = document.forms["Book"];
+formEl.<span class="bold"><strong>isbn</strong></span>.addEventListener("input", function () {
+  formEl.<span class="bold"><strong>isbn</strong></span>.setCustomValidity( 
+      <span class="bold"><strong>Book.check</strong></span>( "<span class="bold"><strong>isbn</strong></span>", formEl.<span class="bold"><strong>isbn</strong></span>.value).message);
+});</pre><p>Here
+   we define an event handler for <code class="code">input</code> events on the ISBN input field. It invokes the
+    <code class="code">setCustomValidity</code> method of the HTML5 constraint validation API for setting a
+   validation error message that results from invoking <code class="code">Book.check</code> for validating the
+   constraints defined for the <code class="code">isbn</code> property for the user input value from the form
+   field <code class="code">formEl.isbn</code>. The <code class="code">check</code> method returns a constraint violation
+   object with a message property. If no constraint is violated, the message is an empty string, so
+   nothing happens. Notice that you don't have to write the code of the <code class="code">check</code> method,
+   as it is pre-defined by mODELcLASSjs.</p><p>For managing data storage, a sTORAGEmANAGER object has to be created first:</p><pre class="programlisting">storageManager = new sTORAGEmANAGER();</pre><p>By default, when providing no argument in the invocation of <code class="code">new
+    sTORAGEmANAGER()</code>, data is stored locally with the help of JavaScript's <span class="italic">Local Storage</span> API in the form of 'stringified' JSON tables. </p><p>With the help of the created storage manager, you can then, for instance, create new model
+   objects and store them using the storage manager's <code class="code">add</code> method, like
+   so,</p><pre class="programlisting">storageManager.add( Book, {isbn:"006251587X",
+    title:"Weaving the Web", year: 2000});</pre><p>Notice that the first parameter of all data management methods is the model class concerned,
+   which is <code class="code">Book</code> in the example code.</p></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e255"></a>3.&nbsp;Model-Based Development</h2></div></div></div><p>We must not confuse the term <span class="italic">model</span> as used in the MVC
+   metaphor, and adopted by many web application frameworks, and the term <span class="italic">model</span> as used in UML and other modeling languages. While the former refers to the
+   model classes of an app, the latter refers to the concept of a model either as a simplified
+   description of some part of the real world, or as a design blueprint for construction.</p><p>In model-based engineering, models are the basis for designing and implementing a system,
+			no matter if the system to be built is a software system or another kind of complex system
+			such as a manufacturing machine, a car, or an organisation.</p><p>In model-based software development, we distinguish between three kinds of models: </p><p>
+			</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>solution-independent <span class="bold"><strong><span class="italic">domain
+								models</span></strong></span> describing a specific part of the real-world and
+						resulting from requirements and domain engineering in the system analysis, or inception,
+						phase of a development project;</p></li><li class="listitem"><p>platform-independent <span class="bold"><strong><span class="italic">design
+								models</span></strong></span> specifying a logical system design resulting from the
+						design activities in the elaboration phase;</p></li><li class="listitem"><p>platform-specific <span class="bold"><strong><span class="italic">implementation
+        models</span></strong></span> as the result of technical system design in the implementation
+      phase.</p></li></ol></div><p>
+		</p><p><span class="italic">Domain models</span> are the basis for designing a software
+   system by making a platform-independent <span class="italic">design model</span>, which is
+   in turn the basis for implementing a system by making an <span class="italic">implementation
+    model</span> and encoding it in the language of the chosen platform. Concerning information
+   modeling, we first make a (conceptual) <span class="italic">domain information
+    model</span>, then we derive an <span class="bold"><strong><span class="italic">information
+     design model</span></strong></span> from it, and finally map the information design model to a
+    <span class="bold"><strong><span class="italic">data model</span></strong></span> for the target
+   platform. We then code this data model in the form of <span class="bold"><strong><span class="italic">model classes</span></strong></span>, which are the basis for any data management
+   user interface. </p><p>mODELcLASSjs facilitates model-based app development by allowing a direct encoding of an
+			information design model, including subtype/inheritance relationships.</p></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e288"></a>4.&nbsp;The Philosophy and Features of mODELcLASSjs</h2></div></div></div><p>The concept of a <span class="bold"><strong><span class="italic">class</span></strong></span>
+			is fundamental in <span class="italic">object-oriented</span> programming. Objects
+				<span class="italic">instantiate</span> (or <span class="italic">are classified
+				by</span>) a class. A class defines the properties and methods for the objetcs that
+			instantiate it. </p><p>There is no explicit class concept in JavaScript. However, classes can be defined in two
+			ways: </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>In the form of a <span class="bold"><strong><span class="italic">constructor</span></strong></span> function that allows to create new instances of
+						the class with the help of the <code class="code">new</code> operator. This is the classical approach
+						recommended in the Mozilla JavaScript documents.</p></li><li class="listitem"><p>In the form of a <span class="bold"><strong><span class="italic">factory</span></strong></span> object that uses the predefined
+							<code class="code">Object.create</code> method for creating new instances of the class.</p></li></ol></div><p>Since we normally need to define class hierarchies, and not just single classes, these two
+   alternative approaches cannot be mixed within a class hierarchy, and we have to make a choice
+   whenever we build an app. With mODELcLASSjs, we choose the second approach with the following
+   benefits:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>Properties are declared (with a property label, a range and many other
+     constraints).</p></li><li class="listitem"><p>Multiple inheritance and multiple classification are supported.</p></li><li class="listitem"><p>Object pools are supported.</p></li></ol></div><p>These benefits come with a price: objects are created with lower performance, mainly due to
+			the fact that <code class="code">Object.create</code> is slower than <code class="code">new</code>. On the other
+			hand, for apps with lots of object creation and destruction, such as games and
+			simulations, mODELcLASSjs provides object pools for avoiding performance problems due to
+			garbage collection.</p><p>The properties and methods of the meta-class mODELcLASS, and the properties and methods it
+   injects in any model class created with its <code class="code">create</code> method, are listed in the
+   following class diagram:</p><div class="figure"><a name="figCLASS"></a><p class="title"><b>Figure&nbsp;1.1.&nbsp;The meta-class mODELcLASS</b></p><div class="figure-contents"><div class="mediaobject"><img src="../fig/mODELcLASS.svg" alt="The meta-class mODELcLASS"></div></div></div><br class="figure-break"><p>Notice that in the diagram, we use the (imaginary) type <code class="code">mODELoBJECT</code> for showing
+   the pre-defined property <code class="code">type</code> and several methods pre-defined for all objects that
+   instantiate a class created with mODELcLASS. The class <code class="code">Book</code> is an example of a
+    <code class="code">mODELcLASS</code>. As a subclass of <code class="code">mODELoBJECT</code>, it inherits its property
+    <code class="code">type</code> and all its methods.</p><p>The values of the pre-defined property <code class="code">instances</code> are maps of
+    <code class="code">mODELoBJECT</code>s representing the extension (or population) of a model class.</p></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e336"></a>5.&nbsp;The Check Method</h2></div></div></div><p>Any mODELcLASS has a class-level <code class="code">check</code> method for validating all kinds of
+   property constraints. Since this method can validate all properties of a model class, it takes as
+   its first parameter the name of the property, and as its second parameter the value to be
+   validated:</p><pre class="programlisting">mODELcLASS.prototype.<span class="bold"><strong>check</strong></span> = function (prop, val) {
+  var propDeclParams = this.properties[prop],
+      range = propDeclParams.range,
+      min = propDeclParams.min,
+      max = propDeclParams.max,
+      minCard = propDeclParams.minCard,
+      maxCard = propDeclParams.maxCard,
+      pattern = propDeclParams.pattern,
+      msg = propDeclParams.patternMessage,
+      label = propDeclParams.label || prop;</pre><p>Notice that the definition of a model class comes with a set of property declarations in
+    <code class="code">properties</code>. An example of such a property declaration is the declaration of the
+   attribute
+   <code class="code">title</code>:</p><pre class="programlisting"><span class="bold"><strong>title</strong></span>: {range:"NonEmptyString", min: 2, max: 50, label:"Title"}, </pre><p>In this example we have the property declaration parameters <code class="code">range</code>,
+				<code class="code">min</code>, <code class="code">max</code> and <code class="code">label</code>. In lines 2-10 above, all
+			these property declaration parameters are copied to local variables for having
+			convenient shortcuts.</p><p>In the <code class="code">check</code> method, the first check is concerned with <span class="bold"><strong><span class="italic">mandatory value
+				constraints</span></strong></span>:</p><pre class="programlisting">  if (!propDeclParams.optional &amp;&amp; val === undefined) {
+      return new MandatoryValueConstraintViolation("A value for "+ 
+          label +" is required!");	  
+  }</pre><p>The next check is concerned with <span class="bold"><strong><span class="italic">range
+					constraints</span></strong></span>:</p><pre class="programlisting">  switch (range) {
+  case "<span class="bold"><strong>String</strong></span>":
+    if (typeof( val) !== "string") {
+      return new RangeConstraintViolation("The "+ label +
+          " must be a string!");
+    } 
+    break;
+  case "<span class="bold"><strong>NonEmptyString</strong></span>":
+    if (typeof(val) !== "string" || val.trim() === "") {
+      return new RangeConstraintViolation("The "+ label +
+          " must be a non-empty string!");
+    }
+    break;
+  ...  // other cases
+  case "<span class="bold"><strong>Boolean</strong></span>":
+    if (typeof( val) !== "boolean") {
+      return new RangeConstraintViolation("The value of "+ label +
+          " must be either 'true' or 'false'!");
+    }
+    break;
+  }</pre><p>Then there are several range-specific checks concerning (1) <span class="bold"><strong><span class="italic">string length constraints</span></strong></span> and <span class="bold"><strong><span class="italic">pattern
+			constraints</span></strong></span>:</p><pre class="programlisting">  if (range === "String" || range === "NonEmptyString") {
+    if (min !== undefined &amp;&amp; val.length &lt; min) {
+      return new StringLengthConstraintViolation("The length of "+
+          label + " must be greater than "+ min);
+    } else if (max !== undefined &amp;&amp; val.length &gt; max) {
+      return new StringLengthConstraintViolation("The length of "+
+          label + " must be smaller than "+ max);  	
+    } else if (pattern !== undefined &amp;&amp; !pattern.test( val)) {
+        return new PatternConstraintViolation( msg || val +
+            "does not comply with the pattern defined for "+ label);  	
+    }  
+  }</pre><p>and (2) <span class="bold"><strong><span class="italic">interval
+				constraints</span></strong></span>:</p><pre class="programlisting">  if (range === "Integer" || range === "NonNegativeInteger" || 
+      range === "PositiveInteger") {
+    if (min !== undefined &amp;&amp; val &lt; min) {
+      return new IntervalConstraintViolation( label +
+          " must be greater than "+ min);
+    } else if (max !== undefined &amp;&amp; val &gt; max) {
+      return new IntervalConstraintViolation( label +
+          " must be smaller than "+ max);  	
+    }
+  }</pre><p>Then the next check is concerned with <span class="bold"><strong><span class="italic">cardinality constraints</span></strong></span>, which may apply to list-valued
+			or map-valued properties.
+			</p><pre class="programlisting">  if (minCard !== undefined &amp;&amp; 
+      (Array.isArray(val) &amp;&amp; val.length &lt; minCard || 
+       typeof(val)==="object" &amp;&amp; Object.keys(val).length &lt; minCard)) {
+    return new CardinalityConstraintViolation(
+        "A set of at least "+ minCard +" values is required for "+ label);	  
+  }
+  if (maxCard !== undefined &amp;&amp; 
+      (Array.isArray(val) &amp;&amp; val.length &gt; maxCard || 
+       typeof(val)==="object" &amp;&amp; Object.keys(val).length &gt; maxCard)) {
+    return new CardinalityConstraintViolation("A value set for "+ label + 
+        " must not have more than "+ maxCard +" members!");	  
+  }</pre><p>The next check is concerned with <span class="bold"><strong><span class="italic">uniqueness
+     constraints</span></strong></span>, which can only be checked by inspecting the entire
+   population of the model class. Assuming that this population has been loaded into the main memory
+   collection <span class="italic">modelclass</span><code class="code">.instances</code>, the following
+   code is
+   used:</p><pre class="programlisting">  if (propDeclParams.unique &amp;&amp; this.instances) {
+    keys = Object.keys( this.instances);
+    for (i=0; i &lt; keys.length; i++) {
+      if ( this.instances[keys[i]][prop] === val) {
+        return new UniquenessConstraintViolation("There is already a "+
+            this.name +" with a(n) "+ label +" value "+ val +"!");
+      }
+    }
+  }</pre><p>Finally, the <span class="italic">mandatory value constraints</span> and the
+    <span class="italic">uniqueness constraints</span> implied by a <span class="bold"><strong><span class="italic">standard identifier declaration</span></strong></span> are
+   checked:</p><pre class="programlisting">  if (propDeclParams.isStandardId) {
+    if (val === undefined) {
+      return new MandatoryValueConstraintViolation("A value for the " +
+          "standard identifier attribute "+ label +" is required!");
+    } else if (this.instances &amp;&amp; this.instances[val]) {
+      return new UniquenessConstraintViolation("There is already a "+
+          this.name +" with a(n) "+ label +" value "+ val +"!");	  
+    }
+  }</pre></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e390"></a>6.&nbsp;Storage Management</h2></div></div></div><p>As explained above in <a class="xref" href="#secMSVC" title="1.3.&nbsp;The Model-Storage-View-Controller (MSVC) architecture pattern">Section&nbsp;1.3, &#8220;The Model-Storage-View-Controller (MSVC) architecture pattern&#8221;</a>, mODELcLASSjs is using a <span class="italic">data mapper</span> approach for separating model classes and storage
+   management. A mODELcLASSjs application creates a sTORAGEmANAGER object at application start-up
+   time, typically in some piece of controller code, by providing parameter values for a storage
+   adapter (such as local storage or back-end storage with MariaDB).</p><p>The storage manager has a list of available storage adapters, one of which is assigned as
+   the currently used adapter. Each available storage adapter (such as <code class="code">LocaStorage</code> or
+    <code class="code">MariaDB</code> in the diagram below) implements the CRUD methods specified in the abstract
+   class <code class="code">AbstractStorageAdapter</code>.</p><div class="figure"><a name="figSTORAGEmANAGER"></a><p class="title"><b>Figure&nbsp;1.2.&nbsp;The sTORAGEmANAGER classes</b></p><div class="figure-contents"><div class="mediaobject"><img src="../fig/sTORAGEmANAGER.svg" alt="The sTORAGEmANAGER classes"></div></div></div><br class="figure-break"></div></div><div lang="" class="chapter"><div class="titlepage"><div><div><h1 class="title"><a name="d5e404"></a>Chapter&nbsp;2.&nbsp;Constraint Validation with mODELcLASSjs</h1></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl class="toc"><dt><span class="section"><a href="#d5e422">1. Encoding the Design Model</a></span></dt><dt><span class="section"><a href="#d5e478">2. Project Set-Up </a></span></dt><dt><span class="section"><a href="#d5e499">3. The View and Controller Layers</a></span></dt><dt><span class="section"><a href="#d5e519">4. Run the App and Get the Code</a></span></dt><dt><span class="section"><a href="#d5e524">5. Concluding Remarks</a></span></dt></dl></div><p>In this part of the tutorial, we show how to build a simple app with constraint validation
+  using the mODELcLASSjs library for avoiding boilerplate model code. Compared to the  app discussed
+  in the <a class="link" href="http://web-engineering.info/tech/JsFrontendApp/validation-tutorial.html" target="_top">plain JavaScript validation app tutorial</a>, we deal with the same issues: showing 1) how to
+   <span class="bold"><strong><span class="italic">define constraints</span></strong></span> in a model
+  class, 2) how to <span class="bold"><strong><span class="italic">perform responsive
+    validation</span></strong></span> in the user interface based on the constraints defined in the
+  model classes. </p><p>The main difference when using mODELcLASSjs is that defining constraints becomes much
+  simpler. Since mODELcLASSjs provides a generic method for checking property constraints, the
+  property-specific check methods for checking property constraints are no longer needed. Since
+  constraints are defined in a purely declarative manner, their textual encoding corresponds
+  directly to their expression in the information design model. This implies that we can directly
+  code the information design model without first creating a data model from it.</p><p>As in other tutorials, the purpose of our app is to manage information about books. The
+		information items and constraints are described in the information design model shown in Figure
+			<a class="xref" href="#figBookCLASSvalidationAppModel" title="Figure&nbsp;2.1.&nbsp;A platform-independent design model with the class Book and two invariants">2.1</a> below.</p><div class="figure"><a name="figBookCLASSvalidationAppModel"></a><p class="title"><b>Figure&nbsp;2.1.&nbsp;A platform-independent design model with the class <code class="code">Book</code> and two
+			invariants</b></p><div class="figure-contents"><div class="mediaobject"><img src="../fig/Book_SimpleAppDesM.svg" alt="A platform-independent design model with the class Book and two invariants"></div></div></div><br class="figure-break"><p> </p><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e422"></a>1.&nbsp;Encoding the Design Model</h2></div></div></div><p>We now show how to code the ten integrity constraints defined by the design model shown in
+   Figure <a class="xref" href="#figBookCLASSvalidationAppModel" title="Figure&nbsp;2.1.&nbsp;A platform-independent design model with the class Book and two invariants">2.1</a> above. </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>For the first three of the four properties defined in the <code class="code">Book</code> class, we have
+     a <span class="italic">mandatory value constraint</span>, indicated by the multiplicity
+     expression [1]. However, since properties are mandatory by default in mODELcLASSjs, we don't
+     have to code anything for them. Only for the property <code class="code">edition</code>, we need to code
+     that it is optional with the key-value pair <code class="code">optional: true</code>, as shown in the
+      <code class="code">edition</code> property declaration in the class definition below. </p></li><li class="listitem"><p>The <code class="code">isbn</code> attribute is declared to be the <span class="italic">standard
+      identifier</span> of <code class="code">Book</code>. We code this (and the implied uniqueness
+     constraint) in the <code class="code">isbn</code> property declaration with the key-value pair
+      <code class="code">isStandardId: true</code>, as shown in the class definition below.</p></li><li class="listitem"><p>The <code class="code">isbn</code> attribute has a <span class="italic">pattern
+      constraint</span> requiring its values to match the ISBN-10 format that admits only
+     10-digit strings or 9-digit strings followed by "X". We code this with the key-value pair
+      <code class="code">pattern:/\b\d{9}(\d|X)\b/</code> and the special constraint violation message defined by
+      <code class="code">patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by
+      'X'!"</code>.</p></li><li class="listitem"><p>The <code class="code">title</code> attribute has an <span class="italic">string length
+      constraint</span> with a maximum of 50 characters. This is coded with <code class="code">max:
+     50</code>. </p></li><li class="listitem"><p>The <code class="code">year</code> attribute has an <span class="italic">interval
+      constraint</span> with a minimum of 1459 and a maximum that is not fixed, but provided by
+     the utility function <code class="code">nextYear()</code>. We can code this constraint with the key-value
+     pairs <code class="code">min: 1459</code> and <code class="code">max: util.nextYear()</code>.</p></li><li class="listitem"><p>Finally, there are four <span class="italic">range constraints</span>, one for each
+     property. We code them with corresponding key-value pairs, like
+      <code class="code">range:"NonEmptyString"</code>.</p></li></ol></div><p>This leads to the following definition of the model class <code class="code">Book</code> :</p><pre class="programlisting"><span class="bold"><strong>Book</strong></span> = new <span class="bold"><strong>mODELcLASS</strong></span>({
+  name: "Book",
+  properties: {
+    <span class="bold"><strong>isbn</strong></span>: {range:"NonEmptyString", isStandardId: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/, 
+        patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+    <span class="bold"><strong>title</strong></span>: {range:"NonEmptyString", max: 50},
+    <span class="bold"><strong>year</strong></span>: {range:"Integer", min: 1459, max: util.nextYear()},
+    <span class="bold"><strong>edition</strong></span>: {range:"PositiveInteger", optional: true}
+  }
+});</pre><p>For
+   such a model class definition, mODELcLASSjs provides generic data management operations
+    (<code class="code">Book.add</code>, <code class="code">Book.update</code>, <code class="code">Book.destroy</code>, etc.) as well as
+   property checks and setters (<code class="code">Book.check</code> and <code class="code">bookObject.set</code>).</p></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e478"></a>2.&nbsp;Project Set-Up </h2></div></div></div><p>The MVC folder structure of this project is the same as discussed in the <a class="link" href="http://web-engineering.info/tech/JsFrontendApp/validation-tutorial.html" target="_top">plain
+    JavaScript validation app tutorial</a>. Also, the same library files are used.</p><p>The start page of the app first takes care of the page styling by loading
+    <code class="code">normalize.css</code> and our <code class="code">main.css</code> file with the help of the two
+    <code class="code">link</code> elements (in lines 6 and 7), then it loads the mODELcLASSjs library file, the
+   app initialization script <code class="code">initialize.js</code> from the <code class="code">src/ctrl</code> folder and
+   the model class <code class="code">Book.js</code> from the <code class="code">src/model</code> folder.</p><div class="figure"><a name="d5e490"></a><p class="title"><b>Figure&nbsp;2.2.&nbsp;The mODELcLASSjs validation app's start page <code class="code">index.html</code>.</b></p><div class="figure-contents"><pre class="programlisting">&lt;!DOCTYPE html&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8" /&gt;
+  &lt;title&gt;mODELcLASSjs Validation App&lt;/title&gt;
+  &lt;link rel="stylesheet" type="text/css" href="../css/normalize.css" /&gt;
+  &lt;link rel="stylesheet" type="text/css" href="../css/main.css" /&gt; 
+  &lt;script src="../mODELcLASSjs.min.js"&gt;&lt;/script&gt;
+  &lt;script src="src/ctrl/initialize.js"&gt;&lt;/script&gt;
+  &lt;script src="src/model/Book.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Example: Public Library&lt;/h1&gt;
+  &lt;h2&gt;mODELcLASS Validation App&lt;/h2&gt;
+  &lt;p&gt;This app supports the following operations:&lt;/p&gt;
+  &lt;menu&gt;
+    &lt;li&gt;&lt;a href="listBooks.html"&gt;
+         &lt;button type="button"&gt;List all books&lt;/button&gt;&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="createBook.html"&gt;
+         &lt;button type="button"&gt;Add a new book&lt;/button&gt;&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="updateBook.html"&gt;
+         &lt;button type="button"&gt;Update a book&lt;/button&gt;&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="deleteBook.html"&gt;
+         &lt;button type="button"&gt;Delete a book&lt;/button&gt;&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;button type="button" onclick="Book.clearData()"&gt;
+         Clear database&lt;/button&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;button type="button" onclick="Book.createTestData()"&gt;
+         Create test data&lt;/button&gt;&lt;/li&gt;
+  &lt;/menu&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre></div></div><br class="figure-break"><p>The app initialization script <code class="code">initialize.js</code> first defines the app's namespaces
+   and then creates a local storage manager. It also defines a method for creating test
+   data:</p><pre class="programlisting">// main namespace pl = "public library"
+var pl = {model:{}, view: {}, ctrl:{}};
+// define a localStorage manager
+pl.ctrl.storageManager =  <span class="bold"><strong>new sTORAGEmANAGER</strong></span>();
+/**
+ *  Create and save test data
+ */
+pl.ctrl.createTestData =  function () {
+  pl.ctrl.<span class="bold"><strong>storageManager.add</strong></span>( Book, {isbn:"006251587X",
+      title:"Weaving the Web", year: 2000, edition: 2});
+  pl.ctrl.storageManager.add( Book, {isbn:"0465026567",
+      title:"G&ouml;del, Escher, Bach", year: 1999});
+  pl.ctrl.storageManager.add( Book, {isbn:"0465030793",
+      title:"I Am A Strange Loop", year: 2008});
+};
+</pre></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e499"></a>3.&nbsp;The View and Controller Layers</h2></div></div></div><p>The user interface (UI) is the same as explained in the <a class="link" href="http://web-engineering.info/tech/JsFrontendApp/validation-tutorial.html" target="_top">plain
+    JavaScript validation app tutorial</a>. There is only one difference. For responsive
+   constraint validation, where input event handlers are used to check constraints on user input,
+   now the generic <code class="code">Book.check</code> function is used, as shown in the following code fragment
+   of the <code class="code">setupUserInterface</code> method from <code class="code">src/view/createBook.js</code>:</p><p>
+				</p><pre class="programlisting">pl.view.createBook = {
+  setupUserInterface: function () {
+    var formEl = document.forms['Book'],
+        submitButton = formEl.commit;
+    submitButton.addEventListener("click", 
+        this.handleSubmitButtonClickEvent);
+    formEl.isbn.addEventListener("input", function () { 
+        formEl.isbn.<span class="bold"><strong>setCustomValidity</strong></span>( 
+            <span class="bold"><strong>Book.check</strong></span>("isbn", formEl.isbn.value).message);
+    });
+    formEl.title.addEventListener("input", function () { 
+        formEl.title.<span class="bold"><strong>setCustomValidity</strong></span>( 
+            <span class="bold"><strong>Book.check</strong></span>("title", formEl.title.value).message);
+    });
+   ...
+  },
+};</pre><p>
+			</p><p>While the validation on user input enhances the usability of the UI by providing immediate
+   feedback to the user, validation on form submission is even more important for catching invalid
+   data. Therefore, the event handler <code class="code">handleSubmitButtonClickEvent()</code> performs the
+   property checks again, as shown in the following program
+   listing:</p><pre class="programlisting"><span class="bold"><strong>handleSaveButtonClickEvent</strong></span>: function () {
+  var formEl = document.forms['Book'], slots = {};
+  // create error messages in case of constraint violations
+  Object.keys( Book.properties).forEach( function (prop) {
+    var errMsg="";
+    slots[prop] = formEl[prop].value;
+    errMsg = <span class="bold"><strong>Book.check</strong></span>( prop, slots[prop]).message;
+    formEl[prop].<span class="bold"><strong>setCustomValidity</strong></span>( errMsg);
+  });
+  // save the input data only if all of the form fields are valid
+  if (formEl.checkValidity()) {
+    pl.ctrl.<span class="bold"><strong>storageManager.add</strong></span>( Book, slots);
+  }
+}</pre></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e519"></a>4.&nbsp;Run the App and Get the Code</h2></div></div></div><p>You can <a class="link" href="mODELcLASS-ValidationApp/index.html" target="_top">run the mODELcLASS validation app</a> from
+   our server or <a class="link" href="mODELcLASS-ValidationApp.zip" target="_top">download the code</a> as a ZIP archive file.</p></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d5e524"></a>5.&nbsp;Concluding Remarks</h2></div></div></div><p>After eliminating the repetitive code structures (called <span class="italic">boilerplate code</span>) needed in the model layer for constraint validation and for
+			the data storage management methods, there is still a lot of boilerplate code needed in the
+			UI. In a follow-up article of our tutorial series, we will present an approach how to avoid
+			this UI boilerplate code.</p></div></div><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48105674-1', 'tu-cottbus.de');
+  ga('send', 'pageview');
+
+</script></div></body></html>

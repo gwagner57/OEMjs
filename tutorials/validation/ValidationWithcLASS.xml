@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="http://www.oasis-open.org/docbook/xml/5.0/rng/docbookxi.rng" type="xml"?>
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude"
+	xmlns:xlink="http://www.w3.org/1999/xlink">
+	<title>Constraint Validation with cLASSjs</title>
+	<para>In this part of the tutorial, we show how to build a simple app with constraint validation
+  using the cLASSjs library for avoiding boilerplate model code. Compared to the  app discussed
+  in the <link xlink:href="http://web-engineering.info/tech/JsFrontendApp/validation-tutorial.html"
+   >plain JavaScript validation app tutorial</link>, we deal with the same issues: showing 1) how to
+   <emphasis role="bold"><emphasis role="italic">define constraints</emphasis></emphasis> in a model
+  class, 2) how to <emphasis role="bold"><emphasis role="italic">perform responsive
+    validation</emphasis></emphasis> in the user interface based on the constraints defined in the
+  model classes. </para>
+ <para>The main difference when using cLASSjs is that defining constraints becomes much
+  simpler. Since cLASSjs provides a generic method for checking property constraints, the
+  property-specific check methods for checking property constraints are no longer needed. Since
+  constraints are defined in a purely declarative manner, their code corresponds
+  directly to their expression in the information design model. This implies that we can directly
+  code the information design model without first creating a data model from it.</para>
+	<para>As in other tutorials, the purpose of our app is to manage information about books. The
+		information items and constraints are described in the information design model shown in Figure
+			<xref linkend="figBookCLASSvalidationAppModel" xrefstyle="select: labelnumber"/> below.</para>
+	<figure xml:id="figBookCLASSvalidationAppModel">
+		<title>A platform-independent design model with the class <code>Book</code> and two
+			invariants</title>
+		<mediaobject>
+			<imageobject>
+				<imagedata fileref="../fig/Book_SimpleAppDesM.svg"/>
+			</imageobject>
+		</mediaobject>
+	</figure>
+	<para> </para>
+	<section>
+		<title>Coding the Design Model</title>
+		<para>We now show how to code the ten integrity constraints defined by the design model shown in
+   Figure <xref linkend="figBookCLASSvalidationAppModel" xrefstyle="select: labelnumber"/> above. </para>
+		<orderedlist>
+			<listitem>
+				<para>For the first three of the four properties defined in the <code>Book</code> class, we have
+     a <emphasis role="italic">mandatory value constraint</emphasis>, indicated by the multiplicity
+     expression [1]. However, since properties are mandatory by default in cLASSjs, we don't
+     have to code anything for them. Only for the property <code>edition</code>, we need to code
+     that it is optional with the key-value pair <code>optional: true</code>, as shown in the
+      <code>edition</code> property declaration in the class definition below. </para>
+			</listitem>
+			<listitem>
+				<para>The <code>isbn</code> attribute is declared to be the <emphasis role="italic">standard
+      identifier</emphasis> of <code>Book</code>. We code this (and the implied uniqueness
+     constraint) in the <code>isbn</code> property declaration with the key-value pair
+      <code>isStandardId: true</code>, as shown in the class definition below.</para>
+			</listitem>
+			<listitem>
+				<para>The <code>isbn</code> attribute has a <emphasis role="italic">pattern
+      constraint</emphasis> requiring its values to match the ISBN-10 format that admits only
+     10-digit strings or 9-digit strings followed by "X". We code this with the key-value pair
+      <code>pattern:/\b\d{9}(\d|X)\b/</code> and the special constraint violation message defined by
+      <code>patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by
+      'X'!"</code>.</para>
+			</listitem>
+			<listitem>
+				<para>The <code>title</code> attribute has an <emphasis role="italic">string length
+      constraint</emphasis> with a maximum of 50 characters. This is coded with <code>max:
+     50</code>. </para>
+			</listitem>
+			<listitem>
+				<para>The <code>year</code> attribute has an <emphasis role="italic">interval
+      constraint</emphasis> with a minimum of 1459 and a maximum that is not fixed, but provided by
+     the utility function <code>nextYear()</code>. We can code this constraint with the key-value
+     pairs <code>min: 1459</code> and <code>max: util.nextYear()</code>.</para>
+			</listitem>
+			<listitem>
+				<para>Finally, there are four <emphasis role="italic">range constraints</emphasis>, one for each
+     property. We code them with corresponding key-value pairs, like
+      <code>range:"NonEmptyString"</code>.</para>
+			</listitem>
+		</orderedlist>
+		<para>This leads to the following definition of the model class <code>Book</code> :</para>
+		<para><programlisting><emphasis role="bold">Book</emphasis> = new <emphasis role="bold">cLASS</emphasis>({
+  name: "Book",
+  properties: {
+    <emphasis role="bold">isbn</emphasis>: {range:"NonEmptyString", isStandardId: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/, 
+        patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+    <emphasis role="bold">title</emphasis>: {range:"NonEmptyString", max: 50},
+    <emphasis role="bold">year</emphasis>: {range:"Integer", min: 1459, max: util.nextYear()},
+    <emphasis role="bold">edition</emphasis>: {range:"PositiveInteger", optional: true}
+  }
+});</programlisting>For
+   such a model class definition, cLASSjs provides generic data management operations
+    (<code>Book.add</code>, <code>Book.update</code>, <code>Book.destroy</code>, etc.) as well as
+   property checks and setters (<code>Book.check</code> and <code>bookObject.set</code>).</para>
+	</section>
+	<section>
+		<title>Project Set-Up </title>
+		<para>The MVC folder structure of this project is the same as discussed in the <link
+    xlink:href="http://web-engineering.info/tech/JsFrontendApp/validation-tutorial.html">plain
+    JavaScript validation app tutorial</link>. Also, the same library files are used.</para>
+		<para>The start page of the app first takes care of the page styling by loading
+    <code>normalize.css</code> and our <code>main.css</code> file with the help of the two
+    <code>link</code> elements (in lines 6 and 7), then it loads the cLASSjs library file, the
+   app initialization script <code>initialize.js</code> from the <code>src/ctrl</code> folder and
+   the model class <code>Book.js</code> from the <code>src/model</code> folder.</para>
+		<figure>
+			<title>The cLASSjs validation app's start page <code>index.html</code>.</title>
+			<programlisting>&lt;!DOCTYPE html>
+&lt;html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+&lt;head>
+  &lt;meta charset="UTF-8" />
+  &lt;title>cLASSjs Validation App&lt;/title>
+  &lt;link rel="stylesheet" type="text/css" href="../css/normalize.css" />
+  &lt;link rel="stylesheet" type="text/css" href="../css/main.css" /> 
+  &lt;script src="../cLASSjs.min.js">&lt;/script>
+  &lt;script src="src/ctrl/initialize.js">&lt;/script>
+  &lt;script src="src/model/Book.js">&lt;/script>
+&lt;/head>
+&lt;body>
+  &lt;h1>Example: Public Library&lt;/h1>
+  &lt;h2>cLASS Validation App&lt;/h2>
+  &lt;p>This app supports the following operations:&lt;/p>
+  &lt;menu>
+    &lt;li>&lt;a href="listBooks.html">
+         &lt;button type="button">List all books&lt;/button>&lt;/a>&lt;/li>
+    &lt;li>&lt;a href="createBook.html">
+         &lt;button type="button">Add a new book&lt;/button>&lt;/a>&lt;/li>
+    &lt;li>&lt;a href="updateBook.html">
+         &lt;button type="button">Update a book&lt;/button>&lt;/a>&lt;/li>
+    &lt;li>&lt;a href="deleteBook.html">
+         &lt;button type="button">Delete a book&lt;/button>&lt;/a>&lt;/li>
+    &lt;li>&lt;button type="button" onclick="Book.clearData()">
+         Clear database&lt;/button>&lt;/li>
+    &lt;li>&lt;button type="button" onclick="Book.createTestData()">
+         Create test data&lt;/button>&lt;/li>
+  &lt;/menu>
+&lt;/body>
+&lt;/html></programlisting></figure>
+  <para>The app initialization script <code>initialize.js</code> first defines the app's namespaces
+   and then creates a local storage manager. It also defines a method for creating test
+   data:<programlisting>// main namespace pl = "public library"
+var pl = {model:{}, view: {}, ctrl:{}};
+// define a localStorage manager
+pl.ctrl.storageManager =  <emphasis role="bold">new sTORAGEmANAGER</emphasis>();
+/**
+ *  Create and save test data
+ */
+pl.ctrl.createTestData =  function () {
+  pl.ctrl.<emphasis role="bold">storageManager.add</emphasis>( Book, {isbn:"006251587X",
+      title:"Weaving the Web", year: 2000, edition: 2});
+  pl.ctrl.storageManager.add( Book, {isbn:"0465026567",
+      title:"Gödel, Escher, Bach", year: 1999});
+  pl.ctrl.storageManager.add( Book, {isbn:"0465030793",
+      title:"I Am A Strange Loop", year: 2008});
+};
+</programlisting></para>
+	</section>
+	<section>
+		<title>The View and Controller Layers</title>
+		<para>The user interface (UI) is the same as explained in the <link
+    xlink:href="http://web-engineering.info/tech/JsFrontendApp/validation-tutorial.html">plain
+    JavaScript validation app tutorial</link>. There is only one difference. For responsive
+   constraint validation, where input event handlers are used to check constraints on user input,
+   now the generic <code>Book.check</code> function is used, as shown in the following code fragment
+   of the <code>setupUserInterface</code> method from <code>src/view/createBook.js</code>:</para>
+			<para>
+				<programlisting linenumbering="numbered">pl.view.createBook = {
+  setupUserInterface: function () {
+    var formEl = document.forms['Book'],
+        submitButton = formEl.commit;
+    submitButton.addEventListener("click", 
+        this.handleSubmitButtonClickEvent);
+    formEl.isbn.addEventListener("input", function () { 
+        formEl.isbn.<emphasis role="bold">setCustomValidity</emphasis>( 
+            <emphasis role="bold">Book.check</emphasis>("isbn", formEl.isbn.value).message);
+    });
+    formEl.title.addEventListener("input", function () { 
+        formEl.title.<emphasis role="bold">setCustomValidity</emphasis>( 
+            <emphasis role="bold">Book.check</emphasis>("title", formEl.title.value).message);
+    });
+   ...
+  },
+};</programlisting>
+			</para>
+			<para>While the validation on user input enhances the usability of the UI by providing immediate
+   feedback to the user, validation on form submission is even more important for catching invalid
+   data. Therefore, the event handler <code>handleSubmitButtonClickEvent()</code> performs the
+   property checks again, as shown in the following program
+   listing:<programlisting linenumbering="numbered"><emphasis role="bold">handleSaveButtonClickEvent</emphasis>: function () {
+  var formEl = document.forms['Book'], slots = {};
+  // create error messages in case of constraint violations
+  Object.keys( Book.properties).forEach( function (prop) {
+    var errMsg="";
+    slots[prop] = formEl[prop].value;
+    errMsg = <emphasis role="bold">Book.check</emphasis>( prop, slots[prop]).message;
+    formEl[prop].<emphasis role="bold">setCustomValidity</emphasis>( errMsg);
+  });
+  // save the input data only if all of the form fields are valid
+  if (formEl.checkValidity()) {
+    pl.ctrl.<emphasis role="bold">storageManager.add</emphasis>( Book, slots);
+  }
+}</programlisting></para>
+	</section>
+	<section>
+  <title>Run the App and Get the Code</title>
+  <para>You can <link xmlns:xlink="http://www.w3.org/1999/xlink"
+    xlink:href="cLASS-ValidationApp/index.html">run the cLASS validation app</link> from
+   our server or <link xmlns:xlink="http://www.w3.org/1999/xlink"
+    xlink:href="cLASS-ValidationApp.zip">download the code</link> as a ZIP archive file.</para>
+ </section>
+ <section>
+		<title>Concluding Remarks</title>
+		<para>After eliminating the repetitive code structures (called <emphasis role="italic"
+				>boilerplate code</emphasis>) needed in the model layer for constraint validation and for
+			the data storage management methods, there is still a lot of boilerplate code needed in the
+			UI. In a follow-up article of our tutorial series, we will present an approach how to avoid
+			this UI boilerplate code.</para>
+	</section>
+</chapter>

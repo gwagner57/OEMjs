@@ -1,0 +1,62 @@
+<!-- ===========================================================================
+ * Test UI generation based on a model object
+ * @copyright Copyright 2016 Gerd Wagner, BTU (Germany) + ODU (VA, USA)
+ * @author Gerd Wagner
+ * @license The MIT License (MIT)
+================================================================================ -->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Test ObjectView</title>
+  <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
+  <link rel="stylesheet" href="../css/normalize.css" />
+  <link rel="stylesheet" href="../css/vIEW.css" />
+  <link rel="stylesheet" href="../css/basic-styles.css">
+  <!-- Libraries -->
+  <script src="../lib/browserShims.js"></script>
+  <!-- A small library for defining classes and class hierarchies -->
+  <script src="../lib/dom.js"></script>
+  <script src="../src/eNUMERATION.js"></script>
+  <script src="../src/oBJECTvIEW.js"></script>
+</head>
+<body>
+ <h1>Test oBJECTvIEW UI based on model object</h1>
+ <script>
+   createViewModelBasedUI = function (o) {
+     var modObjView = null;
+     var slots = { modelObject: o};
+     slots.userActions = {
+       "save": function () {
+         alert("Test successful!");
+         //$appNS.ctrl.storageManager.save( o.objectName, slots);},
+       }
+     };
+     slots.userActions["save"].label = "Save";
+     // create ad-hoc view
+     modObjView = new oBJECTvIEW( slots);
+     // render view
+     modObjView.render();
+   };
+   var scenario = {
+     objectName: "scenario",
+     properties: {
+       "simulationEndTime": {range:"Time", label:"Simulation end time"},
+       "stepDuration": {range:"NonNegativeInteger", label:"Step duration"},
+       "randomSeed": {range:"PositiveInteger", label:"Random seed"},
+       "visualize": {range:"Boolean", label:"Visualization", },
+       "createLog": {range:"Boolean", label:"Simulation log"},
+       "logOnly": {range:["Species","Animal"], maxCard:2, dependsOn:"createLog", label:"Restrict log to"}
+     }
+   };
+   scenario.simulationEndTime = 10;
+   scenario.stepDuration = 500;  // 500 ms observation time per step
+   scenario.randomSeed = 5;  // optional
+   scenario.visualize = true;
+   scenario.createLog = false;
+   scenario.logOnly = ["Species"];
+   createViewModelBasedUI( scenario);
+ </script>
+</body>
+</html>
+

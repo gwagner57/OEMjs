@@ -1,0 +1,72 @@
+<!-- ===========================================================================
+ * Test UI generation based on a model object
+ * @copyright Copyright 2016 Gerd Wagner, BTU (Germany) + ODU (VA, USA)
+ * @author Gerd Wagner
+ * @license The MIT License (MIT)
+================================================================================ -->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Test ObjectView</title>
+  <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
+  <link rel="stylesheet" href="../css/normalize.css" />
+  <link rel="stylesheet" href="../css/vIEW.css" />
+  <link rel="stylesheet" href="../css/basic-styles.css">
+  <!-- Libraries -->
+  <script src="../lib/browserShims.js"></script>
+  <script src="../lib/errorTypes.js"></script>
+  <script src="../lib/util.js"></script>
+  <script src="../lib/dom.js"></script>
+  <!-- A small library for defining classes and class hierarchies -->
+  <script src="../src/eNUMERATION.js"></script>
+  <script src="../src/oBJECTvIEW.js"></script>
+  <script src="../src/cLASS.js"></script>
+</head>
+<body>
+ <h1>Test oBJECTvIEW UI based on UI definition record</h1>
+ <h2>Test UI definition record without fieldOrder</h2>
+ <script>
+   const GenderEL = new eNUMERATION("GenderEL",  ["male","female","undetermined"]);
+   var viewModel = {
+     formID: "test",
+     title: "This is the test form",
+     outputFields: {
+       "info": {
+         range: "NonEmptyString", label: "Info"
+       }
+     },
+     fieldValues: {info: "Test-Info"},
+     inputFields: {
+       "planProdQty": {
+         range: "PositiveInteger", defaultValue: 3, label: "Planned prod. qty.",
+         hint: "How many pitchers of lemonade to produce?"
+       },
+       "prodName": {
+         range: "NonEmptyString", label: "Product name"
+       },
+       "gender": {
+         range: GenderEL, label: "Gender"
+       },
+       "withVAT": {
+         range: "Boolean", label: "With VAT"
+       },
+       "planSalesPrice": {
+         range: "PositiveDecimal", decimalPlaces: 2, defaultValue: 2.00, label: "Planned sales price",
+         hint: "At which price is a cup to be sold?"
+       }
+     },
+     userActions: {
+       "save": function () {
+         alert("Test successful!");
+         //$appNS.ctrl.storageManager.save( o.objectName, slots);},
+       }
+     }
+   };
+   viewModel.userActions["save"].label = "Save";
+   oBJECTvIEW.renderViewModel( viewModel);
+
+ </script>
+</body>
+</html>
+

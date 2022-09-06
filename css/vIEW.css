@@ -1,0 +1,240 @@
+/* ==========================================================================
+   Custom styles
+   ========================================================================== */
+
+body {
+  padding: 8px;
+}
+button {
+  border-radius: 3px;  
+  background: ghostwhite;
+}
+button[disabled] {
+    color: lightgrey;
+    background: whitesmoke;
+}
+button[disabled]:hover {
+  cursor: default;
+}
+noscript > p { font-size: 1.2em; color: red;}
+
+.oBJECTvIEW h2 {
+  font-size: 110%;
+  margin-top: 0.2em;
+}
+table { 
+  border-collapse:collapse;
+  margin: 1em 0;
+  empty-cells: show;
+}  
+table, td, th { 
+  border: thin solid black;
+  padding: 5px;
+}  
+thead, th {
+  background: aliceblue;
+}
+
+/****************************************
+ Fixed-height tables with scrollable body
+ assuming scrollbar width is 16px
+
+ Issues: (1) does not scroll horizontally
+ (2) renders thead underneath tbody
+
+ ****************************************/
+/*
+table.RecTbl {
+  display: table;
+  width: 100%;
+}
+table.RecTbl thead {
+  display: table;
+  table-layout: fixed;
+  width: calc(100% - 16px);
+}
+table.RecTbl tbody {
+  display: block;
+  width: calc(100% - 16px);
+  height: 10em;
+  overflow: auto;
+  overflow-y: scroll;
+}
+table.RecTbl tr {
+  display: table;
+  table-layout: fixed;
+  width: 100%;
+  text-align: left;
+}
+*/
+
+/* Center the class name of a record table widget */
+table.RecTbl > thead > tr:first-child  {
+  text-align: center;
+}
+
+menu {
+  width: 14em;
+  text-align: center;
+  border: 1px solid black;
+  padding: 8px;
+  border-radius: 5px;
+}
+menu li {
+  list-style: none;
+  height: 1.5em;
+  margin: 2px auto;
+}
+menu li button {
+  width: 14em;
+}
+/*** Modal Window and Draggable Modal Window ***/
+#overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background-color:rgba(0,0,0, 0.5);  /* 50% opacity */
+  animation: overlay-with-modal .3s forwards ease;
+}
+@keyframes overlay-with-modal {
+  from {transform:scale(0.5); background-color:rgba(0,0,0, 0);}
+  to {transform:scale(1); background-color:rgba(0,0,0, 0.5);}
+}
+.modal {
+  width: 40em;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);  /* for centering */
+  background-color: #eee;
+}
+.modal > h1 {
+  margin: 0;
+  padding: 0.5em;
+  color: #eee;
+  background-color: blue;
+  font-size: 120%;
+  height: 2em;
+}
+.modal > h1 > span.title {
+  display: inline-block;
+  padding-top: 0.4em;
+}
+.modal > h1 > span.closeButton {
+  color: #eee;
+  float: right;
+  font-size: 180%;
+  font-weight: bold;
+}
+.modal .modal-body {
+  padding: 0.5em;
+}
+.modal label {
+  line-height: 1.5;
+}
+.modal.action-required > h1{
+  background-color: green;
+}
+.modal.error > h1{
+  background-color: deeppink;
+}
+.modal .closeButton:hover,
+.modal .closeButton:focus {
+  cursor: pointer;
+}
+[draggable=true] {
+  outline: 1px solid black;
+  cursor: move;
+  overflow: auto;
+  resize: both;
+}
+/*********************************************/
+form :invalid {
+  box-shadow: none;  /* neutralizing FF */
+  outline: dotted red;      
+}
+form > h1 {  /* form title */
+  font-size: 120%;
+}
+form > div:first-child  {
+  margin-top: 0.5em;
+}
+form > div:not(:last-child)  {
+  margin-bottom: 0.5em;
+}
+form > div > label {
+  position: relative;
+}
+form > div.I-O-field > label {
+  width: 40em;
+  display: block;     /* by default, one labeled control per line*/
+}
+form div.field-group > label {
+  display: inline-block;
+  width: 20em;
+  margin-right: 1em;
+}
+form div.field-group > label > output {
+  position: absolute;
+  left: 12em;
+}
+form div.field-group > table.RecTbl {
+  display: inline-block;
+  margin: 0;
+  vertical-align: top;
+}
+form output {
+  min-width: 2em;
+  background-color: gainsboro;
+}
+form div.field-group > label > input,
+form div.field-group > label > select,
+form div.field-group > label > output {
+  margin-left: 0.7em;
+  margin-right: 0.1em;
+}
+form div.I-O-field > label > input[type="text"],
+form div.I-O-field > label > input[type="number"],
+form div.yes-no-field > label > input[type="checkbox"],
+form div.select > label > select,
+form div.I-O-field > label > output {
+  position: absolute;
+  left: 12em;
+}
+form div.I-O-field > label > input[type="text"],
+form div.I-O-field > label > input[type="number"] {
+  width: 7em;
+}
+/*
+form div.yes-no-field > label > input[type="checkbox"] {
+  position: absolute;
+  left: 2em;
+}
+*/
+form div.action-group {
+  margin-top: 0.5em;
+}
+form div > button {
+  margin-right: 0.5em;  
+}
+
+form fieldset {
+  margin-bottom: 1em;  
+}
+form fieldset > label {
+  margin-right: 1em;
+}
+form fieldset > label > input[type="radio"],
+    form > fieldset > label > input[type="checkbox"] {
+  margin-right: 0.5em;  
+}
+
+/* Record List Widget */
+td[contenteditable] {
+  background-color: hsl( 120, 100%, 95%); /* 120 = green */
+}
