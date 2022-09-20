@@ -116,3 +116,13 @@ Since the IndexedDB technology is much more powerful, it is normally preferred f
     }
     storageManager = new sTORAGEmANAGER( storageAdapter);
 
+## Development of mODELcLASS library
+
+### Testing
+
+This library uses Javascript test framework [jest](https://jestjs.io). Provided test cases can be run with
+following command:
+
+```
+npm test
+```
