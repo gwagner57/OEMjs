@@ -35,7 +35,8 @@
 class bUSINESSoBJECT {
   constructor( id) {
     const Class = this.constructor;
-    if (id) this.id = id;
+    let idAttr = Class.idAttribute ?? "id";
+    if (id) this[idAttr] = id;
     else {  // assign auto-ID
       if (typeof Class.getAutoId === "function") {
         this.id = Class.getAutoId();
