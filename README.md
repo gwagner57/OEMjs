@@ -1,8 +1,8 @@
-# mODELcLASSjs
+# OEMjs
 A JS library for defining 
 
 1. enumerations;
-2. constructor-based classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);
+2. business object and business event classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);
 3. storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as MySQL);
 4. view models for model-based user interfaces.
 
@@ -15,7 +15,7 @@ A JS library for defining
 
 ### Using an Enumeration as the Range of an Attribute
 
-    class Weather extends mODELcLASS {
+    class Weather extends bUSINESSoBJECT {
       constructor (ws, t) {
         this.weatherState = ws;
         this.temperature = t;
@@ -52,14 +52,14 @@ We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 
 
 ## Use Case 2: Declarative Constraint Valdiation
 
-mODELcLASSjs allows defining property constraints in a model class created with cLASS:
+OEMjs allows defining property constraints for a business object class:
 
-    class Book extends mODELcLASS {
+    class Book extends bUSINESSoBJECT {
       constructor ({isbn, title, year, edition}) {
-        this.isbn = isbn;
+        super( isbn); 
         this.title = title;
         this.year = year;
-        this.edition = edition;
+        if (edition) this.edition = edition;
       }
     }
     Book.properties = {
@@ -80,7 +80,7 @@ Suitable *range constraints* can be defined by using one of the supported range 
 <li>"DateTime", "Date"</li>
 </ul>
     
-The constraints defined for a property in a model class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods of a storage manager, using the generic validation method `mODELcLASS.check`, as shown in the following example:
+The constraints defined for a property in a business object class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods of a storage manager, using the generic validation method `mODELcLASS.check`, as shown in the following example:
 
 <pre>
 const formEl = document.querySelector("#Book-Create > form");
