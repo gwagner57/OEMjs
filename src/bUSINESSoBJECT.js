@@ -39,9 +39,9 @@ class bUSINESSoBJECT {
     if (id) this[idAttr] = id;
     else {  // assign auto-ID
       if (typeof Class.getAutoId === "function") {
-        this.id = Class.getAutoId();
+        this[idAttr] = Class.getAutoId();
       } else if (Class.idCounter !== undefined) {
-        this[p] = ++Class.idCounter;
+        this[idAttr] = ++Class.idCounter;
       }
     }
     // is the class neither a complex datatype nor abstract and does the object have an id slot?
