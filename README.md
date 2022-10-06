@@ -1,9 +1,11 @@
-# mODELcLASSjs
+# OEMjs
 A JS library for defining 
 
 1. enumerations;
-2. constructor-based classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);
-3. storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as MySQL);
+2. business object and business event classes (and class hierarchies) with semantic meta-data 
+   (e.g., for declarative constraint validation);
+3. storage adapters that facilitate switching from one storage technology (such as IndexedDB) 
+   to another one (such as MySQL);
 4. view models for model-based user interfaces.
 
 ## Use Case 1: Handling Enumerations and Enumeration Attributes
@@ -15,7 +17,7 @@ A JS library for defining
 
 ### Using an Enumeration as the Range of an Attribute
 
-    class Weather extends mODELcLASS {
+    class Weather extends bUSINESSoBJECT {
       constructor (ws, t) {
         this.weatherState = ws;
         this.temperature = t;
@@ -31,7 +33,8 @@ A JS library for defining
 
 Recall that *enumeration literals* are constants that stand for a positive integer (the *enumeration index*). 
 
-For instance, the enum literal `WeatherStateEL.SUNNY` stands for the enum index 1. In program code, we do not use the enum index, but rather the enum literal. For instance, 
+For instance, the enum literal `WeatherStateEL.SUNNY` stands for the enum index 1. 
+In program code, we do not use the enum index, but rather the enum literal. For instance, 
 
     var theWeather = new Weather( WeatherStateEL.SUNNY, 30)
 
@@ -52,14 +55,14 @@ We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 
 
 ## Use Case 2: Declarative Constraint Valdiation
 
-mODELcLASSjs allows defining property constraints in a model class created with cLASS:
+OEMjs allows defining property constraints for a business object class:
 
-    class Book extends mODELcLASS {
+    class Book extends bUSINESSoBJECT {
       constructor ({isbn, title, year, edition}) {
-        this.isbn = isbn;
+        super( isbn); 
         this.title = title;
         this.year = year;
-        this.edition = edition;
+        if (edition) this.edition = edition;
       }
     }
     Book.properties = {
@@ -80,7 +83,9 @@ Suitable *range constraints* can be defined by using one of the supported range 
 <li>"DateTime", "Date"</li>
 </ul>
     
-The constraints defined for a property in a model class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods of a storage manager, using the generic validation method `mODELcLASS.check`, as shown in the following example:
+The constraints defined for a property in a business object class can be checked on input/change 
+and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods 
+of a storage manager, using the generic validation method `bUSINESSoBJECT.check`, as shown in the following example:
 
 <pre>
 const formEl = document.querySelector("#Book-Create > form");
@@ -88,7 +93,7 @@ const formEl = document.querySelector("#Book-Create > form");
 for (const propName of Object.keys( Book.properties)) {
   const propDecl = Book.properties[propName];
   formEl[propName].addEventListener("input", function () {
-    var errMsg = mODELcLASS.check( propName, propDecl, formEl[propName].value).message;
+    var errMsg = bUSINESSoBJECT.check( propName, propDecl, formEl[propName].value).message;
     formEl[propName].setCustomValidity( errMsg);
   });
 });
@@ -96,7 +101,7 @@ for (const propName of Object.keys( Book.properties)) {
 
 ## Use Case 3: Flexible Data Storage Management with Storage Adapters
 
-mODELcLASSjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or `ìndexedDB`. 
+OEMjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or `ìndexedDB`. 
 
 A storage manager works like a wrapper of the methods of an adapter. The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking a data retrieval operation on a model class `Book`:
 

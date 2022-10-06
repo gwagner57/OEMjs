@@ -1,9 +1,10 @@
  /*******************************************************************************
- * mODELcLASS allows defining constructor-based JavaScript classes and
+ * bUSINESSoBJECT allows defining constructor-based business object classes and
  * class hierarchies based on a declarative description of the form:
  *
- *   class Book extends mODELcLASS {
+ *   class Book extends bUSINESSoBJECT {
  *     constructor ({isbn, title, year, edition}) {
+ *       super( isbn);
  *       this.isbn = isbn;
  *       this.title = title;
  *       this.year = year;
@@ -24,28 +25,29 @@
  *   if (b1 instanceof Book) ...
  *
  * When a model class has no standard ID attribute declared with "isIdAttribute: true", 
- * it inherits an auto-integer "id" attribute as its standard ID attribute from mODELcLASS.
+ * it inherits an auto-integer "id" attribute as its standard ID attribute from bUSINESSoBJECT.
  *
  * @copyright Copyright 2015-2022 Gerd Wagner, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
  * @author Gerd Wagner
  ******************************************************************************/
-class mODELcLASS {
+class bUSINESSoBJECT {
   constructor( id) {
     const Class = this.constructor;
-    if (id) this.id = id;
+    let idAttr = Class.idAttribute ?? "id";
+    if (id) this[idAttr] = id;
     else {  // assign auto-ID
       if (typeof Class.getAutoId === "function") {
-        this.id = Class.getAutoId();
+        this[idAttr] = Class.getAutoId();
       } else if (Class.idCounter !== undefined) {
-        this[p] = ++Class.idCounter;
+        this[idAttr] = ++Class.idCounter;
       }
     }
     // is the class neither a complex datatype nor abstract and does the object have an id slot?
-    if (!classSlots.isComplexDatatype && !classSlots.isAbstract && "id" in this) {
-      // add new object to the population/extension of the class
-      Class.instances[String(this.id)] = this;
+    if (!Class.isComplexDatatype && !Class.isAbstract && "id" in this) {
+      // add new object to the population of the class (represented as a map) 
+      Class.instances[this.id] = this;
     }
   }
   /****************************************************
@@ -65,7 +67,7 @@ class mODELcLASS {
           propLabel = propDecl ? (propDecl.shortLabel || propDecl.label) : key,
           valStr = "";
       // is the slot of a declared reference property?
-      if (propDecl && typeof propDecl.range === "string" && mODELcLASS[propDecl.range]) {
+      if (propDecl && typeof propDecl.range === "string" && bUSINESSoBJECT[propDecl.range]) {
         // is the property multi-valued?
         if (propDecl.maxCard && propDecl.maxCard > 1) {
           if (Array.isArray( this[key])) {
@@ -98,7 +100,7 @@ class mODELcLASS {
         propDecl = obj.constructor.properties[p];
         range = propDecl.range;
         if (propDecl.maxCard && propDecl.maxCard > 1) {
-          if (range.constructor && range.constructor === mODELcLASS) { // object reference(s)
+          if (range.constructor && range.constructor === bUSINESSoBJECT) { // object reference(s)
             if (Array.isArray( val)) {
               valuesToConvert = val.slice(0);  // clone;
             } else {  // val is a map from ID refs to obj refs
@@ -117,7 +119,7 @@ class mODELcLASS {
             valuesToConvert[i] = String( v);
           } else if (range === "Date") {
             valuesToConvert[i] = util.createIsoDateString( v);
-          } else if (range.constructor && range.constructor === mODELcLASS) { // object reference(s)
+          } else if (range.constructor && range.constructor === bUSINESSoBJECT) { // object reference(s)
             valuesToConvert[i] = v.id;
           } else if (Array.isArray( v)) {  // JSON-compatible array
             valuesToConvert[i] = v.slice(0);  // clone
@@ -166,13 +168,13 @@ class mODELcLASS {
         valuesToConvert[i] = util.createIsoDateString( v);
       } else if (Array.isArray( v)) {  // JSON-compatible array
         valuesToConvert[i] = v.slice(0);  // clone
-      } else if (typeof range === "string" && mODELcLASS[range]) {
+      } else if (typeof range === "string" && bUSINESSoBJECT[range]) {
         if (typeof v === "object" && v.id !== undefined) {
           valuesToConvert[i] = v.id;
         } else {
           valuesToConvert[i] = v.toString();
           propDecl.stringified = true;
-          console.log("Property "+ this.constructor.Name +"::"+ prop +" has a mODELcLASS object value without an 'id' slot!");
+          console.log("Property "+ this.constructor.Name +"::"+ prop +" has a bUSINESSoBJECT object value without an 'id' slot!");
         }
       } else {
         valuesToConvert[i] = JSON.stringify( v);
@@ -210,7 +212,7 @@ class mODELcLASS {
   }
 }	
 
-mODELcLASS.setup = function () {
+bUSINESSoBJECT.setup = function () {
   /*
   * FOR LATER: support (1) datatype ranges (such as Array), (2) union types,
   *            (3) converting IdRefs to object references, (4) assigning initial values
@@ -233,24 +235,24 @@ mODELcLASS.setup = function () {
     if (typeof propDefs[p].initialValue === "function") propsWithInitialValFunc.push( p);
   }
   /* TODO: construct implicit setters and getters
-   * (adding constraint checks with mODELcLASS.check( propName, propDef, val) only if
-   * mODELcLASS.areConstraintsToBeChecked is true)
+   * (adding constraint checks with bUSINESSoBJECT.check( propName, propDef, val) only if
+   * bUSINESSoBJECT.areConstraintsToBeChecked is true)
    */
   for (const p of Object.keys( propDefs)) {
-    var pDef = propDefs[p], range = pDef.range, 
-        val, rangeTypes=[], i=0, validationResult=null;
+    const pDef = propDefs[p], range = pDef.range; 
+    let val, rangeTypes=[], i=0, validationResult=null;
     //...  
   }
   // call the functions for initial value expressions
   for (const p of propsWithInitialValFunc) {
-    var f = propDefs[p].initialValue;
+    const f = propDefs[p].initialValue;
     if (f.length === 0) this[p] = f();
     else this[p] = f.call( this);
   }
   /*
   if (supertypeName) {
     constr.supertypeName = supertypeName;
-    superclass = mODELcLASS[supertypeName];
+    superclass = bUSINESSoBJECT[supertypeName];
     // apply classical inheritance pattern for methods
     constr.prototype = Object.create( superclass.prototype);
     constr.prototype.constructor = constr;
@@ -265,20 +267,20 @@ mODELcLASS.setup = function () {
     constr.prototype.set = function ( prop, val) {
       // this = object
       var validationResult = null;
-      if (mODELcLASS.areConstraintsToBeChecked) {
-        validationResult = mODELcLASS.check( prop, this.constructor.properties[prop], val);
+      if (bUSINESSoBJECT.areConstraintsToBeChecked) {
+        validationResult = bUSINESSoBJECT.check( prop, this.constructor.properties[prop], val);
         if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
         else this[prop] = validationResult.checkedValue;
       } else this[prop] = val;
     };
   }
   // store class/constructor as value associated with its name in a map
-  mODELcLASS[classSlots.Name] = constr;
+  bUSINESSoBJECT[classSlots.Name] = constr;
   // initialize the class-level instances property
   if (!classSlots.isAbstract) {
-    mODELcLASS[classSlots.Name].instances = {};
+    bUSINESSoBJECT[classSlots.Name].instances = {};
   }
   */
 };
 // A flag for disabling constraint checking
-mODELcLASS.areConstraintsToBeChecked = true;
+bUSINESSoBJECT.areConstraintsToBeChecked = true;
