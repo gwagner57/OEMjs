@@ -1,3 +1,11 @@
+import eNUMERATION from "./eNUMERATION.mjs";
+import { NoConstraintViolation,
+  MandatoryValueConstraintViolation, RangeConstraintViolation,
+  StringLengthConstraintViolation, IntervalConstraintViolation,
+  PatternConstraintViolation, UniquenessConstraintViolation,
+  ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
+  from "./constraint-violation-error-types.mjs";
+
 const dt = {
   Classes: {},
   // define lists of datatype names
@@ -646,3 +654,5 @@ const dt = {
 dt.numericTypes = dt.integerTypes.concat( dt.decimalTypes);
 dt.primitiveDatatypes = [...dt.stringTypes, ...dt.numericTypes, ...dt.otherPrimitiveTypes];
 dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.structuredDataTypes];
+
+export default dt;

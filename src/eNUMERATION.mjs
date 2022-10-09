@@ -16,6 +16,7 @@
  * MAX           the size of the enumeration
  */
 /* globals eNUMERATION */
+
 class eNUMERATION {
   constructor(name, enumArg) {
     var lbl="", LBL="";
@@ -75,3 +76,5 @@ class eNUMERATION {
     return a.map( enumInt => this.enumLitNames[enumInt-1], this).join(", ");
   }
 }
+
+export default eNUMERATION;

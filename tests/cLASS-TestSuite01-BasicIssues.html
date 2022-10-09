@@ -13,128 +13,89 @@
   <link rel="stylesheet" href="../css/normalize.css" />
   <style>
     .failure {color: red;}
-    .info {color: darkorange;}
+    .info {color: blue;}
     .okay {color: green;}
   </style>
   <!-- Basic libraries -->
   <script src="../lib/browserShims.js"></script>
   <script src="../lib/dom.js"></script>
-  <!-- cLASS Libraries -->
-  <script src="../lib/errorTypes.js"></script>
-  <script src="../src/eNUMERATION.js"></script>
-  <script src="../src/cLASS.js"></script>
-
   <script src="test.js"></script>
 </head>
 <body>
- <h1>cLASS Test Suite 01: Basic Issues</h1>
- <p>Testing if a JS object <code>C</code> is a cLASS can only be done with
-   <code>(C.constructor === cLASS)</code> and not with <code>(C instanceof cLASS)</code>.</p>
+ <h1>bUSINESSoBJECT Test Suite 01: Basic Issues</h1>
 
- <script>
+ <script type="module">
+ import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
 
-/****************************************
+ /****************************************
  *** Test code **************************
  ****************************************/
  try {
-   var ServiceDesk = new cLASS({
-     Name: "ServiceDesk",
-     properties: {
-       "id": {range: "PositiveInteger", label: "ID"},
-       "queueLength": { range: "NonNegativeInteger", initialValue: 0, label: "Queue length"},
-       "isBusy": { range: "Boolean", initialValue: false},
-       "pos": {range: cLASS.Array("Decimal",2)}
+   class Publisher extends bUSINESSoBJECT {
+     constructor ({name, address}) {
+       super( name);
+       this.address = address;
      }
-   });
-   var sD = new ServiceDesk({id: 1, queueLength: 7, isBusy: false});
-   var CustomerArrival = new cLASS({
-     Name: "CustomerArrival",
-     properties: {
-       "occTime": {range: "NonNegativeInteger"},
-       "serviceDesk": {range: "ServiceDesk"}
-     },
-     methods: {
-       "toString": function () {  //?? calling the supertype's toString method? (not used/tested below!?)
-         return cLASS[this.constructor.supertypeName].prototype.toString.call( this) +"@"+ this.occTime;
-       }
+   }
+   Publisher.properties = {
+     "name": {range:"NonEmptyString", isIdAttribute: true, min: 2, max: 20},
+     "address": {range:"NonEmptyString", min: 5, max: 50},
+   }
+   Publisher.setup();
+   var p1 = new Publisher({name: "Springer", address:"Berlin, Germany"});
+
+   class Book extends bUSINESSoBJECT {
+     constructor ({isbn, title, year, publisher, edition}) {
+       super( isbn);
+       this.title = title;
+       this.year = year;
+       if (publisher) this.publisher = publisher;
+       if (edition) this.edition = edition;
      }
-   });
-   var custArrEvt = new CustomerArrival({occTime:1, serviceDesk: 1});
-} catch (e) {
-  console.log( e.constructor.name +": "+ e.message);
-}
-
-
+   }
+   Book.properties = {
+     "isbn": {range:"NonEmptyString", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
+              patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+     "title": {range:"NonEmptyString", min: 2, max: 50},
+     "year": {range:"Integer", min: 1459, max: () => (new Date()).getFullYear() + 1},
+     "publisher": {range:"Publisher", optional: true},
+     "edition": {range:"PositiveInteger", optional: true}
+   }
+   Book.setup();
+   var b1 = new Book({isbn: "123456789X", title:"Hello world", year: 2022});
    //*** Test Suite 1 ***************************
-   document.body.appendChild( dom.createElement("h2",{content:"Test Suite 1: Accessing properties"}));
+   document.body.appendChild(dom.createElement("h2", {content: "Test Suite 1: Accessing properties"}));
 
-   test( "sD.constructor.Name should be 'ServiceDesk'",
-       sD.constructor.Name === "ServiceDesk"
-   );
-   test( "sD  (should be) instanceof ServiceDesk",
-       sD instanceof ServiceDesk
-   );
-   test( "custArrEvt.serviceDesk.queueLength should be 7",
-       custArrEvt.serviceDesk.queueLength === 7
-   );
-
+   test( "b1 (should be) instanceof Book", b1 instanceof Book);
+   test( "b1.year should be 2022", b1.year === 2022);
+   b1.title = "New title";
+   test("b1.title should be 'New title'", b1.title === "New title");
    if (test.okay) showSuccessMessage();
    else test.okay = true;  // reset test.okay
 
    //*** Test Suite 2 ***********************************************************
-   document.body.appendChild( dom.createElement("h2",{content:"Test Suite 2: Class Hierarchies and Inheritance"}));
+   document.body.appendChild(dom.createElement("h2", {content: "Test Suite 2: Constraint Validation"}));
+   try {
+     var b1 = new Book({isbn: "123456789", title:"Hello world", year: 2022});
+   } catch (e) {
+     document.body.appendChild(dom.createElement("p", {content: e.constructor.name +": "+ e.message}));
+     test("Should be a PatternConstraintViolation", e.constructor.name === "PatternConstraintViolation");
+     if (test.okay) showSuccessMessage();
+     else test.okay = true;  // reset test.okay
+   }
 
-   test( "ServiceDesk.constructor should be cLASS",
-       ServiceDesk.constructor === cLASS
-   );
-   test( "ServiceDesk.constructor.name should be 'cLASS'",
-       ServiceDesk.constructor.name === "cLASS"
-   );
-   test("ServiceDesk.Name should be 'ServiceDesk'",
-       ServiceDesk.Name === "ServiceDesk"
-   );
 
-   var ATM = new cLASS({
-     Name: "ATM",
-     supertypeName: "ServiceDesk",
-     properties: {
-       "model": {range: "String", label: "Model"}
-     }
-   });
-   var atm1 = new ATM({id: 2, queueLength: 3, isBusy: false, model:"Siemens"});
 
-   test( "atm1.id should be 2",
-       atm1.id === 2
-   );
-   test( "atm1.model should be 'Siemens'",
-       atm1.model === "Siemens"
-   );
+ } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+}
 
-   var SiemensATM = new cLASS({
-     Name: "SiemensATM",
-     supertypeName: "ATM",
-     properties: {
-       "model": {range: "String", label: "Model", initialValue:"Siemens", frozen:true},
-       "specialFeature": {range: "String", label: "Special feature"}
-     }
-   });
-   var atm2 = new SiemensATM({id: 3, queueLength: 3, isBusy: false, specialFeature:"Durable"});
-
-   showInfo("atm2.toString() = "+ atm2.toString());
-
-   test( "The class SiemensATM should have the property 'queueLength'",
-       SiemensATM.properties['queueLength']
-   );
-   test( "The class SiemensATM should have the property 'specialFeature'",
-       SiemensATM.properties['specialFeature']
-   );
-
-   if (test.okay) showSuccessMessage();
-   else test.okay = true;  // reset test.okay
-
-   //*******************************************************************
-   document.body.appendChild( dom.createElement("h2",{content:
-       "Test Suite 3: Creating objects with slots for non-declared poperties and with instance-level method slots"}));
+  //*******************************************************************
+  document.body.appendChild(dom.createElement("h2", {
+    content:
+        "Test Suite 3: Creating objects with slots for non-declared poperties and with instance-level method slots"
+  }));
+  /*
    var sD2 = new ServiceDesk({id: 12, testProp:"testPropValue",
        testMethod: function () {return true;}});
    showInfo("sD2.toString() = "+ sD2.toString());
@@ -143,12 +104,7 @@
    test( "The invocation sD2.testMethod() should return true",  sD2.testMethod());
    if (test.okay) showSuccessMessage();
    else test.okay = true;  // reset test.okay
-
-   //*******************************************************************
-   /*
-   document.body.appendChild( dom.createElement("h2",{content:
-       "Test Suite 4: "}));
-   */
+*/
  </script>
 </body>
 </html>

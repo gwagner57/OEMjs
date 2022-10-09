@@ -9,10 +9,9 @@ class ConstraintViolation extends Error {
   }
 }
 class NoConstraintViolation extends ConstraintViolation {
-  constructor (msg, v) {
-    super( msg);
-    if (v !== undefined) this.checkedValue = v;
-    this.message = "";
+  constructor ( val) {
+    super("okay");
+    if (val !== undefined) this.checkedValue = val;
   }
 }
 class MandatoryValueConstraintViolation extends ConstraintViolation {
@@ -55,10 +54,8 @@ class FrozenValueConstraintViolation extends ConstraintViolation {
     super( msg);
   }
 }
-/*
-export { ConstraintViolation, NoConstraintViolation,
+export { NoConstraintViolation,
   MandatoryValueConstraintViolation, RangeConstraintViolation,
   StringLengthConstraintViolation, IntervalConstraintViolation,
   PatternConstraintViolation, UniquenessConstraintViolation,
   ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation };
-*/

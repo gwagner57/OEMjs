@@ -5,7 +5,6 @@
  *   class Book extends bUSINESSoBJECT {
  *     constructor ({isbn, title, year, edition}) {
  *       super( isbn);
- *       this.isbn = isbn;
  *       this.title = title;
  *       this.year = year;
  *       this.edition = edition;
@@ -18,7 +17,8 @@
  *     "year": {range:"Integer", min: 1459, max: util.nextYear()},
  *     "edition": {range:"PositiveInteger", optional: true}
  *   }
- *   var b1 = new Book({id:"123456789X", title:"Hello world", 2022});
+ *   Book.setup();  // to be invoked for every BO class
+ *   var b1 = new Book({isbn:"123456789X", title:"Hello world", year: 2022});
  *   // test if direct instance
  *   if (b1.constructor.name === "Book") ...
  *   // test if instance
@@ -32,10 +32,13 @@
  * @license The MIT License (MIT)
  * @author Gerd Wagner
  ******************************************************************************/
-class bUSINESSoBJECT {
+ import dt from "./datatypes.mjs";
+ import {NoConstraintViolation} from "./constraint-violation-error-types.mjs";
+
+ class bUSINESSoBJECT {
   constructor( id) {
-    const Class = this.constructor;
-    let idAttr = Class.idAttribute ?? "id";
+    const Class = this.constructor,
+          idAttr = Class.idAttribute ?? "id";
     if (id) this[idAttr] = id;
     else {  // assign auto-ID
       if (typeof Class.getAutoId === "function") {
@@ -44,49 +47,50 @@ class bUSINESSoBJECT {
         this[idAttr] = ++Class.idCounter;
       }
     }
-    // is the class neither a complex datatype nor abstract and does the object have an id slot?
-    if (!Class.isComplexDatatype && !Class.isAbstract && "id" in this) {
+    // has an id value been passed and is the class neither a complex datatype nor abstract?
+    if (id && !Class.isComplexDatatype && !Class.isAbstract) {
       // add new object to the population of the class (represented as a map) 
-      Class.instances[this.id] = this;
+      Class.instances[this[idAttr]] = this;
     }
   }
   /****************************************************
   ** overwrite and improve the standard toString method
   *****************************************************/
   toString() {
+    const Class = this.constructor,
+          idAttr = Class.idAttribute;
     var str1="", str2="", i=0;
-    const Class = this.constructor;
     if (this.name) str1 = this.name;
     else {
       str1 = Class.shortLabel || Class.name;
-      if (this.id) str1 += ":"+ this.id;
+      if (this[idAttr]) str1 += ":"+ this[idAttr];
     }
     str2 = "{ ";
-    Object.keys( this).forEach( function (key) {
-      var propDecl = Class.properties[key],
-          propLabel = propDecl ? (propDecl.shortLabel || propDecl.label) : key,
-          valStr = "";
-      // is the slot of a declared reference property?
-      if (propDecl && typeof propDecl.range === "string" && bUSINESSoBJECT[propDecl.range]) {
+    for (const p of Object.keys( this)) {
+      const propDecl = Class.properties[p],
+            propLabel = propDecl?.shortLabel || propDecl?.label || p;
+      var valStr = "";
+      // is p a declared reference property?
+      if (propDecl && typeof propDecl.range === "string" && propDecl.range in bUSINESSoBJECT.classes) {
         // is the property multi-valued?
         if (propDecl.maxCard && propDecl.maxCard > 1) {
-          if (Array.isArray( this[key])) {
-            valStr = this[key].map( function (o) {return o.id;}).toString();
-          } else valStr = JSON.stringify( Object.keys( this[key]));
+          if (Array.isArray( this[p])) {
+            valStr = this[p].map( o => o[idAttr]).toString();
+          } else valStr = JSON.stringify( Object.keys( this[p]));
         } else {  // if the property is single-valued
-          valStr = String( this[key].id);
+          valStr = String( this[p][idAttr]);
         }
-      } else if (typeof this[key] === "function") {
+      } else if (typeof this[p] === "function") {
         // the slot is an instance-level method slot
         valStr = "a function";
       } else {  // the slot is an attribute slot or an undeclared reference property slot
-        valStr = JSON.stringify( this[key]);
+        valStr = JSON.stringify( this[p]);
       }
-      if (this[key] !== undefined && propLabel) {
+      if (this[p] !== undefined) {
         str2 += (i>0 ? ", " : "") + propLabel +": "+ valStr;
         i = i+1;
       }
-    }, this);
+    }
     str2 += "}";
     if (str2 === "{ }") str2 = "";
     return str1 + str2;
@@ -210,77 +214,95 @@ class bUSINESSoBJECT {
     }
     return obj;
   }
-}	
-
-bUSINESSoBJECT.setup = function () {
-  /*
-  * FOR LATER: support (1) datatype ranges (such as Array), (2) union types,
-  *            (3) converting IdRefs to object references, (4) assigning initial values
-  *            to mandatory properties (if !pDef.optional), including the default values
-  *            0, "", [] and {}
-  */
-  var propsWithInitialValFunc = [], missingRangeProp="";
-  const Class = this.constructor,
-        propDefs = Class.properties || {};  // property declarations
-  // initialize the Class.instances map
-  Class.instances = {};
-  // check model class definition constraints
-  if (!Object.keys( propDefs).every( function (p) {
-      if (!propDefs[p].range) missingRangeProp = p;
-      return (propDefs[p].range !== undefined);})) {
-    throw `No range defined for property ${missingRangeProp} of class ${Class.name}.`;
-  }
-	// properties with initialValue functions
-  for (const p of Object.keys( propDefs)) {
-    if (typeof propDefs[p].initialValue === "function") propsWithInitialValFunc.push( p);
-  }
-  /* TODO: construct implicit setters and getters
-   * (adding constraint checks with bUSINESSoBJECT.check( propName, propDef, val) only if
-   * bUSINESSoBJECT.areConstraintsToBeChecked is true)
-   */
-  for (const p of Object.keys( propDefs)) {
-    const pDef = propDefs[p], range = pDef.range; 
-    let val, rangeTypes=[], i=0, validationResult=null;
-    //...  
-  }
-  // call the functions for initial value expressions
-  for (const p of propsWithInitialValFunc) {
-    const f = propDefs[p].initialValue;
-    if (f.length === 0) this[p] = f();
-    else this[p] = f.call( this);
-  }
-  /*
-  if (supertypeName) {
-    constr.supertypeName = supertypeName;
-    superclass = bUSINESSoBJECT[supertypeName];
-    // apply classical inheritance pattern for methods
-    constr.prototype = Object.create( superclass.prototype);
-    constr.prototype.constructor = constr;
-    // merge superclass property declarations with own property declarations
-    constr.properties = Object.create( superclass.properties);
-   //  assign own property declarations, possibly overriding super-props                                     
-    Object.keys( propDefs).forEach( function (p) {
-      constr.properties[p] = propDefs[p];
-    });
-  } else {  // if class is root class
-    constr.properties = propDefs;
-    constr.prototype.set = function ( prop, val) {
-      // this = object
-      var validationResult = null;
-      if (bUSINESSoBJECT.areConstraintsToBeChecked) {
-        validationResult = bUSINESSoBJECT.check( prop, this.constructor.properties[prop], val);
-        if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
-        else this[prop] = validationResult.checkedValue;
-      } else this[prop] = val;
-    };
-  }
-  // store class/constructor as value associated with its name in a map
-  bUSINESSoBJECT[classSlots.Name] = constr;
-  // initialize the class-level instances property
-  if (!classSlots.isAbstract) {
-    bUSINESSoBJECT[classSlots.Name].instances = {};
-  }
-  */
-};
+   /***************************************************
+    * To be invoked for each BO class definition
+    ***************************************************/
+   static setup() {
+     /*
+     * FOR LATER: support (1) datatype ranges (such as Array), (2) union types,
+     *            (3) converting IdRefs to object references, (4) assigning initial values
+     *            to mandatory properties (if !pDef.optional), including the default values
+     *            0, "", [] and {}
+     */
+     const Class = this,
+           propDefs = Class.properties || {};  // property definitions
+     const propsWithInitialValFunc = [];
+     // initialize the Class.instances map
+     Class.instances = {};
+     // collect all names of BO classes in a map
+     bUSINESSoBJECT.classes[Class.name] = Class;
+     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( bUSINESSoBJECT.classes)];
+     // pre-process all property definitions
+     for (const p of Object.keys( propDefs)) {
+       const propDecl = propDefs[p],
+             range = propDecl.range;
+       // check if property definition includes a range declaration
+       if (!range) throw Error(`No range defined for property ${p} of class ${Class.name}`);
+       else if (!admissibleRanges.includes( range))
+           throw Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
+       // establish standard ID attribute
+       if (propDecl.isIdAttribute) Class.idAttribute = p;
+       // collect properties with initialValue functions
+       if (typeof propDecl.initialValue === "function") propsWithInitialValFunc.push( p);
+       // construct implicit setters and getters
+       Object.defineProperty( Class.prototype, p, {
+         get() { return this["_"+p]; },
+         set( val) {
+           if (bUSINESSoBJECT.areConstraintsToBeChecked) {
+             const validationResults = dt.check( p, propDecl, val, {checkRefInt:false});
+             if (validationResults[0] instanceof NoConstraintViolation) {
+               this["_"+p] = validationResults[0].checkedValue;
+             } else {
+               //TODO: support multiple errors
+               throw validationResults[0];
+             }
+           } else this["_"+p] = val;
+         },
+         enumerable: true
+       });
+     }
+     // call the functions for initial value expressions
+     for (const p of propsWithInitialValFunc) {
+       const f = propDefs[p].initialValue;
+       if (f.length === 0) this[p] = f();
+       else this[p] = f.call( this);
+     }
+     /*
+     if (supertypeName) {
+       constr.supertypeName = supertypeName;
+       superclass = bUSINESSoBJECT[supertypeName];
+       // apply classical inheritance pattern for methods
+       constr.prototype = Object.create( superclass.prototype);
+       constr.prototype.constructor = constr;
+       // merge superclass property declarations with own property declarations
+       constr.properties = Object.create( superclass.properties);
+      //  assign own property declarations, possibly overriding super-props
+       Object.keys( propDefs).forEach( function (p) {
+         constr.properties[p] = propDefs[p];
+       });
+     } else {  // if class is root class
+       constr.properties = propDefs;
+       constr.prototype.set = function ( prop, val) {
+         // this = object
+         var validationResult = null;
+         if (bUSINESSoBJECT.areConstraintsToBeChecked) {
+           validationResult = bUSINESSoBJECT.check( prop, this.constructor.properties[prop], val);
+           if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
+           else this[prop] = validationResult.checkedValue;
+         } else this[prop] = val;
+       };
+     }
+     // store class/constructor as value associated with its name in a map
+     bUSINESSoBJECT[classSlots.Name] = constr;
+     // initialize the class-level instances property
+     if (!classSlots.isAbstract) {
+       bUSINESSoBJECT[classSlots.Name].instances = {};
+     }
+     */
+   }
+}
+bUSINESSoBJECT.classes = {};
 // A flag for disabling constraint checking
 bUSINESSoBJECT.areConstraintsToBeChecked = true;
+
+export default bUSINESSoBJECT;
