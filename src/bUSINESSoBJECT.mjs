@@ -33,18 +33,28 @@
  * @author Gerd Wagner
  ******************************************************************************/
  import dt from "./datatypes.mjs";
- import {NoConstraintViolation} from "./constraint-violation-error-types.mjs";
+ import { NoConstraintViolation,
+   MandatoryValueConstraintViolation, RangeConstraintViolation,
+   StringLengthConstraintViolation, IntervalConstraintViolation,
+   PatternConstraintViolation, UniquenessConstraintViolation,
+   ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
+   from "./constraint-violation-error-types.mjs";
 
  class bUSINESSoBJECT {
   constructor( id) {
     const Class = this.constructor,
           idAttr = Class.idAttribute ?? "id";
     if (id) this[idAttr] = id;
-    else {  // assign auto-ID
+    else if (Class.idAttribute && !Class.properties[Class.idAttribute].autoId) {
+      throw new MandatoryValueConstraintViolation(
+          `A value for ${Class.idAttribute} is required!`)
+    } else {  // assign auto-ID
       if (typeof Class.getAutoId === "function") {
         this[idAttr] = Class.getAutoId();
       } else if (Class.idCounter !== undefined) {
         this[idAttr] = ++Class.idCounter;
+      } else {
+        this[idAttr] = Class.idCounter = 1;
       }
     }
     // has an id value been passed and is the class neither a complex datatype nor abstract?

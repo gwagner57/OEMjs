@@ -75,18 +75,24 @@
 
    //*** Test Suite 2 ***********************************************************
    document.body.appendChild(dom.createElement("h2", {content: "Test Suite 2: Constraint Validation"}));
-   try {
-     var b1 = new Book({isbn: "123456789", title:"Hello world", year: 2022});
+   try { // violate ISBN pattern constraint
+     var b2 = new Book({isbn: "123456789", title:"Hello world", year: 2022});
    } catch (e) {
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name +": "+ e.message}));
      test("Should be a PatternConstraintViolation", e.constructor.name === "PatternConstraintViolation");
+
+     try { // violate mandatory value constraint for isbn
+       var b3 = new Book({title:"Hello world", year: 2022});
+     } catch (e) {
+       document.body.appendChild(dom.createElement("p", {content: e.constructor.name +": "+ e.message}));
+       test("Should be a MandatoryValueConstraintViolation", e.constructor.name === "MandatoryValueConstraintViolation");
+
+     }
      if (test.okay) showSuccessMessage();
      else test.okay = true;  // reset test.okay
    }
 
-
-
- } catch (e) {
+ } catch (e) {  // class setup errors
    console.log( e.constructor.name +": "+ e.message);
 }
 
