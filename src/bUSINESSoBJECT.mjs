@@ -34,9 +34,7 @@
  ******************************************************************************/
  import dt from "./datatypes.mjs";
  import { NoConstraintViolation,
-   MandatoryValueConstraintViolation, RangeConstraintViolation,
-   StringLengthConstraintViolation, IntervalConstraintViolation,
-   PatternConstraintViolation, UniquenessConstraintViolation,
+   MandatoryValueConstraintViolation, UniquenessConstraintViolation,
    ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
    from "./constraint-violation-error-types.mjs";
 
@@ -240,8 +238,8 @@
      // initialize the Class.instances map
      Class.instances = {};
      // collect all names of BO classes in a map
-     bUSINESSoBJECT.classes[Class.name] = Class;
-     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( bUSINESSoBJECT.classes)];
+     dt.classes[Class.name] = Class;
+     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes)];
      // pre-process all property definitions
      for (const p of Object.keys( propDefs)) {
        const propDecl = propDefs[p],

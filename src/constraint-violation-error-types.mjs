@@ -39,6 +39,11 @@ class PatternConstraintViolation extends ConstraintViolation {
     super( msg);
   }
 }
+class CardinalityConstraintViolation extends ConstraintViolation {
+  constructor (msg) {
+    super( msg);
+  }
+}
 class UniquenessConstraintViolation extends ConstraintViolation {
   constructor (msg) {
     super( msg);
@@ -57,5 +62,5 @@ class FrozenValueConstraintViolation extends ConstraintViolation {
 export { NoConstraintViolation,
   MandatoryValueConstraintViolation, RangeConstraintViolation,
   StringLengthConstraintViolation, IntervalConstraintViolation,
-  PatternConstraintViolation, UniquenessConstraintViolation,
+  PatternConstraintViolation, CardinalityConstraintViolation, UniquenessConstraintViolation,
   ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation };
