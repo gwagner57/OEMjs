@@ -28,7 +28,6 @@
  <script type="module">
  import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
 
- let failure=false;
  /****************************************
  *** Test code **************************
  ****************************************/
@@ -72,7 +71,6 @@
    try {
      let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 2022});
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
-     failure = true;
    } catch (e) {
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
@@ -85,7 +83,6 @@
        title: "Hello world", year: 2022
      });
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
-     failure = true;
    } catch (e) {
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
@@ -95,7 +92,6 @@
    try {
      let b1 = new Book({title: "Hello world", year: 2022});
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
-     failure = true;
    } catch (e) {
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
@@ -103,9 +99,15 @@
    //*** Test 4 ***************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 4: Wrong year"}));
    try {
-     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 22});
+     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 1122});
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
-     failure = true;
+   } catch (e) {
+     document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
+     document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
+   }
+   try {
+     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 2025});
+     document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
    } catch (e) {
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
@@ -116,7 +118,6 @@
      bUSINESSoBJECT.areConstraintsToBeChecked = false;
      let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 22});
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
-     failure = true;
    } catch (e) {
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
