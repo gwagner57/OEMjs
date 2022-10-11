@@ -28,7 +28,7 @@
  <script type="module">
  import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
 
- var failure=false;
+ let failure=false;
  /****************************************
  *** Test code **************************
  ****************************************/
@@ -70,7 +70,7 @@
    //*** Test 1 ***************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 1: Valid data"}));
    try {
-     var b1 = new Book({isbn: "123456789X", title: "Hello world", year: 2022});
+     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 2022});
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
      failure = true;
    } catch (e) {
@@ -80,7 +80,7 @@
    //*** Test 2 ***************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 2: Flawed ISBN"}));
    try {
-     var b1 = new Book({
+     let b1 = new Book({
        isbn: "123456789",  // instead of "123456789X"
        title: "Hello world", year: 2022
      });
@@ -93,7 +93,7 @@
    //*** Test 3 ***************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 3: Missing value for ISBN"}));
    try {
-     var b1 = new Book({title: "Hello world", year: 2022});
+     let b1 = new Book({title: "Hello world", year: 2022});
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
      failure = true;
    } catch (e) {
@@ -103,7 +103,7 @@
    //*** Test 4 ***************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 4: Wrong year"}));
    try {
-     var b1 = new Book({isbn: "123456789X", title: "Hello world", year: 22});
+     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 22});
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
      failure = true;
    } catch (e) {
@@ -114,12 +114,25 @@
    document.body.appendChild(dom.createElement("h2", {content: "Test 5: Deactivate Validation"}));
    try {
      bUSINESSoBJECT.areConstraintsToBeChecked = false;
-     var b1 = new Book({isbn: "123456789X", title: "Hello world", year: 22});
+     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 22});
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
      failure = true;
    } catch (e) {
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
+   }
+   //*** Test 6 ***************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 6: Referential Integrity"}));
+   try {
+     let p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
+     let b6 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, publisher:"Spring"});
+     document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
+   } catch (e) {
+     document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
+     document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
+     test("Should be a ReferentialIntegrityConstraintViolation", e.constructor.name === "ReferentialIntegrityConstraintViolation");
+     if (test.okay) showSuccessMessage();
+     else test.okay = true;  // reset test.okay
    }
  } catch (e) {
    console.log( e.constructor.name +": "+ e.message);

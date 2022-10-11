@@ -63,32 +63,23 @@
    }
    Book.setup();
    //*** Test 1 ***************************
-   document.body.appendChild(dom.createElement("h2", {content: "Test 1: Accessing properties"}));
-   var b1 = new Book({isbn: "123456789X", title:"Hello world", year: 2022});
-   test( "b1.year should be 2022", b1.year === 2022);
-   b1.title = "New title";
-   test("b1.title should be 'New title'", b1.title === "New title");
+   document.body.appendChild(dom.createElement("h2", {content: "Test 1: Creating objects"}));
+   const b1 = new Book({isbn: "123456789X", title:"Hello world", year: 2022});
+   test("b1.isbn should be 123456789X", b1.isbn === "123456789X");
+   test("b1.title should be 'Hello world'", b1.title === "Hello world");
+   test("b1.year should be 2022", b1.year === 2022);
    if (test.okay) showSuccessMessage();
    else test.okay = true;  // reset test.okay
 
    //*** Test 2 ***********************************************************
-   document.body.appendChild(dom.createElement("h2", {content: "Test 2: Constraint Validation"}));
-   try { // violate ISBN pattern constraint
-     var b2 = new Book({isbn: "123456789", title:"Hello world", year: 2022});
-   } catch (e) {
-     document.body.appendChild(dom.createElement("p", {content: e.constructor.name +": "+ e.message}));
-     test("Should be a PatternConstraintViolation", e.constructor.name === "PatternConstraintViolation");
+   document.body.appendChild(dom.createElement("h2", {content: "Test 2: Accessing properties"}));
+   b1.title = "New title";
+   test("b1.title should be 'New title'", b1.title === "New title");
+   b1.year = 2010;
+   test("b1.year should be 2010", b1.year === 2010);
+   if (test.okay) showSuccessMessage();
+   else test.okay = true;  // reset test.okay
 
-     try { // violate mandatory value constraint for isbn
-       var b3 = new Book({title:"Hello world", year: 2022});
-     } catch (e) {
-       document.body.appendChild(dom.createElement("p", {content: e.constructor.name +": "+ e.message}));
-       test("Should be a MandatoryValueConstraintViolation", e.constructor.name === "MandatoryValueConstraintViolation");
-
-     }
-     if (test.okay) showSuccessMessage();
-     else test.okay = true;  // reset test.okay
-   }
    //*** Test 3 ***********************************************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 3: Associations / Reference Properties"}));
    var p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
@@ -98,12 +89,6 @@
    // create book object with publisher ID reference
    var b5 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, publisher:"Springer"});
    test("b5.publisher.name should be 'Springer'", b5.publisher.name === "Springer");
-   try { // violate referential integrity constraint for publisher
-     var b6 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, publisher:"Spring"});
-   } catch (e) {
-     document.body.appendChild(dom.createElement("p", {content: e.constructor.name +": "+ e.message}));
-     test("Should be a ReferentialIntegrityConstraintViolation", e.constructor.name === "ReferentialIntegrityConstraintViolation");
-   }
    if (test.okay) showSuccessMessage();
    else test.okay = true;  // reset test.okay
 
