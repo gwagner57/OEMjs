@@ -1,5 +1,5 @@
 /**
- * @fileOverview  This file contains the definition of the meta-class vIEWcLASS.
+ * @fileOverview  This file contains the definition of the meta-class vIEW.
  * @author Gerd Wagner
  * @copyright Copyright 2015 Gerd Wagner, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
@@ -10,7 +10,7 @@
  * normally bound to model class properties, and methods, typically implementing
  * user actions and possibly bound to model class methods.
  *
- * A view class may have a field order definition and field group definitions 
+ * A view may have a field order definition and field group definitions 
  * in the constructor parameter "fields", which is processed into a "fields" map 
  * of field definition records and a field order definition list "fieldOrder".
  * The constructor parameter "fields" may contain additional fields not based 
@@ -19,7 +19,7 @@
  * model class(es).
  * 
  * Each model class Xyz has a data management view class XyzView, which is 
- * stored in the map entry vIEWcLASS.classes["XyzView"]. Such a view class has
+ * stored in the map entry vIEW.classes["XyzView"]. Such a view class has
  * four standard instances, each of them identified by one of the characters 
  * "C", "R", "U" and "D", corresponding to the four CRUD operations.
  * 
@@ -65,97 +65,95 @@
  * 2) By accessing existing form elements and controls, just setting/updating their
  *    contents (and dynamic parts)  
  * 
- * @constructor
- * @this {vIEWcLASS}
- * @param {{modelClass: mODELcLASS?, modelClasses: array(mODELcLASS)?,  
- *          fields: array, 
- *          methods: Map?}} slots  The view class definition slots.
+ * @class
  */
-function vIEWcLASS( slots) {
-  var properties={};
-  if (!(slots.modelClass instanceof mODELcLASS)) {
-    throw new ViewConstraintViolation(
-        "A view class must be bound to one or more model classes!");
-  }
-  if (slots.modelClass) {
-    this.modelClass = slots.modelClass;
-    properties = this.modelClass.properties;
-    // add new view class to the "classes" map
-    vIEWcLASS.classes[this.modelClass.name +"View"] = this;
-    // define a property for holding all instances of the view class
-    this.instances = {};
-    /* process the "slots.fields" array into a "fields" map of field definition records
-     * and a field order definition array "fieldOrder" 
-     */
-    this.fields = {};
-    this.fieldOrder = [];
-    if (slots.fields) {
-      // slots.fields is an array while this.fields is a map
-      slots.fields.forEach( function (el) {
-        var j=0, elList=[], fldList=[], fld;
-        if (!Array.isArray( el)) {  // single field
-          elList = [el];
-        } else elList = el;        // field group
-        // elList is an array of property field names or field definitions
-        // fldList is a corresponding array of field names
-        for (j=0; j < elList.length; j++) {
-          fld = elList[j];
-          if (typeof fld === "string") {  // property field
-            if (!properties[fld]) {
-              throw new ViewConstraintViolation(
-                  "Property view field "+ fld +"does not correspond to a model property!");
-            }  // else
-            this.fields[fld] = {
+import dt from "../datatypes.mjs";
+import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
+import dom from "../../lib/dom.mjs";
+
+
+class vIEW {
+  constructor({modelClass, modelClasses, fields, methods, validateOnInput}) {
+    var properties = {};
+    if (!(Object.getPrototypeOf( modelClass) === bUSINESSoBJECT)) {
+      throw new Error(
+          "A view class must be bound to one or more model classes!");
+    }
+    if (modelClass) {
+      this.modelClass = modelClass;
+      properties = this.modelClass.properties;
+      // add new view class to the "classes" map
+      vIEW.classes[this.modelClass.name + "View"] = this;
+      // define a property for holding all instances of the view class
+      this.instances = {};
+      /* process the "fields" array into a "fields" map of field definition records
+       * and a field order definition array "fieldOrder" 
+       */
+      this.fields = {};
+      this.fieldOrder = [];
+      if (fields) {
+        // fields is an array while this.fields is a map
+        for (const el of fields) {
+          var elList = [], fieldNames = [];
+          if (!Array.isArray(el)) elList = [el];  // single field
+          else elList = el;  // field group
+          // elList is an array of property field names or field definitions
+          // fldList is a corresponding array of field names
+          for (const fld of elList) {
+            if (typeof fld === "string") {  // property field
+              if (!properties[fld]) {
+                throw new Error(
+                    `Property view field ${fld} does not correspond to a model property!`);
+              }  // else
+              this.fields[fld] = {
                 label: properties[fld].label,
                 range: properties[fld].range,
-                inputOutputMode:"I/O"
-            };
-            fldList.push( fld);
-          } else if (typeof fld === "object") {  // defined field
-            this.fields[fld.name] = { 
+                inputOutputMode: "I/O"
+              };
+              fieldNames.push(fld);
+            } else if (typeof fld === "object") {  // defined field
+              this.fields[fld.name] = {
                 label: fld.label,
                 range: fld.range,
                 inputOutputMode: fld.inputOutputMode
-            };
-            fldList.push( fld.name);
-            if (elList.derivationFunction) {
-              this.fields[fld.name].derivationFunction = fld.derivationFunction;
+              };
+              fieldNames.push(fld.name);
+              if (elList.derivationFunction) {
+                this.fields[fld.name].derivationFunction = fld.derivationFunction;
+              }
+              if (fld.optional) this.fields[fld.name].optional = true;
+            } else {  // neither property field nor defined field
+              throw new Error(
+                  "Neither property field nor defined field: " + fld);
             }
-            if (fld.optional) this.fields[fld.name].optional = true;              
-          } else {  // neither property field nor defined field
-            throw new ViewConstraintViolation(
-                "Neither property field nor defined field: "+ fld);
           }
+          if (elList.length === 1) this.fieldOrder.push(fieldNames[0]);
+          else this.fieldOrder.push(fieldNames);
         }
-        if (elList.length === 1) this.fieldOrder.push( fldList[0]); 
-        else this.fieldOrder.push( fldList);
-      }, this); 
-    } else {  // no view fields provided in construction slots
-      // create view fields from labeled model properties
-      Object.keys( properties).forEach( function (prop,i) {
-        if (properties[prop].label) {
-          this.fieldOrder[this.fieldOrder.length] = Object.keys( properties)[i];
-          this.fields[prop] = properties[prop];
-          this.fields[prop]["inputOutputMode"] = "I/O";
-        }
-      }, this);
-    }
-  } else this.modelClasses = slots.modelClasses;  //TODO: views based on multiple model classes
-  this.maxNmrOfEnumLitForChoiceButtonRendering = 
-      slots.maxNmrOfEnumLitForChoiceButtonRendering || 7;
-  if (slots.validateOnInput !== undefined) {
-    this.validateOnInput = slots.validateOnInput;
-  } else this.validateOnInput = true;
-  this.methods = slots.methods || {};
+      } else {  // no view fields provided in construction slots
+        // create view fields from labeled model properties
+        Object.keys(properties).forEach(function (prop, i) {
+          if (properties[prop].label) {
+            this.fieldOrder[this.fieldOrder.length] = Object.keys(properties)[i];
+            this.fields[prop] = properties[prop];
+            this.fields[prop]["inputOutputMode"] = "I/O";
+          }
+        }, this);
+      }
+    } else this.modelClasses = modelClasses;  //TODO: views based on multiple model classes
+    this.maxNmrOfEnumLitForChoiceButtonRendering = 7;
+    this.validateOnInput = validateOnInput ?? true;
+    this.methods = methods ?? {};
+  }
   /**
    * Render the DOM structure of a view
    * this = view object
    * @method 
    * @author Gerd Wagner
    */
-  this.methods.render = function () {
+  render() {
     var mc = this.type.modelClass,
-        stdIdRange = mc.properties[mc.standardIdAttr].range,
+        stdIdRange = mc.properties[mc.idAttribute].range,
         viewMode = this.viewMode,
         view = this,
         userActions = this.userActions,
@@ -299,9 +297,10 @@ function vIEWcLASS( slots) {
      * @method 
      */
     function createSelectionList( fld) {
-      var selEl = document.createElement("select"),
-          lblEl = document.createElement("label"),
-          range  = fields[fld].range;
+      const selEl = document.createElement("select"),
+            lblEl = document.createElement("label"),
+            range  = fields[fld].range;
+      var choiceItems=[];
       lblEl.textContent = fields[fld].label;
       lblEl.appendChild( selEl);
       selEl.setAttribute("data-bind", fld);
@@ -389,7 +388,7 @@ function vIEWcLASS( slots) {
       uiContainerEl = dom.createElement("section", {
         id: mc.name +"-"+ this.viewMode,
         classValues:"UI",
-        content:"<h1>"+ mODELvIEW.crudVerbs[this.viewMode] + 
+        content:"<h1>"+ vIEW.crudVerbs[this.viewMode] + 
             inbetween + mc.name.toLowerCase() +
             " record"+ suffix +"</h1>"
       });
@@ -427,9 +426,9 @@ function vIEWcLASS( slots) {
         columns = fieldOrder;
       } else {
         columns = displayAttribs.clone();
-        if (columns[0] !== mc.standardIdAttr) {
+        if (columns[0] !== mc.idAttribute) {
           // add standardIdAttr at beginning of displayAttribs
-          columns.unshift( mc.standardIdAttr);
+          columns.unshift( mc.idAttribute);
         }
       }
       rowEl = tblEl.tHead.insertRow(-1);
@@ -538,7 +537,7 @@ function vIEWcLASS( slots) {
       // handle save button click events
       formEl.submitButton.addEventListener("click", function () {
         var slots={}, fName = '',
-            idProp = mc.standardIdAttr,
+            idProp = mc.idAttribute,
             id = formEl[idProp].value;
         Object.keys( fields).forEach( function (f) {
           if (fields[f].inputOutputMode === "I/O" && f !== idProp) {
@@ -598,7 +597,7 @@ function vIEWcLASS( slots) {
       }));
       // handle delete button click events
       formEl.submitButton.addEventListener("click", function () {
-        var id = formEl[mc.standardIdAttr].value;
+        var id = formEl[mc.idAttribute].value;
         if (cOMPLEXtYPE.isIntegerType( stdIdRange)) id = parseInt( id);
         // map UI event to a user action defined by the view
         userActions["deleteRecord"](id);
@@ -618,7 +617,7 @@ function vIEWcLASS( slots) {
         modelClass.saveAll(); 
     });
 */
-  },
+  }
   /**
    * Generic setter for view fields
    * this = view object
@@ -626,7 +625,7 @@ function vIEWcLASS( slots) {
    * @author Gerd Wagner
    * TODO: what about derived view fields?
    */
-  this.methods.set = function (f,v) {
+  set( f, v) {
     var el=null, elems=null, i=0,
         mc = this.type.modelClass,
         properties = mc.properties,
@@ -665,15 +664,14 @@ function vIEWcLASS( slots) {
       elems = uiEl.querySelectorAll("input[type='checkbox']");
       for (i=0; i < elems.length; i++) {
         el = elems[i];
-        if (v.indexOf( parseInt( el.value)) > -1) el.checked = true;
-        else el.checked = false;
+        el.checked = v.indexOf(parseInt(el.value)) > -1;
       }
     } else if (uiEl.tagName === "SELECT" && uiEl.multiple !== "multiple") {
       uiEl.selectedIndex = v;
     } else {
       uiEl.setAttribute("data-value", v);
     }
-  },
+  }
   /**
    * Set the view's model object
    * this = view object
@@ -681,65 +679,326 @@ function vIEWcLASS( slots) {
    * @author Gerd Wagner
    * @param {string} id  the object's standard ID value
    */
-  this.methods.setModelObject = function (id) {
-    var modelClass = this.type.modelClass;
+  setModelObject( id) {
+    const modelClass = this.type.modelClass;
     this.modelObject = modelClass.instances[id];
     Object.keys( this.modelObject).forEach( function (prop) {
       // assign value if the view has a field based on the model property
       if (this.type.fields[prop]) this.set( prop, this.modelObject[prop]);
     }, this);
-  };
-}
-vIEWcLASS.classes = {};  // a map of all view classes defined per model class
-/**
- * Factory method for creating new views as instances of a vIEWcLASS.
- * While a view class is bound to one or more model classes, a view
- * is bound to zero, one or more model objects.
- * @method 
- * @author Gerd Wagner
- * @param {{viewMode: string, modelObject: object?}} slots  
- *     The view definition slots.
- * @return {object}  The new view object.
- */
-vIEWcLASS.prototype.create = function (slots) {
-  var properties = this.modelClass.properties,
-      keys=[];
-  // add predefined property "type" for direct type of view
-  var view = Object.create( this.methods, {
-      "type": {value: this, writable: false, enumerable: true}
-  });
-  // check CRUD mode parameter
-  if (!slots.viewMode) view.viewMode = "O";  //TODO: Other???
-  else  if (["C","R","U","D"].indexOf( slots.viewMode) === -1) {
-      throw new ViewConstraintViolation("Attempt to create a "+ 
-          this.modelClass.name + " view with an invalid viewMode "+
-              "argument: "+ slots.viewMode);
-    } else view.viewMode = slots.viewMode;
-  // in case of viewMode "U" and "D"
-  if (slots.modelObject && slots.modelObject.type !== this.modelClass) {
-    throw new ViewConstraintViolation("The view's model object " +
-        "must have the model class of its view class ("+
-        this.modelClass.name +") as its type !");          
   }
-  view.userActions = slots.userActions;
-  view.showAllFields = slots.showAllFields;
-  view.modelObject = slots.modelObject;
-  view.dataBinding = {"C":{},"R":{},"U":{},"D":{}};  
-  view.fieldGroupSeparator = slots.fieldGroupSeparator || ", ";
-  // initialize view fields 
-  Object.keys( view.type.fields).forEach( function (f) {
-    var obj = view.modelObject,
-        val = obj ? obj[f] : undefined;
-    if (obj && val !== undefined) {
-      if (!Array.isArray(val)) {
-        view[f] = eNTITYtYPE.getValAsString( view.type.modelClass, f, val);
+  /**
+   * Factory method for creating new views as instances of a vIEW.
+   * While a vIEW class is bound to one or more model classes,
+   * a view object is bound to zero, one or more model objects.
+   * @method
+   * @author Gerd Wagner
+   * @return {object}  A new view object.
+   */
+  create({viewMode, modelObject, userActions, showAllFields, fieldGroupSeparator}) {
+    const properties = this.modelClass.properties;
+    // add predefined property "type" for direct type of view
+    const view = Object.create( this.methods, {
+                 "type": {value: this, writable: false, enumerable: true}});
+    // check CRUD mode parameter
+    if (!viewMode) view.viewMode = "O";  //TODO: Other???
+    else  if (["C","R","U","D"].indexOf( viewMode) === -1) {
+      throw new Error(`Attempt to create a ${this.modelClass.name} view with an invalid viewMode argument: ${viewMode}`);
+    } else view.viewMode = viewMode;
+    // in case of viewMode "U" and "D"
+    if (modelObject && modelObject.type !== this.modelClass) {
+      throw new Error("The view's model object must be an instance of the model class of its view class!");
+    }
+    view.userActions = userActions;
+    view.showAllFields = showAllFields;
+    view.modelObject = modelObject;
+    view.dataBinding = {"C":{},"R":{},"U":{},"D":{}};
+    view.fieldGroupSeparator = fieldGroupSeparator || ", ";
+    // initialize view fields
+    for (const f of Object.keys( view.type.fields)) {
+      var obj = view.modelObject,
+          val = obj ? obj[f] : undefined;
+      if (obj && val !== undefined) {
+        if (!Array.isArray(val)) {
+          view[f] = eNTITYtYPE.getValAsString( view.type.modelClass, f, val);
+        }
+        else view[f] = val.slice();
+      } else if (properties[f] && properties[f].maxCard) {
+        view[f] = [];
+      } else view[f] = "";
+    }
+    // store view
+    this.instances[view.viewMode] = view;
+    return view;
+  }
+  static setupUI( app) {
+    function setupStartUI() {
+      var uiContainerEl = document.querySelector("#AppStart"),
+          footerEl = document.querySelector("html>body>footer"),
+          menuEl = document.querySelector("ul.menu");
+      if (!uiContainerEl) {
+        uiContainerEl = dom.createElement("section", {classValues:"UI", id:"AppStart",
+            content:"<p>This app supports the following operations:</p>"});
+        if (footerEl) {
+          document.body.insertBefore( uiContainerEl, footerEl);
+        } else {
+          document.body.appendChild( uiContainerEl);
+        }
       }
-      else view[f] = val.slice();
-    } else if (properties[f] && properties[f].maxCard) {
-      view[f] = [];
-    } else view[f] = "";
-  });
-  // store view
-  this.instances[view.viewMode] = view;
-  return view;
-};
+      if (!menuEl) {
+        menuEl = dom.createElement("ul", {classValues:"menu"});
+        uiContainerEl.appendChild( menuEl);
+      }
+      menuEl.addEventListener( "click", function (e) {
+        var menuOption="", selectedMenuItemEl=null;
+        if (e.target.tagName === "LI") {
+          selectedMenuItemEl = e.target;
+        } else if (e.target.parentNode.tagName === "LI") {
+          selectedMenuItemEl = e.target.parentNode;
+        } else return;
+        menuOption = selectedMenuItemEl.id;
+        switch (menuOption) {
+          case "createTestData":
+            app.createTestData();
+            break;
+          case "clearDatabase":
+            if (app.clearDatabase) {
+              app.clearDatabase();
+            } else {
+              Object.keys( bUSINESSoBJECT.classes).forEach( function (className) {
+                app.storageManager.clearData( bUSINESSoBJECT.classes[className]);
+              });
+            }
+            break;
+          default:  // a model class has been selected
+            const className = selectedMenuItemEl.id;
+            vIEW.refreshUI( className +"-M");
+        }
+      });
+      for (const className of Object.keys( bUSINESSoBJECT.classes)) {
+        if (!menuEl.querySelector("li#"+ className)) {
+          const liEl = dom.createElement("li", {
+            id: className,
+            content:"Manage "+ className.toLowerCase() +" data"
+          });
+          menuEl.appendChild( liEl);
+        }
+      }
+      if (app.createTestData) {
+        if (!menuEl.querySelector("li#createTestData")) {
+          const liEl = dom.createElement("li", {
+            id:"createTestData",
+            content:"Create test data"
+          });
+          menuEl.appendChild( liEl);
+        }
+      }
+      if (!menuEl.querySelector("li#clearDatabase")) {
+        const liEl = dom.createElement("li", {
+          id:"clearDatabase",
+          content:"Clear database"
+        });
+        menuEl.appendChild( liEl);
+      }
+    }
+    function setupManageDataUI( className) {
+      var manageUiEl = document.querySelector("section.UI#"+ className +"-M"),
+          footerEl = document.querySelector("html>body>footer"),
+          menuEl=null, liEl=null;
+      if (!manageUiEl) {
+        manageUiEl = dom.createElement("section", { classValues:"UI",
+          id: className +"-M",
+          content:"<h1>Manage "+ className.toLowerCase() +" data</h1>"
+        });
+        if (footerEl) {
+          document.body.insertBefore( manageUiEl, footerEl);
+        } else {
+          document.body.appendChild( manageUiEl);
+        }
+      }
+      menuEl = manageUiEl.querySelector("ul.menu");
+      if (!menuEl) {
+        menuEl = document.createElement("ul");
+        menuEl.className = "menu";
+        manageUiEl.appendChild( menuEl);
+      }
+      ["R","C","U","D"].forEach( function (crudCode) {
+        var inbetween = (crudCode !== "R") ? " a " : " ",
+            suffix = (crudCode === "R") ? "s" : "";
+        liEl = dom.createMenuItem({
+          id: className +"-"+ crudCode ,
+          content: vIEW.crudVerbs[crudCode] + inbetween +
+              className.toLowerCase() +" record"+ suffix
+        });
+        menuEl.appendChild( liEl);
+      });
+      menuEl.addEventListener( "click", function (e) {
+        var selectedMenuItemEl=null;
+        if (e.target.tagName === "LI") {
+          selectedMenuItemEl = e.target;
+        } else if (e.target.parentNode.tagName === "LI") {
+          selectedMenuItemEl = e.target.parentNode;
+        } else return;
+        const sepPos = selectedMenuItemEl.id.indexOf('-');
+        const className = selectedMenuItemEl.id.substr( 0, sepPos);
+        const crudCode = selectedMenuItemEl.id.substr( sepPos+1);
+        vIEW.refreshUI( className +"-"+ crudCode);
+      });
+      manageUiEl.appendChild( dom.createBackButton({
+          label:"Back to main menu",
+          handler: function () { vIEW.refreshUI("AppStart");}
+      }));
+    }
+    setupStartUI();
+    for (const className of Object.keys( bUSINESSoBJECT.classes)) {
+      const modelClass = bUSINESSoBJECT.classes[className];
+      const ViewClass = vIEW.classes[className+"View"] ??
+                          new vIEW({modelClass: modelClass});
+      // set up the CRUD menu UI page
+      setupManageDataUI( className);
+      ["R","C","U","D"].forEach( function (crudCode) {
+        var viewSlots={};
+        switch (crudCode) {
+          case "R":  //================ RETRIEVE ==========================
+            viewSlots.userActions = {
+              "back": function () { vIEW.refreshUI( className +"-M");}
+            };
+            break;
+          case "C":  //================ CREATE ============================
+            viewSlots.userActions = {
+              "createRecord": function (slots) {
+                  app.storageManager.add( modelClass, slots);},
+              "back": function () { vIEW.refreshUI( className +"-M");}
+            };
+            break;
+          case "U":  //================ UPDATE ============================
+            viewSlots.userActions = {
+              "setViewModelObject": function (id) {  // ON object selection
+                  ViewClass.instances["U"].setModelObject( id);},
+              "updateRecord": function (id, slots) {
+                  app.storageManager.update( modelClass, id, slots);},
+              "back": function () { vIEW.refreshUI( className +"-M");}
+            };
+            break;
+          case "D":  //================ DELETE ============================
+            viewSlots.userActions = {
+              "setViewModelObject": function (id) {  // ON object selection
+                  ViewClass.instances["D"].setModelObject( id);},
+              "deleteRecord": function (id) {
+                  app.storageManager.destroy( modelClass, id);},
+              "back": function () { vIEW.refreshUI( className +"-M");}
+            };
+            break;
+        }
+        // create and render view
+        viewSlots.viewMode = crudCode;
+        ViewClass.create( viewSlots).render();
+      });
+    }
+    vIEW.refreshUI("AppStart");
+  }
+  static refreshUI( userInterfaceId) {
+    var i=0, selectEl=null, formEl=null, uiPages = vIEW.uiPages;
+    var sepPos = userInterfaceId.indexOf('-');
+    var className = userInterfaceId.substr( 0, sepPos);
+    var opCode = userInterfaceId.substr( sepPos+1);
+    var modelClass = bUSINESSoBJECT.classes[className];
+    // store the UI elements in a cache variable
+    if (!uiPages) uiPages = document.querySelectorAll("section.UI");
+    for (i=0; i < uiPages.length; i++) {
+      if (uiPages[i].id === userInterfaceId) {
+        uiPages[i].style.display = "block";
+      } else {
+        uiPages[i].style.display = "none";
+      }
+    }
+    switch (opCode) {
+      case "M":
+        break;
+      case "R":
+        app.storageManager.retrieveAll( modelClass,
+            function () {vIEW.fillTable( className);});
+        break;
+      case "U":
+        formEl = document.querySelector("section#"+ className +"-U > form");
+        formEl.reset();
+        selectEl = formEl["select"+ className];
+        app.storageManager.retrieveAll( modelClass,
+            function () {
+              dom.fillSelectWithOptionsFromEntityTable( selectEl,
+                  modelClass.instances,
+                  modelClass.idAttribute,
+                  modelClass.attributesToDisplayInLists);
+            });
+        break;
+      case "D":
+        formEl = document.querySelector("section#"+ className +"-D > form");
+        formEl.reset();
+        selectEl = formEl["select"+ className];
+        app.storageManager.retrieveAll( modelClass,
+            function () {
+              dom.fillSelectWithOptionsFromEntityTable( selectEl,
+                  modelClass.instances,
+                  modelClass.idAttribute,
+                  modelClass.attributesToDisplayInLists);
+            });
+        break;
+    }
+  }
+  static fillTable( className) {
+    var mc = bUSINESSoBJECT.classes[className],
+        columns=[], keys=[], obj=null,
+        rowEl=null, i=0, nmrOfInstances=0;
+    var tblEl = document.querySelector("html>body>section#"+ className +"-R>table");
+    if (!tblEl) {
+      console.log("No table in "+ className +"-R user interface section found!");
+      return;
+    }
+    if (!(tblEl.tBodies[0] && tblEl.tHead && tblEl.tHead.rows[0])) {
+      console.log("Table in "+ className +"-R user interface section " +
+          "does not have the required structure!");
+      return;
+    }
+    tblEl.tBodies[0].innerHTML = "";
+    columns = tblEl.tHead.rows[0].cells;
+    keys = Object.keys( mc.instances);
+    nmrOfInstances = keys.length;
+    for (i=0; i < nmrOfInstances; i++) {
+      obj = mc.instances[keys[i]];
+      rowEl = tblEl.tBodies[0].insertRow(-1);
+      // create cell content for each column
+      Array.prototype.forEach.call( columns, function (col) {
+        var cellContent="", properties=[], propSep="",
+            dataBinding = col.getAttribute("data-bind");
+        if (!dataBinding) {
+          console.log("A column in the table in the "+ className +
+              "-R UI page does not have any data binding!");
+          return;
+        }
+        if (dataBinding.indexOf(" ") === -1) {  // single field column
+          properties = [dataBinding];
+        } else {  // field group column
+          properties = dataBinding.split(" ");
+        }
+        propSep = col.getAttribute("data-separator") || ", ";
+        properties.forEach( function (prop, k) {
+          var cont, range = mc.properties[prop].range;
+          if (obj[prop] === undefined) return;
+          if (range === "Date") {
+            cont = dom.createTime( obj[prop]).outerHTML;
+          } else {
+            cont = obj.getValAsString( prop);
+          }
+          if (k===0) cellContent = cont;
+          else cellContent += propSep + cont;
+        });
+        rowEl.insertCell(-1).innerHTML = cellContent;
+      });
+      //TODO add edit and delete buttons
+    }
+  }
+}
+vIEW.classes = {};  // a map of all view classes defined per model class
+vIEW.crudVerbs = {'R':'Retrieve/List', 'C':'Create', 'U':'Update', 'D':'Delete'};
+
+export default vIEW;
