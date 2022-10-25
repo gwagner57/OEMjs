@@ -17,15 +17,13 @@
     .info {color: blue;}
     .okay {color: green;}
   </style>
-  <!-- Basic libraries -->
-  <script src="../lib/browserShims.js"></script>
-  <script src="../lib/dom.mjs"></script>
-  <script src="test.js"></script>
 </head>
 <body>
  <h1>bUSINESSoBJECT Test Suite 02: Constraint Validation</h1>
 
  <script type="module">
+ import dom from "../lib/dom.mjs";
+ import {test, showSuccessMessage} from "./test.js";
  import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
 
  /****************************************
@@ -34,7 +32,7 @@
  try {
    class Publisher extends bUSINESSoBJECT {
      constructor({name, address}) {
-       super(name);
+       super( name);
        this.address = address;
      }
    }
@@ -47,7 +45,7 @@
 
    class Book extends bUSINESSoBJECT {
      constructor({isbn, title, year, publisher, edition}) {
-       super(isbn);
+       super( isbn);
        this.title = title;
        this.year = year;
        if (publisher) this.publisher = publisher;
@@ -66,6 +64,7 @@
      "edition": {range: "PositiveInteger", optional: true}
    }
    Book.setup();
+
    //*** Test 1 ***************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 1: Valid data"}));
    try {
@@ -124,6 +123,7 @@
    }
    //*** Test 6 ***************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 6: Referential Integrity"}));
+   bUSINESSoBJECT.areConstraintsToBeChecked = true;
    try {
      let p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
      let b6 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, publisher:"Spring"});

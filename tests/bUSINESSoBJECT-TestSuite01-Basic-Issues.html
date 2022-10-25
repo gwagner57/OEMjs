@@ -17,15 +17,13 @@
     .info {color: blue;}
     .okay {color: green;}
   </style>
-  <!-- Basic libraries -->
-  <script src="../lib/browserShims.js"></script>
-  <script src="../lib/dom.mjs"></script>
-  <script src="test.js"></script>
 </head>
 <body>
  <h1>bUSINESSoBJECT Test Suite 01: Basic Issues</h1>
 
  <script type="module">
+ import dom from "../lib/dom.mjs";
+ import {test, showSuccessMessage} from "./test.js";
  import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
 
  /****************************************

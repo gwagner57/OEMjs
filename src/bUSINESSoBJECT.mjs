@@ -257,7 +257,7 @@
          get() { return this["_"+p]; },
          set( val) {
            if (bUSINESSoBJECT.areConstraintsToBeChecked) {
-             const validationResults = dt.check( p, propDecl, val, {checkRefInt:false});
+             const validationResults = dt.check( p, propDecl, val, {checkRefInt:true});
              if (validationResults[0] instanceof NoConstraintViolation) {
                this["_"+p] = validationResults[0].checkedValue;
              } else {
