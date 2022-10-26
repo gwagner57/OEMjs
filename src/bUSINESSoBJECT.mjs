@@ -37,6 +37,7 @@
    MandatoryValueConstraintViolation, UniquenessConstraintViolation,
    ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
    from "./constraint-violation-error-types.mjs";
+ import eNUMERATION from "./eNUMERATION.mjs";
 
  class bUSINESSoBJECT {
   constructor( id) {
@@ -239,14 +240,14 @@
      Class.instances = {};
      // collect all names of BO classes in a map
      dt.classes[Class.name] = Class;
-     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes)];
+     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes), ...Object.keys( eNUMERATION)];
      // pre-process all property definitions
      for (const p of Object.keys( propDefs)) {
        const propDecl = propDefs[p],
              range = propDecl.range;
        // check if property definition includes a range declaration
        if (!range) throw Error(`No range defined for property ${p} of class ${Class.name}`);
-       else if (!admissibleRanges.includes( range))
+       else if (!admissibleRanges.includes( range) && !(range instanceof eNUMERATION))
            throw Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
        // establish standard ID attribute
        if (propDecl.isIdAttribute) Class.idAttribute = p;

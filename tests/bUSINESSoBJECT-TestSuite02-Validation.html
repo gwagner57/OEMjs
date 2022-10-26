@@ -24,12 +24,16 @@
  <script type="module">
  import dom from "../lib/dom.mjs";
  import {test, showSuccessMessage} from "./test.js";
+ import eNUMERATION from "../src/eNUMERATION.mjs";
  import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
 
  /****************************************
  *** Test code **************************
  ****************************************/
  try {
+   const BookCategoryEL = new eNUMERATION("BookCategoryEL", ["novel","biography",
+     "textbook","other"]);
+
    class Publisher extends bUSINESSoBJECT {
      constructor({name, address}) {
        super( name);
@@ -44,12 +48,13 @@
    Publisher.setup();
 
    class Book extends bUSINESSoBJECT {
-     constructor({isbn, title, year, publisher, edition}) {
+     constructor({isbn, title, year, publisher, edition, category}) {
        super( isbn);
        this.title = title;
        this.year = year;
        if (publisher) this.publisher = publisher;
        if (edition) this.edition = edition;
+       if (category) this.category = category;
      }
    }
 
@@ -61,7 +66,8 @@
      "title": {range: "NonEmptyString", min: 2, max: 50},
      "year": {range: "Integer", min: 1459, max: () => (new Date()).getFullYear() + 1},
      "publisher": {range: "Publisher", optional: true},
-     "edition": {range: "PositiveInteger", optional: true}
+     "edition": {range:"PositiveInteger", optional: true},
+     "category": {range: BookCategoryEL, optional: true}
    }
    Book.setup();
 
@@ -122,8 +128,25 @@
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
    }
    //*** Test 6 ***************************
-   document.body.appendChild(dom.createElement("h2", {content: "Test 6: Referential Integrity"}));
+   document.body.appendChild(dom.createElement("h2", {content: "Test 6: Enumeration Attribute"}));
    bUSINESSoBJECT.areConstraintsToBeChecked = true;
+   try {
+     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 2022, category: 2});
+     document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
+   } catch (e) {
+     document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
+     document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
+   }
+   try {
+     // the value 5 exceeds the defined enumeration literals for category
+     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 2022, category: 5});
+     document.body.appendChild(dom.createElement("p", {content: "FAILED! ConstraintViolation not recognized."}));
+   } catch (e) {
+     document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
+     document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
+   }
+   //*** Test 7 ***************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 7: Referential Integrity"}));
    try {
      let p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
      let b6 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, publisher:"Spring"});
@@ -132,8 +155,11 @@
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
      test("Should be a ReferentialIntegrityConstraintViolation", e.constructor.name === "ReferentialIntegrityConstraintViolation");
-     if (test.okay) showSuccessMessage();
-     else test.okay = true;  // reset test.okay
+     if (test.okay) {
+       document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
+     } else {
+       document.body.appendChild(dom.createElement("p", {content: "FAILED! Wrong type of ConstraintViolation."}));
+     }
    }
  } catch (e) {
    console.log( e.constructor.name +": "+ e.message);

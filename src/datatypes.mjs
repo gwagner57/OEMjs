@@ -466,8 +466,7 @@ const dt = {
         }
       }
     } else {
-      if (typeof eNUMERATION === "object" &&
-          (range instanceof eNUMERATION || typeof range === "string" && eNUMERATION[range])) {
+      if (range instanceof eNUMERATION || typeof range === "string" && eNUMERATION[range]) {
         if (typeof range === "string") range = eNUMERATION[range];
         for (const v of valuesToCheck) {
           if (!Number.isInteger(v) || v < 1 || v > range.MAX) {

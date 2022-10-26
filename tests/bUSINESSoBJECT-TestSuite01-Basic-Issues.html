@@ -24,12 +24,16 @@
  <script type="module">
  import dom from "../lib/dom.mjs";
  import {test, showSuccessMessage} from "./test.js";
+ import eNUMERATION from "../src/eNUMERATION.mjs";
  import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
 
  /****************************************
  *** Test code **************************
  ****************************************/
  try {
+   const BookCategoryEL = new eNUMERATION("BookCategoryEL", ["novel","biography",
+     "textbook","other"]);
+
    class Publisher extends bUSINESSoBJECT {
      constructor ({name, address}) {
        super( name);
@@ -43,12 +47,13 @@
    Publisher.setup();
 
    class Book extends bUSINESSoBJECT {
-     constructor ({isbn, title, year, publisher, edition}) {
+     constructor ({isbn, title, year, publisher, edition, category}) {
        super( isbn);
        this.title = title;
        this.year = year;
        if (publisher) this.publisher = publisher;
        if (edition) this.edition = edition;
+       if (category) this.category = category;
      }
    }
    Book.properties = {
@@ -57,7 +62,8 @@
      "title": {range:"NonEmptyString", min: 2, max: 50},
      "year": {range:"Integer", min: 1459, max: () => (new Date()).getFullYear() + 1},
      "publisher": {range:"Publisher", optional: true},
-     "edition": {range:"PositiveInteger", optional: true}
+     "edition": {range:"PositiveInteger", optional: true},
+     "category": {range: BookCategoryEL, optional: true}
    }
    Book.setup();
    //*** Test 1 ***************************
@@ -79,7 +85,15 @@
    else test.okay = true;  // reset test.okay
 
    //*** Test 3 ***********************************************************
-   document.body.appendChild(dom.createElement("h2", {content: "Test 3: Associations / Reference Properties"}));
+   document.body.appendChild(dom.createElement("h2", {content: "Test 3: Enumeration Attributes"}));
+   // create book object with publisher object reference
+   var b3 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, category: BookCategoryEL.NOVEL});
+   test("b3.category should be 1 (= BookCategoryEL.NOVEL)", b3.category === 1);
+   if (test.okay) showSuccessMessage();
+   else test.okay = true;  // reset test.okay
+
+   //*** Test 4 ***********************************************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 4: Associations / Reference Properties"}));
    var p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
    // create book object with publisher object reference
    var b4 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, publisher: p1});
