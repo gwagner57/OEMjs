@@ -302,10 +302,12 @@ const dt = {
         condition: value => typeof value === "number" && value>0 && value<1},
     "Date": {phrase:"an ISO date string (or a JS Date value)",
         condition: value => value instanceof Date,
-        str2val: s => new Date(s)},
+        str2val: s => new Date(s),
+        val2str: d => d.toISOString().substring(0,10)},
     "DateTime": {phrase:"an ISO date-time string (or a JS Date value)",
         condition: value => value instanceof Date,
-        str2val: s => new Date(s)},
+        str2val: s => new Date(s),
+        val2str: d => d.toISOString()},
     "Boolean": {phrase:"a Boolean value (true/'yes' or false/'no')",
         condition: value => typeof value === "boolean",
         str2val: s => ["true","yes"].includes(s) ? true :
@@ -314,6 +316,10 @@ const dt = {
   isOfType( value, Type) {
     const cond = dt.dataTypes[Type]?.condition;
     return cond !== undefined && cond( value);
+  },
+  // https://stackoverflow.com/questions/526559/testing-if-something-is-a-class-in-javascript
+  isClass( C) {
+    return typeof C === "function" && C.prototype !== undefined;
   },
   range2JsDataType( range) {
     var jsDataType="";
@@ -462,8 +468,7 @@ const dt = {
         }
       }
     } else {
-      if (typeof eNUMERATION === "object" &&
-          (range instanceof eNUMERATION || typeof range === "string" && eNUMERATION[range])) {
+      if (range instanceof eNUMERATION || typeof range === "string" && eNUMERATION[range]) {
         if (typeof range === "string") range = eNUMERATION[range];
         for (const v of valuesToCheck) {
           if (!Number.isInteger(v) || v < 1 || v > range.MAX) {

@@ -1,3 +1,4 @@
+import dom from "../lib/dom.mjs";
 
 function test( message, condition) {
   if (!condition) {
@@ -19,3 +20,5 @@ function showInfo(txt) {
 }
 
 test.okay = true;
+
+export {test, showSuccessMessage};

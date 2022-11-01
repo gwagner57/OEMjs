@@ -37,6 +37,7 @@
    MandatoryValueConstraintViolation, UniquenessConstraintViolation,
    ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
    from "./constraint-violation-error-types.mjs";
+ import eNUMERATION from "./eNUMERATION.mjs";
 
  class bUSINESSoBJECT {
   constructor( id) {
@@ -105,21 +106,25 @@
   }
   // construct a storage serialization/representation of an instance
   toRecord() {
-    var obj = this, rec = {}, propDecl = {}, valuesToConvert = [], range, val;
-    Object.keys(obj).forEach(function (p) {
-      if (obj[p] !== undefined) {
-        val = obj[p];
-        propDecl = obj.constructor.properties[p];
-        range = propDecl.range;
+    const obj = this, rec={};
+    var valuesToConvert=[];
+    for (const p of Object.keys( obj)) {
+      if (p.charAt(0) === "_" && obj[p] !== undefined) {
+        const val = obj[p];
+        // remove underscore prefix from internal property name
+        const prop = p.substr(1);
+        const propDecl = obj.constructor.properties[prop];
+        const range = propDecl.range;
+        // create a list of values to convert
         if (propDecl.maxCard && propDecl.maxCard > 1) {
-          if (range.constructor && range.constructor === bUSINESSoBJECT) { // object reference(s)
-            if (Array.isArray(val)) {
-              valuesToConvert = val.slice(0);  // clone;
+          if (val instanceof bUSINESSoBJECT) { // object reference(s)
+            if (Array.isArray( val)) {
+              valuesToConvert = [...val];  // clone;
             } else {  // val is a map from ID refs to obj refs
               valuesToConvert = Object.values(val);
             }
-          } else if (Array.isArray(val)) {
-            valuesToConvert = val.slice(0);  // clone;
+          } else if (Array.isArray( val)) {
+            valuesToConvert = [...val];  // clone;
           } else console.log("Invalid non-array collection in toRecord!");
         } else {  // maxCard=1
           valuesToConvert = [val];
@@ -127,23 +132,25 @@
         valuesToConvert.forEach(function (v, i) {
           // alternatively: enum literals as labels
           // if (range instanceof eNUMERATION) rec[p] = range.labels[val-1];
-          if (["number", "string", "boolean"].includes(typeof (v)) || !v) {
-            valuesToConvert[i] = String(v);
+          if (["number","string","boolean"].includes( typeof v)) {
+            valuesToConvert[i] = v;
           } else if (range === "Date") {
-            valuesToConvert[i] = util.createIsoDateString(v);
-          } else if (range.constructor && range.constructor === bUSINESSoBJECT) { // object reference(s)
-            valuesToConvert[i] = v.id;
-          } else if (Array.isArray(v)) {  // JSON-compatible array
-            valuesToConvert[i] = v.slice(0);  // clone
-          } else valuesToConvert[i] = JSON.stringify(v);
+            valuesToConvert[i] = dt.dataTypes["Date"].val2str( v);
+          } else if (v instanceof bUSINESSoBJECT) { // replace object reference with ID ref.
+            // get ID attribute of referenced class
+            const idAttr = v.constructor.idAttribute || "id";
+            valuesToConvert[i] = v[idAttr];
+          } else if (Array.isArray( v)) {  // JSON-compatible array
+            valuesToConvert[i] = [...v];  // clone
+          } else valuesToConvert[i] = JSON.stringify( v);
         });
         if (!propDecl.maxCard || propDecl.maxCard <= 1) {
-          rec[p] = valuesToConvert[0];
+          rec[prop] = valuesToConvert[0];
         } else {
-          rec[p] = valuesToConvert;
+          rec[prop] = valuesToConvert;
         }
       }
-    });
+    }
     return rec;
   }
   /***************************************************/
@@ -239,14 +246,14 @@
      Class.instances = {};
      // collect all names of BO classes in a map
      dt.classes[Class.name] = Class;
-     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes)];
+     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes), ...Object.keys( eNUMERATION)];
      // pre-process all property definitions
      for (const p of Object.keys( propDefs)) {
        const propDecl = propDefs[p],
              range = propDecl.range;
        // check if property definition includes a range declaration
        if (!range) throw Error(`No range defined for property ${p} of class ${Class.name}`);
-       else if (!admissibleRanges.includes( range))
+       else if (!admissibleRanges.includes( range) && !(range instanceof eNUMERATION))
            throw Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
        // establish standard ID attribute
        if (propDecl.isIdAttribute) Class.idAttribute = p;
@@ -257,7 +264,7 @@
          get() { return this["_"+p]; },
          set( val) {
            if (bUSINESSoBJECT.areConstraintsToBeChecked) {
-             const validationResults = dt.check( p, propDecl, val, {checkRefInt:false});
+             const validationResults = dt.check( p, propDecl, val, {checkRefInt:true});
              if (validationResults[0] instanceof NoConstraintViolation) {
                this["_"+p] = validationResults[0].checkedValue;
              } else {
