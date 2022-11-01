@@ -40,7 +40,7 @@
  import eNUMERATION from "./eNUMERATION.mjs";
 
  class bUSINESSoBJECT {
-  constructor( id) {
+  constructor(id, slot) {
     const Class = this.constructor,
           idAttr = Class.idAttribute ?? "id";
     if (id) this[idAttr] = id;

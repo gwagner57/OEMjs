@@ -16,7 +16,6 @@
  * MAX           the size of the enumeration
  */
 /* globals eNUMERATION */
-export 
 class eNUMERATION {
   constructor(name, enumArg) {
     var lbl="", LBL="";
