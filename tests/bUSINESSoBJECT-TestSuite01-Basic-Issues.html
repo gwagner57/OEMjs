@@ -1,0 +1,102 @@
+<!-- ===========================================================================
+ * Test cLASS
+ * @copyright Copyright 2016 Gerd Wagner, BTU (Germany) + ODU (VA, USA)
+ * @author Gerd Wagner
+ * @license The MIT License (MIT)
+================================================================================ -->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>bUSINESSoBJECT Test Suite 01</title>
+  <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
+  <link rel="stylesheet" href="../css/normalize.css" />
+  <style>
+    body { padding: 8px;}
+    .failure {color: red;}
+    .info {color: blue;}
+    .okay {color: green;}
+  </style>
+  <!-- Basic libraries -->
+  <script src="../lib/browserShims.js"></script>
+  <script src="../lib/dom.mjs"></script>
+  <script src="test.js"></script>
+</head>
+<body>
+ <h1>bUSINESSoBJECT Test Suite 01: Basic Issues</h1>
+
+ <script type="module">
+ import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
+
+ /****************************************
+ *** Test code **************************
+ ****************************************/
+ try {
+   class Publisher extends bUSINESSoBJECT {
+     constructor ({name, address}) {
+       super( name);
+       this.address = address;
+     }
+   }
+   Publisher.properties = {
+     "name": {range:"NonEmptyString", isIdAttribute: true, min: 2, max: 20},
+     "address": {range:"NonEmptyString", min: 5, max: 50},
+   }
+   Publisher.setup();
+
+   class Book extends bUSINESSoBJECT {
+     constructor ({isbn, title, year, publisher, edition}) {
+       super( isbn);
+       this.title = title;
+       this.year = year;
+       if (publisher) this.publisher = publisher;
+       if (edition) this.edition = edition;
+     }
+   }
+   Book.properties = {
+     "isbn": {range:"NonEmptyString", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
+              patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+     "title": {range:"NonEmptyString", min: 2, max: 50},
+     "year": {range:"Integer", min: 1459, max: () => (new Date()).getFullYear() + 1},
+     "publisher": {range:"Publisher", optional: true},
+     "edition": {range:"PositiveInteger", optional: true}
+   }
+   Book.setup();
+   //*** Test 1 ***************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 1: Creating objects"}));
+   const b1 = new Book({isbn: "123456789X", title:"Hello world", year: 2022});
+   test("b1.isbn should be 123456789X", b1.isbn === "123456789X");
+   test("b1.title should be 'Hello world'", b1.title === "Hello world");
+   test("b1.year should be 2022", b1.year === 2022);
+   if (test.okay) showSuccessMessage();
+   else test.okay = true;  // reset test.okay
+
+   //*** Test 2 ***********************************************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 2: Accessing properties"}));
+   b1.title = "New title";
+   test("b1.title should be 'New title'", b1.title === "New title");
+   b1.year = 2010;
+   test("b1.year should be 2010", b1.year === 2010);
+   if (test.okay) showSuccessMessage();
+   else test.okay = true;  // reset test.okay
+
+   //*** Test 3 ***********************************************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 3: Associations / Reference Properties"}));
+   var p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
+   // create book object with publisher object reference
+   var b4 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, publisher: p1});
+   test("b4.publisher.name should be 'Springer'", b4.publisher.name === "Springer");
+   // create book object with publisher ID reference
+   var b5 = new Book({isbn: "123456789X", title:"Hello world", year: 2022, publisher:"Springer"});
+   test("b5.publisher.name should be 'Springer'", b5.publisher.name === "Springer");
+   if (test.okay) showSuccessMessage();
+   else test.okay = true;  // reset test.okay
+
+ } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+ }
+
+ </script>
+</body>
+</html>
+

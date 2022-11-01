@@ -1,5 +1,13 @@
+import eNUMERATION from "./eNUMERATION.mjs";
+import { NoConstraintViolation,
+  MandatoryValueConstraintViolation, RangeConstraintViolation,
+  StringLengthConstraintViolation, IntervalConstraintViolation,
+  PatternConstraintViolation, CardinalityConstraintViolation, UniquenessConstraintViolation,
+  ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
+  from "./constraint-violation-error-types.mjs";
+
 const dt = {
-  Classes: {},
+  classes: {},
   // define lists of datatype names
   stringTypes: ["String","NonEmptyString","Identifier","Email","URL","PhoneNumber"],
   integerTypes: ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber","Year"],
@@ -122,9 +130,9 @@ const dt = {
         }
         break;
       default:
-        if (type in dt.Classes) {
+        if (type in dt.classes) {
           for (const str of valueStringsToParse) {  // should be an ID
-            const obj = dt.Classes[type].instances[str];
+            const obj = dt.classes[type].instances[str];
             if (!obj) {
               value = undefined; break;
             } else {
@@ -156,8 +164,8 @@ const dt = {
     if (!type) type = dt.determineDatatype( value);
     // make sure value is an array
     if (!Array.isArray( value)) {
-      if (type in dt.Classes && typeof value === "object" &&
-          Object.keys(value).every( id => value[id] instanceof dt.Classes[type])) {
+      if (type in dt.classes && typeof value === "object" &&
+          Object.keys(value).every( id => value[id] instanceof dt.classes[type])) {
         // value is an entity table (a map from IDs to objects of a certain type)
         valuesToStringify = Object.keys( value);
       } else {
@@ -170,7 +178,7 @@ const dt = {
       string = valuesToStringify.toString();
     } else if (dt.isNumberType( type)) {
       string = valuesToStringify.toString();
-    } else if (type in dt.Classes) {
+    } else if (type in dt.classes) {
       string = valuesToStringify.toString();
     } else {
       switch (type) {
@@ -228,8 +236,8 @@ const dt = {
                 range = columnDeclarations[attr].range;
           if (!range) {
             constrVio.push( new Error(`The attribute declaration of ${attr} does not declare the range of the attribute!`));
-          } else if (!dt.supportedDatatypes.includes( range)  && !(range in dt.Classes)) {
-            constrVio.push( new Error(`The range ${range} is not a supported datatype or class! ${JSON.stringify(dt.Classes)}`));
+          } else if (!dt.supportedDatatypes.includes( range)  && !(range in dt.classes)) {
+            constrVio.push( new Error(`The range ${range} is not a supported datatype or class! ${JSON.stringify(dt.classes)}`));
           }
           constrVio.push( ...dt.check( attr, columnDeclarations[attr], val));
           if (constrVio[constrVio.length-1] instanceof NoConstraintViolation) {
@@ -242,7 +250,7 @@ const dt = {
   },
   registerModelClasses( listOfClassNames) {  // Make classes accessible via their name
     for (const className of listOfClassNames) {
-      dt.Classes[className] = dt.getClassByName( className);
+      dt.classes[className] = dt.getClassByName( className);
     }
   },
   dataTypes: {
@@ -368,7 +376,8 @@ const dt = {
     var constrVio=[], valuesToCheck=[],
         minCard = decl.minCard !== "undefined" ? decl.minCard : (decl.optional ? 0 : 1),  // by default, an attribute is mandatory
         maxCard = decl.maxCard || 1,  // by default, an attribute is single-valued
-        min = decl.min, max = decl.max,
+        min = typeof decl.min === "function" ? decl.min() : decl.min,
+        max = typeof decl.max === "function" ? decl.max() : decl.max,
         range = decl.range,
         msg = decl.patternMessage || "",
         pattern = decl.pattern;
@@ -392,13 +401,13 @@ const dt = {
           valuesToCheck = val.map( a => [...a]);
         } else if (range === "Record" && val.every( el => typeof el === "object")) {
           valuesToCheck = val.map( function (o) {return {...o};});
-        } else if (typeof range === "string" && range in dt.Classes &&
-              val.every( el => String(el) in dt.Classes[range].instances)) {
-          valuesToCheck = val.map( id => dt.Classes[range].instances[id]);
+        } else if (typeof range === "string" && range in dt.classes &&
+              val.every( el => String(el) in dt.classes[range].instances)) {
+          valuesToCheck = val.map( id => dt.classes[range].instances[id]);
         } else {
           valuesToCheck = val;
         }
-      } else if (typeof val === "object" && typeof range === "string" && dt.Classes[range]) {
+      } else if (typeof val === "object" && typeof range === "string" && range in dt.classes) {
         if (!decl.isOrdered) {  // convert map to array list
           valuesToCheck = Object.keys( val).map( id => val[id]);
         } else {
@@ -469,8 +478,8 @@ const dt = {
                 " is not in value list "+ range.toString()));
           }
         }
-      } else if (typeof range === "string" && range in dt.Classes) {
-        const RangeClass = dt.Classes[range];
+      } else if (typeof range === "string" && range in dt.classes) {
+        const RangeClass = dt.classes[range];
         valuesToCheck.forEach( function (v, i) {
           var recFldNames=[], propDefs={};
           if (!RangeClass.isComplexDatatype && !(v instanceof RangeClass)) {
@@ -481,7 +490,7 @@ const dt = {
               // convert IdRef to object reference
               if (RangeClass.instances[v]) {
                 valuesToCheck[i] = RangeClass.instances[String(v)];
-              } else if (optParams && optParams.checkRefInt) {
+              } else if (optParams?.checkRefInt) {
                 constrVio.push( new ReferentialIntegrityConstraintViolation("The value " + v +
                     " of attribute '"+ attr +"' is not an ID of any " + range + " object!"));
               }
@@ -514,7 +523,7 @@ const dt = {
           var rangeTypes=[];
           rangeTypes = range.split("|");
           if (typeof v === "object") {
-            if (!rangeTypes.some( rc => v instanceof dt.Classes[rc])) {
+            if (!rangeTypes.some( rc => v instanceof dt.classes[rc])) {
               constrVio.push( new ReferentialIntegrityConstraintViolation("The object " + JSON.stringify(v) +
                   " is not an instance of any class from " + range + "!"));
             } else {
@@ -522,7 +531,7 @@ const dt = {
             }
           } else if (Number.isInteger(v)) {
             if (optParams && optParams.checkRefInt) {
-              if (!dt.Classes[range].instances[String(v)]) {
+              if (!dt.classes[range].instances[String(v)]) {
                 constrVio.push( new ReferentialIntegrityConstraintViolation(
                     `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
               }
@@ -646,3 +655,5 @@ const dt = {
 dt.numericTypes = dt.integerTypes.concat( dt.decimalTypes);
 dt.primitiveDatatypes = [...dt.stringTypes, ...dt.numericTypes, ...dt.otherPrimitiveTypes];
 dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.structuredDataTypes];
+
+export default dt;

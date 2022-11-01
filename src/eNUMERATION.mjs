@@ -16,7 +16,8 @@
  * MAX           the size of the enumeration
  */
 /* globals eNUMERATION */
-export class eNUMERATION {
+export 
+class eNUMERATION {
   constructor(name, enumArg) {
     var lbl="", LBL="";
     if (typeof name !== "string") {
@@ -75,3 +76,5 @@ export class eNUMERATION {
     return a.filter(e => { return e > 0 && e <= this.MAX }).map( enumInt => this.enumLitNames[enumInt-1], this).join(", ");
   }
 }
+
+export default eNUMERATION;
