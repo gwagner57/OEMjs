@@ -91,7 +91,6 @@
    test("b3.category should be 1 (= BookCategoryEL.NOVEL)", b3.category === 1);
    if (test.okay) showSuccessMessage();
    else test.okay = true;  // reset test.okay
-
    //*** Test 4 ***********************************************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 4: Associations / Reference Properties"}));
    var p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
@@ -103,6 +102,12 @@
    test("b5.publisher.name should be 'Springer'", b5.publisher.name === "Springer");
    if (test.okay) showSuccessMessage();
    else test.okay = true;  // reset test.okay
+   //*** Test 5 ***********************************************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 5: toRecord"}));
+   test("b4.toRecord() failed", JSON.stringify( b4.toRecord()) ===
+       JSON.stringify({isbn:"123456789X", title:"Hello world", year: 2022, publisher:"Springer"}));
+   if (test.okay) showSuccessMessage();
+   else console.log(JSON.stringify( b4.toRecord()));
 
  } catch (e) {
    console.log( e.constructor.name +": "+ e.message);
