@@ -7,7 +7,8 @@
  */
 import util from "../../lib/util.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
-import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
+// import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
+import { openDB, deleteDB } from "../../lib/esm.mjs"
 
 /**
  * Library class providing storage management methods for a number of predefined

@@ -45,7 +45,7 @@ describe("bUSINESSoBJECT tests", () => {
     let b1 = new Book({ isbn: "123456789X", title: "Hello world", year: 2022 });
 
     it("Check initial Book information", () => {
-      expect(b1.id).to.be.equal("123456789X");
+      expect(b1.isbn).to.be.equal("123456789X");
       expect(b1.title).to.be.equal("Hello world");
       expect(b1.year).to.be.equal(2022);
     })
@@ -58,31 +58,36 @@ describe("bUSINESSoBJECT tests", () => {
     });
 
     const p1 = new Publisher({ name: "Springer", address: "Berlin, Germany" });
+
+    it("Publisher values correct", () => {
+      expect(p1.name).to.be.equal("Springer");
+      expect(p1.address).to.be.equal("Berlin, Germany");
+    });
+
     const b4 = new Book({ isbn: "123456789X", title: "Hello world", year: 2022, publisher: p1 });
     const b5 = new Book({ isbn: "123456789X", title: "Hello world", year: 2022, publisher: "Springer" });
-    it("Value assignement", () => {
+    it("Publisher from Book should be Springer", () => {
       expect(b4.publisher.name).to.be.equal("Springer");
       expect(b5.publisher.name).to.be.equal("Springer");
-
     });
   });
 
   describe("Validation", () => {
     it("Valid data", () => {
       let b1 = new Book({ isbn: "123456789X", title: "Hello world", year: 2022 });
-      expect(b1.id).to.be.equal("123456789X");
+      expect(b1.isbn).to.be.equal("123456789X");
     });
 
     it("Flawed ISBN", () => {
-      expect(() => new Book({ isbn: "123456789", title: "Hello world", year: 2022 })).to.throw(Error, "");
+      expect(() => new Book({ isbn: "123456789", title: "Hello world", year: 2022 })).to.throw(Error, "The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!");
     });
 
     it("Missing value for ISBN", () => {
-      expect(() => new Book({ title: "Hello world", year: 2022 })).to.throw(Error, "");
+      expect(() => new Book({ title: "Hello world", year: 2022 })).to.throw(Error, "A value for isbn is required!");
     });
 
     it("Wrong year", () => {
-      expect(() => new Book({ isbn: "123456789X", title: "Hello world", year: 1222 })).to.throw(Error, "");
+      expect(() => new Book({ isbn: "123456789X", title: "Hello world", year: 1222 })).to.throw(Error, "year must be greater than 1459");
     });
 
     it("Deactivate Validation", () => {
