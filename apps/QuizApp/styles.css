@@ -1,0 +1,19 @@
+label > div {
+  display: inline-block;
+  vertical-align: top;
+}
+div.fldGrp > label {
+  margin-right: 1em;
+}
+div.fldGrp > label > input {
+  margin-right: 0.5em;
+}
+div.fld  {
+    margin-bottom: 0.5em;
+}
+div.fld > label > div > * {
+    margin: 0;
+}
+div.fld > label > div > p {
+    margin: 0 0 0.3em 0.4em;
+}

@@ -6,7 +6,7 @@
  * @license The MIT License (MIT)
  */
 /**
- * Meta-class for creating view classes (based on model classes), with fields, 
+ * Class for creating view objects (based on model classes), with fields,
  * normally bound to model class properties, and methods, typically implementing
  * user actions and possibly bound to model class methods.
  *
@@ -14,20 +14,17 @@
  * in the constructor parameter "fields", which is processed into a "fields" map 
  * of field definition records and a field order definition list "fieldOrder".
  * The constructor parameter "fields" may contain additional fields not based 
- * on model properties. When a view class is created without a "fields" argument, 
+ * on model properties. When a view is created without a "fields" argument,
  * the view fields are generated from the labeled properties of the underlying 
  * model class(es).
  * 
- * Each model class Xyz has a data management view class XyzView, which is 
- * stored in the map entry vIEW.classes["XyzView"]. Such a view class has
- * four standard instances, each of them identified by one of the characters 
- * "C", "R", "U" and "D", corresponding to the four CRUD operations.
+ * A view can be rendered for a CRUD operation identified by one of the characters
+ * "C", "R", "U" and "D".
  * 
- * A view is created (as an instance of a view class) with a specific mode 
- * (often corresponding to a CRUD operation). A view is a logical representation 
+ * A view is a logical representation
  * of the interaction elements of a data management UI, which in most cases 
  * correspond to properties and methods of a model class. It consists of fields 
- * (as defined by its view class) and of user action types, which are either 
+ * and of user action types, which are either
  * pre-defined (like "back", "createRecord", "setViewModelObject", updateRecord"
  * and "deleteRecord") or developer-defined. 
  * 
@@ -68,24 +65,19 @@
  * @class
  */
 import dt from "../datatypes.mjs";
+import eNUMERATION from "../eNUMERATION.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import dom from "../../lib/dom.mjs";
 
 
 class vIEW {
-  constructor({modelClass, modelClasses, fields, methods, validateOnInput}) {
-    var properties = {};
-    if (!(Object.getPrototypeOf( modelClass) === bUSINESSoBJECT)) {
-      throw new Error(
-          "A view class must be bound to one or more model classes!");
-    }
+  constructor({modelClass, modelClasses, fields, methods, validateOnInput, fieldGroupSeparator}) {
     if (modelClass) {
+      if (Object.getPrototypeOf( modelClass) !== bUSINESSoBJECT) {
+        throw new Error("A view class must be bound to one or more model classes!");
+      }
       this.modelClass = modelClass;
-      properties = this.modelClass.properties;
-      // add new view class to the "classes" map
-      vIEW.classes[this.modelClass.name + "View"] = this;
-      // define a property for holding all instances of the view class
-      this.instances = {};
+      const propDecl = this.modelClass.properties;
       /* process the "fields" array into a "fields" map of field definition records
        * and a field order definition array "fieldOrder" 
        */
@@ -97,17 +89,17 @@ class vIEW {
           var elList = [], fieldNames = [];
           if (!Array.isArray(el)) elList = [el];  // single field
           else elList = el;  // field group
-          // elList is an array of property field names or field definitions
-          // fldList is a corresponding array of field names
+          // elList is an array list of property field names or field definitions
+          // fieldNames is a corresponding array list of field names
           for (const fld of elList) {
             if (typeof fld === "string") {  // property field
-              if (!properties[fld]) {
+              if (!propDecl[fld]) {
                 throw new Error(
                     `Property view field ${fld} does not correspond to a model property!`);
               }  // else
               this.fields[fld] = {
-                label: properties[fld].label,
-                range: properties[fld].range,
+                label: propDecl[fld].label,
+                range: propDecl[fld].range,
                 inputOutputMode: "I/O"
               };
               fieldNames.push(fld);
@@ -123,8 +115,7 @@ class vIEW {
               }
               if (fld.optional) this.fields[fld.name].optional = true;
             } else {  // neither property field nor defined field
-              throw new Error(
-                  "Neither property field nor defined field: " + fld);
+              throw new Error(`Neither property field nor defined field: ${fld}`);
             }
           }
           if (elList.length === 1) this.fieldOrder.push(fieldNames[0]);
@@ -132,18 +123,24 @@ class vIEW {
         }
       } else {  // no view fields provided in construction slots
         // create view fields from labeled model properties
-        Object.keys(properties).forEach(function (prop, i) {
-          if (properties[prop].label) {
-            this.fieldOrder[this.fieldOrder.length] = Object.keys(properties)[i];
-            this.fields[prop] = properties[prop];
+        for (const prop of Object.keys(propDecl)) {
+          if (propDecl[prop].label) {
+            this.fields[prop] = propDecl[prop];
             this.fields[prop]["inputOutputMode"] = "I/O";
           }
-        }, this);
+        }
+        if (Object.keys(this.fields).length === 0) {
+          throw new Error(`No labeled properties defined for ${modelClass.name}`);
+        }
+        this.fieldOrder = [...Object.keys(this.fields)];
       }
     } else this.modelClasses = modelClasses;  //TODO: views based on multiple model classes
     this.maxNmrOfEnumLitForChoiceButtonRendering = 7;
     this.validateOnInput = validateOnInput ?? true;
     this.methods = methods ?? {};
+    this.dataBinding = {"C":{},"R":{},"U":{},"D":{}};
+    this.fldValues = {};
+    this.fieldGroupSeparator = fieldGroupSeparator || ", ";
   }
   /**
    * Render the DOM structure of a view
@@ -151,25 +148,23 @@ class vIEW {
    * @method 
    * @author Gerd Wagner
    */
-  render() {
-    var mc = this.type.modelClass,
-        stdIdRange = mc.properties[mc.idAttribute].range,
-        viewMode = this.viewMode,
-        view = this,
-        userActions = this.userActions,
-        displayAttribs = mc.attributesToDisplayInLists,
-        fields = this.type.fields,  // fields map
-        fieldOrder = this.type.fieldOrder,  // field order array
+  render({viewType, modelObject, userActions, showAllFields}) {
+    var view = this,
+        fields = this.fields,  // fields map
+        fieldOrder = this.fieldOrder,  // field order array
         // a map for storing the bindings of UI elems to view fields
         dataBinding = this.dataBinding, 
-        validateOnInput = this.type.validateOnInput,
+        validateOnInput = this.validateOnInput,
         fldGrpSep = this.fieldGroupSeparator,
-        maxELforButton = 
-            this.type.maxNmrOfEnumLitForChoiceButtonRendering,
+        maxELforButton = this.maxNmrOfEnumLitForChoiceButtonRendering,
         uiContainerEl=null, footerEl=null, formEl=null, 
         columns=[], slots = {}, keys=[], 
         el=null, selectEl=null, rowEl=null,
         inbetween="", suffix="";
+    const mc = this.modelClass,
+          propDecl = mc.properties,
+          displayAttribs = mc.attributesToDisplayInLists,
+          stdIdRange = mc.properties[mc.idAttribute].range;
     /* ==================================================================== */
     /**
      * Create a labeled input field. When validation is not performed on input
@@ -179,35 +174,41 @@ class vIEW {
      * @method 
      */
     function createLabeledField( fld) {
-      var fldEl = null, lblEl = document.createElement("label"),
-          props = mc.properties;
+      var fldEl = null;
+      const lblEl = document.createElement("label");
       if (fields[fld].inputOutputMode === "O" ||
-          (viewMode === "U" && props[fld] && props[fld].isStandardId) || 
-          viewMode === "D") {
+          (viewType === "U" && propDecl[fld]?.isIdAttribute) ||
+          viewType === "D") {
         fldEl = document.createElement("output");        
       } else {
         fldEl = document.createElement("input");
         fldEl.type = "text";
         if (validateOnInput) {
           fldEl.addEventListener("input", function () {
-            fldEl.setCustomValidity( mc.check( fld, fldEl.value).message);
+            const constrVio = dt.check( fld, propDecl[fld], fldEl.value),
+                  msg = constrVio.length === 0 ? "" : constrVio[0].message;
+            fldEl.setCustomValidity( msg);
           });                         
-        } else if (viewMode === "C") {
+        } else if (viewType === "C") {
           fldEl.addEventListener("blur", function () {
-            fldEl.setCustomValidity( mc.check( fld, fldEl.value).message);
+            const constrVio = dt.check( fld, propDecl[fld], fldEl.value),
+                  msg = constrVio.length === 0 ? "" : constrVio[0].message;
+            fldEl.setCustomValidity( msg);
           });
         }
         fldEl.addEventListener("change", function () {
-          var v = fldEl.value;
-          if (!validateOnInput && viewMode === "U") {
-            fldEl.setCustomValidity( mc.check( fld, v).message);
+          const v = fldEl.value;
+          if (!validateOnInput && viewType === "U") {
+            const constrVio = dt.check( fld, propDecl[fld], fldEl.value),
+                  msg = constrVio.length === 0 ? "" : constrVio[0].message;
+            fldEl.setCustomValidity( msg);
           }
           // top-down data binding
           if (fldEl.validity.valid) view[fld] = v;
         });
       }
       // store data binding assignment of UI element to view field
-      dataBinding[viewMode][fld] = fldEl; 
+      dataBinding[viewType][fld] = fldEl;
       fldEl.name = fld;
       lblEl.textContent = fields[fld].label;
       lblEl.appendChild( fldEl);
@@ -218,9 +219,9 @@ class vIEW {
      * @method
      */
     function createLabeledYesNoField( fld) {
-      var fldEl = null, lblEl = document.createElement("label"),
-          decl = fields[fld];   // field declaration
-      if (decl.inputOutputMode === "O") {
+      var fldEl = null;
+      const lblEl = document.createElement("label");
+      if (fields[fld].inputOutputMode === "O") {
         fldEl = document.createElement("output");
       } else {
         fldEl = document.createElement("input");
@@ -248,7 +249,7 @@ class vIEW {
       containerEl.appendChild( el);
       containerEl.setAttribute("data-bind", fld);
       // store data binding assignment of UI element to view field
-      dataBinding[viewMode][fld] = containerEl; 
+      dataBinding[viewType][fld] = containerEl;
       // if maxCard is defined, use checkboxes
       if (mc.properties[fld].maxCard) {
         btnType = "checkbox";
@@ -305,7 +306,7 @@ class vIEW {
       lblEl.appendChild( selEl);
       selEl.setAttribute("data-bind", fld);
       // store data binding assignment of UI element to view field
-      dataBinding[viewMode][fld] = selEl; 
+      dataBinding[viewType][fld] = selEl;
       // if maxCard is defined, make a multi-selection list
       if (mc.properties[fld].maxCard) selEl.multiple = "multiple";
       if (range instanceof eNUMERATION) {
@@ -319,7 +320,7 @@ class vIEW {
       selEl.addEventListener("change", function () {
         // top-down data binding
         if (selEl.value !== "") {
-          if (cOMPLEXtYPE.isIntegerType( range)) {
+          if (dt.isIntegerType( range)) {
             view[fld] = parseInt( selEl.value);
             // increment by 1 for enumerations
             if (range instanceof eNUMERATION) view[fld]++;
@@ -339,23 +340,23 @@ class vIEW {
      * @method 
      */
     function createUiElemsForViewFields() {
-      fieldOrder.forEach( function (fldOrdEl) {
-        var range, fldList=[],
-            containerEl = document.createElement("div");
-        if (!Array.isArray( fldOrdEl)) {  
+      for (const fldOrdEl of fieldOrder) {
+        var containerEl = document.createElement("div"),
+            fields=[], range;
+        if (!Array.isArray( fldOrdEl)) {
           // single field
-          fldList = [fldOrdEl];
+          fields = [fldOrdEl];
         } else {
           // field group
           containerEl.className = "field-group";
-          fldList = fldOrdEl;
+          fields = fldOrdEl;
         }
-        fldList.forEach( function (fld) {
-          if (mc.properties[fld])  {  // property field
-            range = mc.properties[fld].range;
-            if (range instanceof eNUMERATION) {  // enumeration field
-              if (viewMode === "D") {
-                containerEl.className = "field";
+        for (const fld of fields) {
+          if (propDecl[fld])  {  // property field
+            range = propDecl[fld].range;
+            if (typeof eNUMERATION === "object" && range instanceof eNUMERATION) {  // enumeration field
+              if (viewType === "D") {
+                containerEl.className = "I-O-field";
                 containerEl.appendChild( createLabeledField( fld));
               } else {
                 if (range.MAX <= maxELforButton) {
@@ -368,38 +369,54 @@ class vIEW {
             } else if (range === "Boolean") {
               containerEl.appendChild( createLabeledYesNoField( fld));
             } else {  // string/numeric property field
-              containerEl.className = "field";
+              containerEl.className = "I-O-field";
               containerEl.appendChild( createLabeledField( fld));
             }
           } else {  // defined field
-            containerEl.className = "field";
+            containerEl.className = "I-O-field";
             containerEl.appendChild( createLabeledField( fld));
           }
-        });
+        }
         formEl.appendChild( containerEl);
-      });
+      }
     }
     /* ==================================================================== */
-    uiContainerEl = document.querySelector("html>body>section#" +  
-        mc.name +"-"+ this.viewMode);
+    if (modelObject) this.modelObject = modelObject;
+    this.userActions = userActions;
+    this.showAllFields = showAllFields;
+    // initialize view field values
+    for (const f of Object.keys( this.fields)) {
+      const val = modelObject ? modelObject[f] : undefined;
+      if (modelObject && val !== undefined) {
+        if (!Array.isArray(val)) {
+          this.fldValues[f] = dt.stringifyValue( val, propDecl[f].range);
+        } else this.fldValues[f] = val.slice();
+      } else if (propDecl[f]?.maxCard && propDecl[f]?.maxCard > 1) {
+        this.fldValues[f] = [];
+      } else this.fldValues[f] = "";
+    }
+    uiContainerEl = document.querySelector(`section#${mc.name}-${viewType}`);
     if (!uiContainerEl) {
-      inbetween = (this.viewMode !== "R") ? " a " : " ";
-      suffix = (this.viewMode === "R") ? "s" : "";
+      inbetween = (viewType !== "R") ? " a " : " ";
+      suffix = (viewType === "R") ? "s" : "";
       uiContainerEl = dom.createElement("section", {
-        id: mc.name +"-"+ this.viewMode,
+        id: mc.name +"-"+ viewType,
         classValues:"UI",
-        content:"<h1>"+ vIEW.crudVerbs[this.viewMode] + 
+        content:"<h1>"+ vIEW.crudVerbs[viewType] +
             inbetween + mc.name.toLowerCase() +
             " record"+ suffix +"</h1>"
       });
-      footerEl = document.querySelector("html>body>footer");
-      if (footerEl) {
+      const mainEl = document.querySelector("html>body>main"),
+            footerEl = document.querySelector("html>body>footer");
+      if (mainEl) {
+        mainEl.appendChild( uiContainerEl);
+      } else if (footerEl) {
         document.body.insertBefore( uiContainerEl, footerEl);
       } else {
         document.body.appendChild( uiContainerEl);
       }
  	  } 
-    if (this.viewMode !== "R") {
+    if (viewType !== "R") {
       formEl = uiContainerEl.querySelector("form");
       if (!formEl) formEl = dom.createElement("form");
       uiContainerEl.appendChild( formEl);
@@ -409,7 +426,7 @@ class vIEW {
         formEl.reset();
       });
     }
-    switch (this.viewMode) {
+    switch (viewType) {
     case "R":  //================ RETRIEVE ALL and LIST =================
       var tblEl = document.querySelector(
           "html>body>div#"+ mc.name +"-R>table");
@@ -436,7 +453,7 @@ class vIEW {
         var i=0, colHead="", fldList="",
             cellEl = rowEl.insertCell(-1);
         if (typeof(col) === "string") {  // property field
-          /* if (mc.properties[fld].range instanceof cOMPLEXdATAtYPE) */
+          /* if (propDecl[fld].range instanceof cOMPLEXdATAtYPE) */
           cellEl.textContent = fields[col].label;
           cellEl.setAttribute("data-bind", col);
         } else if (Array.isArray( col)) {  // field group
@@ -467,34 +484,37 @@ class vIEW {
           classValues: "button-group"
       }));
       // handle save button click events
-      formEl.submitButton.addEventListener("click", function () {
-        var slots = {}, elem, fName = '';
-        Object.keys( fields).forEach( function (f) {
-          if (mc.properties[f] &&
-              fields[f].inputOutputMode === "I/O") {
-            if (fields[f].optional && view[f] || !fields[f].optional) {
-              slots[f] = view[f];
-              if (!(fields[f].range instanceof eNUMERATION) &&
-                  !(fields[f].range instanceof eNTITYtYPE)) {
-                formEl[f].setCustomValidity( mc.check( f, slots[f]).message);
-              } else if (fields[f].range instanceof eNUMERATION) {
-                // browsers does not render validation of fieldset so we have to use
-                // the first input element instead, and call its setCustomValidity
-                elem = formEl.querySelector("[data-bind=" + f + "] input:first-of-type");
-                // it wasn't a field set with child input elements, so it must be
-                // a select element, with data-bind="property-name" attribute
-                if (elem === null) {
-                  elem = formEl.querySelector("select[data-bind=" + f + "]");
-                }
-                elem.setCustomValidity( mc.check( f, slots[f]).message);
+      formEl["submitButton"].addEventListener("click", function () {
+        var slots = {};
+        for (const f of Object.keys( fields)) {
+          if (propDecl[f] && fields[f].inputOutputMode === "I/O") {
+            const range = fields[f].range;
+            if (fields[f].optional && view.fldValues[f] || !fields[f].optional) {
+              // perform validation on save
+              slots[f] = view.fldValues[f];
+              if (!(range instanceof eNUMERATION) && !(range in dt.classes)) {
+                const constrVio = dt.check( f, propDecl[f], slots[f]),
+                      msg = constrVio.length === 0 ? "" : constrVio[0].message;
+                formEl[f].setCustomValidity( msg);
+              } else if (range instanceof eNUMERATION) {
+                /* Either a field set with child input elements, or
+                   a select element with attribute data-bind="property-name".
+                   Since browsers do not render validation of fieldset, we have to use
+                   the first input element instead, and call its setCustomValidity
+                */
+                const elem = formEl.querySelector(`[data-bind=${f}] input:first-of-type`) ||
+                           formEl.querySelector(`select[data-bind=${f}]`);
+                const constrVio = dt.check( f, propDecl[f], slots[f]),
+                      msg = constrVio.length === 0 ? "" : constrVio[0].message;
+                elem.setCustomValidity( msg);
               }
             }
           }
-        });
+        }
         if (formEl.checkValidity())  {
           userActions["createRecord"]( slots);
           // clear view slots, otherwise they are sent again even if the form is empty!
-          for (fName in slots) view[fName] = undefined;
+          for (const fName in slots) view.fldValues[fName] = undefined;
         }
       });
       break;
@@ -505,22 +525,22 @@ class vIEW {
           labelText:"Select "+ mc.name +": ",
           classValues: "select"
       };
-      el = dom.createLabeledSelectField( slots);  // div element
+      el = dom.createLabeledSelect( slots);  // div element
       formEl.appendChild( el);        
       selectEl = formEl[slots.name];
       // when an entity is selected, populate the form with its data
       selectEl.addEventListener("change", function () {
-        var i=0, id = selectEl.value,
-            formFields = formEl.elements;
+        const formFields = formEl.elements;
+        var id = selectEl.value;
         // reset form fields
         formEl.reset();
         // reset custom validity
-        for (i=0; i < formFields.length; i++) {
+        for (let i=0; i < formFields.length; i++) {
           formFields[i].setCustomValidity("");
         }
         // parse id if integer value
         if (id) {
-          if (cOMPLEXtYPE.isIntegerType( stdIdRange)) {
+          if (dt.isIntegerType( stdIdRange)) {
             id = parseInt( id);
           }
           // map UI event to a user action defined by the view
@@ -535,34 +555,35 @@ class vIEW {
         classValues: "button-group"
       }));
       // handle save button click events
-      formEl.submitButton.addEventListener("click", function () {
-        var slots={}, fName = '',
-            idProp = mc.idAttribute,
+      formEl["submitButton"].addEventListener("click", function () {
+        const idProp = mc.idAttribute;
+        var slots={},
             id = formEl[idProp].value;
-        Object.keys( fields).forEach( function (f) {
+        for (const f of Object.keys( fields)) {
           if (fields[f].inputOutputMode === "I/O" && f !== idProp) {
-            if (fields[f].optional && view[f] ||
-                !fields[f].optional) {
-              if (Array.isArray( view[f])) slots[f] = view[f].clone();  // clone array
-              else slots[f] = view[f];
+            if (fields[f].optional && view.fldValues[f] || !fields[f].optional) {
+              if (Array.isArray( view.fldValues[f])) {
+                slots[f] = [...view.fldValues[f]];  // clone
+              } else slots[f] = view.fldValues[f];
               // check constraints for non-select fields
               if (!(fields[f].range instanceof eNUMERATION) &&
-                  !(fields[f].range instanceof eNTITYtYPE)) {
-                formEl[f].setCustomValidity( 
-                    mc.check( f, slots[f]).message);
+                  !(fields[f].range in dt.classes)) {
+                const constrVio = dt.check( f, propDecl[f], slots[f]),
+                      msg = constrVio.length === 0 ? "" : constrVio[0].message;
+                formEl[f].setCustomValidity( msg);
               }
             } else {  // optional and no form field value
               slots[f] = undefined;  // map empty string to undefined
             }
           }
-        });
+        }
         if (formEl.checkValidity()) {
-          if (cOMPLEXtYPE.isIntegerType( stdIdRange)) id = parseInt( id);
+          if (dt.isIntegerType( stdIdRange)) id = parseInt( id);
           // map UI event to a user action defined by the view
           userActions["updateRecord"]( id, slots);
           // clearup old values, otherwise, values for fields of new object to update,
           // for the optional fields, are old values from other updated objects
-          for (fName in slots) view[fName] = undefined;
+          for (const fName in slots) view.fldValues[fName] = undefined;
         }
       });
       break;
@@ -573,14 +594,14 @@ class vIEW {
             name:"select"+ mc.name,
             labelText:"Select "+ mc.name +": "
         };
-        el = dom.createLabeledSelectField( slots);  // div element
+        el = dom.createLabeledSelect( slots);  // div element
         selectEl = el.querySelector('select');
         formEl.appendChild( el);        
         // when an object is selected, populate the form with its data
         selectEl.addEventListener("change", function () {
           var id = selectEl.value;
           if (id) {
-            if (cOMPLEXtYPE.isIntegerType( stdIdRange)) id = parseInt( id);
+            if (dt.isIntegerType( stdIdRange)) id = parseInt( id);
             // map UI event to a user action defined by the view
             userActions["setViewModelObject"](id);
           } else {
@@ -596,9 +617,9 @@ class vIEW {
         classValues: "button-group"
       }));
       // handle delete button click events
-      formEl.submitButton.addEventListener("click", function () {
+      formEl["submitButton"].addEventListener("click", function () {
         var id = formEl[mc.idAttribute].value;
-        if (cOMPLEXtYPE.isIntegerType( stdIdRange)) id = parseInt( id);
+        if (dt.isIntegerType( stdIdRange)) id = parseInt( id);
         // map UI event to a user action defined by the view
         userActions["deleteRecord"](id);
         if (selectEl && id) {
@@ -607,9 +628,9 @@ class vIEW {
       });
       break;
     }
-    if (this.viewMode !== "R" && userActions) {
+    if (viewType !== "R" && userActions) {
       // handle back button click events
-      formEl.backButton.addEventListener("click", userActions["back"]);      
+      formEl["backButton"].addEventListener("click", userActions["back"]);
     }
  	  //TODO: only for local storage???
 /*
@@ -627,13 +648,13 @@ class vIEW {
    */
   set( f, v) {
     var el=null, elems=null, i=0,
-        mc = this.type.modelClass,
-        properties = mc.properties,
+        mc = this.modelClass,
+        propDecl = mc.properties,
         fldGrpSep = this.fieldGroupSeparator,
-        range = properties[f].range,
-        uiEl = this.dataBinding[this.viewMode][f];
+        range = propDecl[f].range,
+        uiEl = this.dataBinding[viewType][f];
     if (v === undefined) {
-      if (properties[f] && properties[f].maxCard) v = [];
+      if (propDecl[f] && propDecl[f].maxCard) v = [];
       else v = "";
       this[f] = v;
       return;
@@ -680,74 +701,62 @@ class vIEW {
    * @param {string} id  the object's standard ID value
    */
   setModelObject( id) {
-    const modelClass = this.type.modelClass;
+    const modelClass = this.modelClass;
     this.modelObject = modelClass.instances[id];
     Object.keys( this.modelObject).forEach( function (prop) {
       // assign value if the view has a field based on the model property
-      if (this.type.fields[prop]) this.set( prop, this.modelObject[prop]);
+      if (this.fields[prop]) this.set( prop, this.modelObject[prop]);
     }, this);
   }
-  /**
-   * Factory method for creating new views as instances of a vIEW.
-   * While a vIEW class is bound to one or more model classes,
-   * a view object is bound to zero, one or more model objects.
-   * @method
-   * @author Gerd Wagner
-   * @return {object}  A new view object.
-   */
-  create({viewMode, modelObject, userActions, showAllFields, fieldGroupSeparator}) {
-    const properties = this.modelClass.properties;
-    // add predefined property "type" for direct type of view
-    const view = Object.create( this.methods, {
-                 "type": {value: this, writable: false, enumerable: true}});
-    // check CRUD mode parameter
-    if (!viewMode) view.viewMode = "O";  //TODO: Other???
-    else  if (["C","R","U","D"].indexOf( viewMode) === -1) {
-      throw new Error(`Attempt to create a ${this.modelClass.name} view with an invalid viewMode argument: ${viewMode}`);
-    } else view.viewMode = viewMode;
-    // in case of viewMode "U" and "D"
-    if (modelObject && modelObject.type !== this.modelClass) {
-      throw new Error("The view's model object must be an instance of the model class of its view class!");
-    }
-    view.userActions = userActions;
-    view.showAllFields = showAllFields;
-    view.modelObject = modelObject;
-    view.dataBinding = {"C":{},"R":{},"U":{},"D":{}};
-    view.fieldGroupSeparator = fieldGroupSeparator || ", ";
-    // initialize view fields
-    for (const f of Object.keys( view.type.fields)) {
-      var obj = view.modelObject,
-          val = obj ? obj[f] : undefined;
-      if (obj && val !== undefined) {
-        if (!Array.isArray(val)) {
-          view[f] = eNTITYtYPE.getValAsString( view.type.modelClass, f, val);
-        }
-        else view[f] = val.slice();
-      } else if (properties[f] && properties[f].maxCard) {
-        view[f] = [];
-      } else view[f] = "";
-    }
-    // store view
-    this.instances[view.viewMode] = view;
-    return view;
-  }
+
   static setupUI( app) {
     function setupStartUI() {
       var uiContainerEl = document.querySelector("#AppStart"),
+          mainEl = document.querySelector("html>body>main"),
           footerEl = document.querySelector("html>body>footer"),
-          menuEl = document.querySelector("ul.menu");
+          menuEl = document.querySelector("menu.start-menu");
       if (!uiContainerEl) {
         uiContainerEl = dom.createElement("section", {classValues:"UI", id:"AppStart",
             content:"<p>This app supports the following operations:</p>"});
-        if (footerEl) {
+        if (mainEl) {
+          mainEl.appendChild( uiContainerEl);
+        } else if (footerEl) {
           document.body.insertBefore( uiContainerEl, footerEl);
         } else {
           document.body.appendChild( uiContainerEl);
         }
       }
       if (!menuEl) {
-        menuEl = dom.createElement("ul", {classValues:"menu"});
+        menuEl = dom.createElement("menu", {classValues:"start-menu"});
         uiContainerEl.appendChild( menuEl);
+      }
+      for (const className of Object.keys( dt.classes)) {
+        if (!menuEl.querySelector("li#"+ className)) {
+          const liEl = dom.createElement("li", {id: className});
+          menuEl.appendChild( liEl);
+          const btnEl = dom.createElement("button", {
+            content:"Manage "+ className.toLowerCase() +" data"
+          });
+          liEl.appendChild( btnEl);
+        }
+      }
+      if (app.createTestData) {
+        if (!menuEl.querySelector("li#createTestData")) {
+          const liEl = dom.createElement("li", {id:"createTestData"});
+          menuEl.appendChild( liEl);
+          const btnEl = dom.createElement("button", {
+            content:"Create test data"
+          });
+          liEl.appendChild( btnEl);
+        }
+      }
+      if (!menuEl.querySelector("li#clearDatabase")) {
+        const liEl = dom.createElement("li", {id:"clearDatabase"});
+        menuEl.appendChild( liEl);
+        const btnEl = dom.createElement("button", {
+          content:"Clear database"
+        });
+        liEl.appendChild( btnEl);
       }
       menuEl.addEventListener( "click", function (e) {
         var menuOption="", selectedMenuItemEl=null;
@@ -765,44 +774,20 @@ class vIEW {
             if (app.clearDatabase) {
               app.clearDatabase();
             } else {
-              Object.keys( bUSINESSoBJECT.classes).forEach( function (className) {
-                app.storageManager.clearData( bUSINESSoBJECT.classes[className]);
+              Object.keys( dt.classes).forEach( function (className) {
+                app.storageManager.clearData( dt.classes[className]);
               });
             }
             break;
           default:  // a model class has been selected
             const className = selectedMenuItemEl.id;
-            vIEW.refreshUI( className +"-M");
+            vIEW.refreshUI( app, className +"-M");
         }
       });
-      for (const className of Object.keys( bUSINESSoBJECT.classes)) {
-        if (!menuEl.querySelector("li#"+ className)) {
-          const liEl = dom.createElement("li", {
-            id: className,
-            content:"Manage "+ className.toLowerCase() +" data"
-          });
-          menuEl.appendChild( liEl);
-        }
-      }
-      if (app.createTestData) {
-        if (!menuEl.querySelector("li#createTestData")) {
-          const liEl = dom.createElement("li", {
-            id:"createTestData",
-            content:"Create test data"
-          });
-          menuEl.appendChild( liEl);
-        }
-      }
-      if (!menuEl.querySelector("li#clearDatabase")) {
-        const liEl = dom.createElement("li", {
-          id:"clearDatabase",
-          content:"Clear database"
-        });
-        menuEl.appendChild( liEl);
-      }
     }
     function setupManageDataUI( className) {
       var manageUiEl = document.querySelector("section.UI#"+ className +"-M"),
+          mainEl = document.querySelector("html>body>main"),
           footerEl = document.querySelector("html>body>footer"),
           menuEl=null, liEl=null;
       if (!manageUiEl) {
@@ -810,19 +795,21 @@ class vIEW {
           id: className +"-M",
           content:"<h1>Manage "+ className.toLowerCase() +" data</h1>"
         });
-        if (footerEl) {
+        if (mainEl) {
+          mainEl.appendChild( manageUiEl);
+        } else if (footerEl) {
           document.body.insertBefore( manageUiEl, footerEl);
         } else {
           document.body.appendChild( manageUiEl);
         }
       }
-      menuEl = manageUiEl.querySelector("ul.menu");
+      menuEl = manageUiEl.querySelector("menu");
       if (!menuEl) {
-        menuEl = document.createElement("ul");
-        menuEl.className = "menu";
+        menuEl = document.createElement("menu");
+        menuEl.className = "manage-data-menu";
         manageUiEl.appendChild( menuEl);
       }
-      ["R","C","U","D"].forEach( function (crudCode) {
+      for (const crudCode of ["R","C","U","D"]) {
         var inbetween = (crudCode !== "R") ? " a " : " ",
             suffix = (crudCode === "R") ? "s" : "";
         liEl = dom.createMenuItem({
@@ -831,7 +818,7 @@ class vIEW {
               className.toLowerCase() +" record"+ suffix
         });
         menuEl.appendChild( liEl);
-      });
+      }
       menuEl.addEventListener( "click", function (e) {
         var selectedMenuItemEl=null;
         if (e.target.tagName === "LI") {
@@ -842,67 +829,66 @@ class vIEW {
         const sepPos = selectedMenuItemEl.id.indexOf('-');
         const className = selectedMenuItemEl.id.substr( 0, sepPos);
         const crudCode = selectedMenuItemEl.id.substr( sepPos+1);
-        vIEW.refreshUI( className +"-"+ crudCode);
+        vIEW.refreshUI( app, className +"-"+ crudCode);
       });
       manageUiEl.appendChild( dom.createBackButton({
           label:"Back to main menu",
-          handler: function () { vIEW.refreshUI("AppStart");}
+          handler: function () { vIEW.refreshUI( app, "AppStart");}
       }));
     }
     setupStartUI();
-    for (const className of Object.keys( bUSINESSoBJECT.classes)) {
-      const modelClass = bUSINESSoBJECT.classes[className];
-      const ViewClass = vIEW.classes[className+"View"] ??
-                          new vIEW({modelClass: modelClass});
+    for (const className of Object.keys( dt.classes)) {
+      const modelClass = dt.classes[className];
+      const view = new vIEW({modelClass: modelClass});
       // set up the CRUD menu UI page
       setupManageDataUI( className);
-      ["R","C","U","D"].forEach( function (crudCode) {
+      for (const crudCode of ["R","C","U","D"]) {
         var viewSlots={};
         switch (crudCode) {
           case "R":  //================ RETRIEVE ==========================
             viewSlots.userActions = {
-              "back": function () { vIEW.refreshUI( className +"-M");}
+              "back": function () { vIEW.refreshUI( app, className +"-M");}
             };
             break;
           case "C":  //================ CREATE ============================
             viewSlots.userActions = {
               "createRecord": function (slots) {
-                  app.storageManager.add( modelClass, slots);},
-              "back": function () { vIEW.refreshUI( className +"-M");}
+                app.storageManager.add( modelClass, slots);},
+              "back": function () { vIEW.refreshUI( app, className +"-M");}
             };
             break;
           case "U":  //================ UPDATE ============================
             viewSlots.userActions = {
               "setViewModelObject": function (id) {  // ON object selection
-                  ViewClass.instances["U"].setModelObject( id);},
+                view.setModelObject( id);},
               "updateRecord": function (id, slots) {
-                  app.storageManager.update( modelClass, id, slots);},
-              "back": function () { vIEW.refreshUI( className +"-M");}
+                app.storageManager.update( modelClass, id, slots);},
+              "back": function () { vIEW.refreshUI( app, className +"-M");}
             };
             break;
           case "D":  //================ DELETE ============================
             viewSlots.userActions = {
               "setViewModelObject": function (id) {  // ON object selection
-                  ViewClass.instances["D"].setModelObject( id);},
+                view.setModelObject( id);},
               "deleteRecord": function (id) {
-                  app.storageManager.destroy( modelClass, id);},
-              "back": function () { vIEW.refreshUI( className +"-M");}
+                app.storageManager.destroy( modelClass, id);},
+              "back": function () { vIEW.refreshUI( app, className +"-M");}
             };
             break;
         }
-        // create and render view
-        viewSlots.viewMode = crudCode;
-        ViewClass.create( viewSlots).render();
-      });
+        // render view
+        viewSlots.viewType = crudCode;
+        view.render( viewSlots);
+      }
     }
-    vIEW.refreshUI("AppStart");
+    vIEW.refreshUI( app, "AppStart");
   }
-  static refreshUI( userInterfaceId) {
+  static refreshUI( app, userInterfaceId) {
     var i=0, selectEl=null, formEl=null, uiPages = vIEW.uiPages;
     var sepPos = userInterfaceId.indexOf('-');
     var className = userInterfaceId.substr( 0, sepPos);
     var opCode = userInterfaceId.substr( sepPos+1);
-    var modelClass = bUSINESSoBJECT.classes[className];
+    var modelClass = dt.classes[className];
     // store the UI elements in a cache variable
     if (!uiPages) uiPages = document.querySelectorAll("section.UI");
     for (i=0; i < uiPages.length; i++) {
@@ -946,7 +932,7 @@ class vIEW {
     }
   }
   static fillTable( className) {
-    var mc = bUSINESSoBJECT.classes[className],
+    var mc = dt.classes[className],
         columns=[], keys=[], obj=null,
         rowEl=null, i=0, nmrOfInstances=0;
     var tblEl = document.querySelector("html>body>section#"+ className +"-R>table");
@@ -998,7 +984,6 @@ class vIEW {
     }
   }
 }
-vIEW.classes = {};  // a map of all view classes defined per model class
 vIEW.crudVerbs = {'R':'Retrieve/List', 'C':'Create', 'U':'Update', 'D':'Delete'};
 
 export default vIEW;
