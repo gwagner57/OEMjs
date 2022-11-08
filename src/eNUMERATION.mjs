@@ -16,7 +16,6 @@
  * MAX           the size of the enumeration
  */
 /* globals eNUMERATION */
-
 class eNUMERATION {
   constructor(name, enumArg) {
     var lbl="", LBL="";
@@ -73,7 +72,7 @@ class eNUMERATION {
    *****************************************************************************/
   enumIndexesToNames( a) {
     if (!Array.isArray(a)) throw new Error("The argument must be an Array!");
-    return a.map( enumInt => this.enumLitNames[enumInt-1], this).join(", ");
+    return a.filter(e => { return e > 0 && e <= this.MAX }).map( enumInt => this.enumLitNames[enumInt-1], this).join(", ");
   }
 }
 

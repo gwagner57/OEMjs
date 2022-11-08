@@ -1,52 +1,57 @@
- /*******************************************************************************
- * bUSINESSoBJECT allows defining constructor-based business object classes and
- * class hierarchies based on a declarative description of the form:
- *
- *   class Book extends bUSINESSoBJECT {
- *     constructor ({isbn, title, year, edition}) {
- *       super( isbn);
- *       this.title = title;
- *       this.year = year;
- *       this.edition = edition;
- *     }
- *   }
- *   Book.properties = {
- *     "isbn": {range:"NonEmptyString", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
- *           patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
- *     "title": {range:"NonEmptyString", min: 2, max: 50}, 
- *     "year": {range:"Integer", min: 1459, max: util.nextYear()},
- *     "edition": {range:"PositiveInteger", optional: true}
- *   }
- *   Book.setup();  // to be invoked for every BO class
- *   var b1 = new Book({isbn:"123456789X", title:"Hello world", year: 2022});
- *   // test if direct instance
- *   if (b1.constructor.name === "Book") ...
- *   // test if instance
- *   if (b1 instanceof Book) ...
- *
- * When a model class has no standard ID attribute declared with "isIdAttribute: true", 
- * it inherits an auto-integer "id" attribute as its standard ID attribute from bUSINESSoBJECT.
- *
- * @copyright Copyright 2015-2022 Gerd Wagner, Chair of Internet Technology,
- *   Brandenburg University of Technology, Germany.
- * @license The MIT License (MIT)
- * @author Gerd Wagner
- ******************************************************************************/
- import dt from "./datatypes.mjs";
- import { NoConstraintViolation,
-   MandatoryValueConstraintViolation, UniquenessConstraintViolation,
-   ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
-   from "./constraint-violation-error-types.mjs";
- import eNUMERATION from "./eNUMERATION.mjs";
+/*******************************************************************************
+* bUSINESSoBJECT allows defining constructor-based business object classes and
+* class hierarchies based on a declarative description of the form:
+*
+*   class Book extends bUSINESSoBJECT {
+*     constructor ({isbn, title, year, edition}) {
+*       super( isbn);
+*       this.title = title;
+*       this.year = year;
+*       this.edition = edition;
+*     }
+*   }
+*   Book.properties = {
+*     "isbn": {range:"NonEmptyString", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
+*           patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+*     "title": {range:"NonEmptyString", min: 2, max: 50}, 
+*     "year": {range:"Integer", min: 1459, max: util.nextYear()},
+*     "edition": {range:"PositiveInteger", optional: true}
+*   }
+*   Book.setup();  // to be invoked for every BO class
+*   var b1 = new Book({isbn:"123456789X", title:"Hello world", year: 2022});
+*   // test if direct instance
+*   if (b1.constructor.name === "Book") ...
+*   // test if instance
+*   if (b1 instanceof Book) ...
+*
+* When a model class has no standard ID attribute declared with "isIdAttribute: true", 
+* it inherits an auto-integer "id" attribute as its standard ID attribute from bUSINESSoBJECT.
+*
+* @copyright Copyright 2015-2022 Gerd Wagner, Chair of Internet Technology,
+*   Brandenburg University of Technology, Germany.
+* @license The MIT License (MIT)
+* @author Gerd Wagner
+******************************************************************************/
+import dt from "./datatypes.mjs";
+import util from "./../lib/util.mjs"
+import {
+  NoConstraintViolation,
+  MandatoryValueConstraintViolation, UniquenessConstraintViolation,
+  ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation, RangeConstraintViolation, IntervalConstraintViolation
+}
+  from "./constraint-violation-error-types.mjs";
+import eNUMERATION from "./eNUMERATION.mjs";
 
- class bUSINESSoBJECT {
-  constructor( id) {
+class bUSINESSoBJECT {
+  constructor(id, slots) {
     const Class = this.constructor,
-          idAttr = Class.idAttribute ?? "id";
-    if (id) this[idAttr] = id;
+      idAttr = Class.idAttribute ?? "id";
+    if (id) {
+      this[idAttr] = id;
+    }
     else if (Class.idAttribute && !Class.properties[Class.idAttribute].autoId) {
       throw new MandatoryValueConstraintViolation(
-          `A value for ${Class.idAttribute} is required!`)
+        `A value for ${Class.idAttribute} is required!`)
     } else {  // assign auto-ID
       if (typeof Class.getAutoId === "function") {
         this[idAttr] = Class.getAutoId();
@@ -61,43 +66,165 @@
       // add new object to the population of the class (represented as a map) 
       Class.instances[this[idAttr]] = this;
     }
+
+    this.#callEntityType(Class);
+    this.#callComplexType(Class);
   }
+
+  /**
+   * Call constraint validation for eNTITYtYPE
+   * 
+   * @param {*} slots The entity type definition slots
+   */
+  #callEntityType(slots) {
+    // check entity property range and set standardIdAttr
+    Object.keys(slots.properties).forEach(function (prop) {
+      var propDeclParams = slots.properties[prop];  // the property declaration slots
+      // check if properties are declared with a range
+      if (!propDeclParams.range && !(slots.methods && "validate" in slots.methods))
+        throw new MandatoryValueConstraintViolation(
+          "Either there must be a range definition for " + prop +
+          " or its's range must be checked in a 'validate' method!");
+      if (propDeclParams.isStandardId || prop === "id") this.standardIdAttr = prop;
+    }, this);
+  }
+
+  /**
+   * Call constraint validation for cOMPLEXtYPE
+   * 
+   * @param {*} slots Complex type definition slots
+   */
+  #callComplexType(slots) {
+    let k = 0, keys = [], supertype = null,
+      featureMaps = { properties: {}, methods: {}, staticMethods: {} };
+    this.name = slots.name;
+    Object.keys(slots.properties).forEach(function (prop) {
+      var propDeclParams = slots.properties[prop],  // the property declaration slots
+        minCard = propDeclParams.minCard,
+        maxCard = propDeclParams.maxCard;
+      // check if cardinality constraints are meaningful
+      if (minCard !== undefined) {
+        if (!Number.isInteger(minCard) || minCard < 0)
+          throw new RangeConstraintViolation(
+            "minCard value for " + prop + " (" + JSON.stringify(maxCard)) +
+          ") is invalid (not a non-negative integer)!";
+        else if (maxCard === undefined)
+          throw new MandatoryValueConstraintViolation(
+            "A minCard value for " + prop + " is only meaningful when maxCard is defined!");
+        else if ((!Number.isInteger(maxCard) || maxCard < 2) && maxCard !== Infinity)
+          throw new NoConstraintViolation(
+            "Invalid maxCard value for " + prop + ": " + JSON.stringify(maxCard));
+        else if (maxCard < minCard)
+          throw new IntervalConstraintViolation(
+            "maxCard value for " + prop + " is less than mincCard value! ");
+      }
+      // add default property descriptors
+      featureMaps.properties[prop] = util.mergeObjects(
+        { writable: true, enumerable: true }, propDeclParams);
+    }, this);
+    slots.properties = featureMaps.properties;  // completed own properties
+    if (slots.supertype || slots.supertypes) {  // non-root class
+      if (slots.supertype) {  // only one direct supertype
+        this.supertype = slots.supertype;
+        Object.keys(featureMaps).forEach(function (fMK) {  // fMK = featureMapKey
+          // assign featureMap by merging the supertype's featureMap with own featureMap
+          if (slots[fMK] || slots.supertype[fMK]) {
+            this[fMK] = util.mergeObjects(slots.supertype[fMK], slots[fMK]);
+          }
+        }, this);  // passing the context object reference to the forEach function
+      } else {  // multiple direct supertypes
+        this.supertypes = slots.supertypes;
+        // collect features for all featureMaps of all direct supertypes
+        for (k = 0; k < slots.supertypes.length; k++) {
+          supertype = slots.supertypes[k];
+          Object.keys(featureMaps).forEach(function (fMK) {
+            if (supertype[fMK]) {
+              featureMaps[fMK] = util.mergeObjects(featureMaps[fMK], supertype[fMK]);
+            }
+          });
+        }
+        Object.keys(featureMaps).forEach(function (fMK) {
+          // assign merged featureMaps to object
+          if (featureMaps[fMK] || slots[fMK]) {
+            this[fMK] = util.mergeObjects(featureMaps[fMK], slots[fMK]);
+          }
+        }, this);  // passing the context object reference to the forEach function
+      }
+    } else {  // root class (no inheritance)
+      Object.keys(featureMaps).forEach(function (fMK) {
+        // assign merged featureMaps to object
+        if (slots[fMK]) this[fMK] = slots[fMK];
+      }, this);  // passing the context object reference to the forEach function
+      if (!this.methods) this.methods = {};
+      // add predefined methods such that they will be inherited by all subtypes
+      // **************************************************
+      this.methods.toString = function () {
+        // **************************************************
+        var str = this.type.name + "{ ";
+        Object.keys(this).forEach(function (key, i) {
+          if (key !== "type" && this[key] !== undefined) {
+            str += (i > 0 ? ", " : "") + key + ": " + this[key];
+          }
+        }, this);  // pass context object reference
+        return str + "}";
+      };
+      // **************************************************
+      this.methods.set = function (prop, val) {
+        // **************************************************
+        // this = object
+        var constrViol = this.type.check(prop, val);
+        if (constrViol instanceof NoConstraintViolation) {
+          this[prop] = constrViol.checkedValue;
+        } else {
+          throw constrViol;
+        }
+      };
+      // **************************************************
+      this.methods.isInstanceOf = function (Type) {
+        // **************************************************
+        if (!this.type) return false;  // not an object created by a factory
+        else return (this.type === Type) ? true :
+          this.type.isSubTypeOf(Type);
+      };
+    }
+  }
+
   /****************************************************
   ** overwrite and improve the standard toString method
   *****************************************************/
   toString() {
     const Class = this.constructor,
-          idAttr = Class.idAttribute;
-    var str1="", str2="", i=0;
+      idAttr = Class.idAttribute;
+    var str1 = "", str2 = "", i = 0;
     if (this.name) str1 = this.name;
     else {
       str1 = Class.shortLabel || Class.name;
-      if (this[idAttr]) str1 += ":"+ this[idAttr];
+      if (this[idAttr]) str1 += ":" + this[idAttr];
     }
     str2 = "{ ";
-    for (const p of Object.keys( this)) {
+    for (const p of Object.keys(this)) {
       const propDecl = Class.properties[p],
-            propLabel = propDecl?.shortLabel || propDecl?.label || p;
+        propLabel = propDecl?.shortLabel || propDecl?.label || p;
       var valStr = "";
       // is p a declared reference property?
       if (propDecl && typeof propDecl.range === "string" && propDecl.range in bUSINESSoBJECT.classes) {
         // is the property multi-valued?
         if (propDecl.maxCard && propDecl.maxCard > 1) {
-          if (Array.isArray( this[p])) {
-            valStr = this[p].map( o => o[idAttr]).toString();
-          } else valStr = JSON.stringify( Object.keys( this[p]));
+          if (Array.isArray(this[p])) {
+            valStr = this[p].map(o => o[idAttr]).toString();
+          } else valStr = JSON.stringify(Object.keys(this[p]));
         } else {  // if the property is single-valued
-          valStr = String( this[p][idAttr]);
+          valStr = String(this[p][idAttr]);
         }
       } else if (typeof this[p] === "function") {
         // the slot is an instance-level method slot
         valStr = "a function";
       } else {  // the slot is an attribute slot or an undeclared reference property slot
-        valStr = JSON.stringify( this[p]);
+        valStr = JSON.stringify(this[p]);
       }
       if (this[p] !== undefined) {
-        str2 += (i>0 ? ", " : "") + propLabel +": "+ valStr;
-        i = i+1;
+        str2 += (i > 0 ? ", " : "") + propLabel + ": " + valStr;
+        i = i + 1;
       }
     }
     str2 += "}";
@@ -106,9 +233,9 @@
   }
   // construct a storage serialization/representation of an instance
   toRecord() {
-    const obj = this, rec={};
-    var valuesToConvert=[];
-    for (const p of Object.keys( obj)) {
+    const obj = this, rec = {};
+    var valuesToConvert = [];
+    for (const p of Object.keys(obj)) {
       if (p.charAt(0) === "_" && obj[p] !== undefined) {
         const val = obj[p];
         // remove underscore prefix from internal property name
@@ -118,31 +245,31 @@
         // create a list of values to convert
         if (propDecl.maxCard && propDecl.maxCard > 1) {
           if (val instanceof bUSINESSoBJECT) { // object reference(s)
-            if (Array.isArray( val)) {
+            if (Array.isArray(val)) {
               valuesToConvert = [...val];  // clone;
             } else {  // val is a map from ID refs to obj refs
-              valuesToConvert = Object.values( val);
+              valuesToConvert = Object.values(val);
             }
-          } else if (Array.isArray( val)) {
+          } else if (Array.isArray(val)) {
             valuesToConvert = [...val];  // clone;
           } else console.log("Invalid non-array collection in toRecord!");
         } else {  // maxCard=1
           valuesToConvert = [val];
         }
-        valuesToConvert.forEach( function (v,i) {
+        valuesToConvert.forEach(function (v, i) {
           // alternatively: enum literals as labels
           // if (range instanceof eNUMERATION) rec[p] = range.labels[val-1];
-          if (["number","string","boolean"].includes( typeof v)) {
+          if (["number", "string", "boolean"].includes(typeof v)) {
             valuesToConvert[i] = v;
           } else if (range === "Date") {
-            valuesToConvert[i] = dt.dataTypes["Date"].val2str( v);
+            valuesToConvert[i] = dt.dataTypes["Date"].val2str(v);
           } else if (v instanceof bUSINESSoBJECT) { // replace object reference with ID ref.
             // get ID attribute of referenced class
             const idAttr = v.constructor.idAttribute || "id";
             valuesToConvert[i] = v[idAttr];
-          } else if (Array.isArray( v)) {  // JSON-compatible array
+          } else if (Array.isArray(v)) {  // JSON-compatible array
             valuesToConvert[i] = [...v];  // clone
-          } else valuesToConvert[i] = JSON.stringify( v);
+          } else valuesToConvert[i] = JSON.stringify(v);
         });
         if (!propDecl.maxCard || propDecl.maxCard <= 1) {
           rec[prop] = valuesToConvert[0];
@@ -156,36 +283,36 @@
   /***************************************************/
   // Convert property value to (form field) string.
   /***************************************************/
-  getValueAsString( prop) {
+  getValueAsString(prop) {
     // make sure the eNUMERATION meta-class object can be checked if available
     var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
     var propDecl = this.constructor.properties[prop],
-        range = propDecl.range, val = this[prop],
-        decimalPlaces = propDecl.displayDecimalPlaces || oes.defaults.displayDecimalPlaces || 2;
-    var valuesToConvert=[], displayStr="", k=0,
-        listSep = ", ";
+      range = propDecl.range, val = this[prop],
+      decimalPlaces = propDecl.displayDecimalPlaces || oes.defaults.displayDecimalPlaces || 2;
+    var valuesToConvert = [], displayStr = "", k = 0,
+      listSep = ", ";
     if (val === undefined || val === null) return "";
     if (propDecl.maxCard && propDecl.maxCard > 1) {
-      if (Array.isArray( val)) {
-        valuesToConvert = val.length>0 ? val.slice(0) : [];  // clone;
+      if (Array.isArray(val)) {
+        valuesToConvert = val.length > 0 ? val.slice(0) : [];  // clone;
       } else if (typeof val === "object") {
-        valuesToConvert = Object.keys( val);
+        valuesToConvert = Object.keys(val);
       } else console.log("The value of a multi-valued " +
-          "property like "+ prop +" must be an array or a map!");
+        "property like " + prop + " must be an array or a map!");
     } else valuesToConvert = [val];
-    valuesToConvert.forEach( function (v,i) {
+    valuesToConvert.forEach(function (v, i) {
       if (typeof propDecl.val2str === "function") {
-        valuesToConvert[i] = propDecl.val2str( v);
+        valuesToConvert[i] = propDecl.val2str(v);
       } else if (eNUMERATION && range instanceof eNUMERATION) {
-        valuesToConvert[i] = range.labels[v-1];
-      } else if (["string","boolean"].includes( typeof v) || !v) {
-        valuesToConvert[i] = String( v);
+        valuesToConvert[i] = range.labels[v - 1];
+      } else if (["string", "boolean"].includes(typeof v) || !v) {
+        valuesToConvert[i] = String(v);
       } else if (typeof v === "number") {
-        if (Number.isInteger(v)) valuesToConvert[i] = String( v);
-        else valuesToConvert[i] = math.round( v, decimalPlaces);
+        if (Number.isInteger(v)) valuesToConvert[i] = String(v);
+        else valuesToConvert[i] = math.round(v, decimalPlaces);
       } else if (range === "Date") {
-        valuesToConvert[i] = util.createIsoDateString( v);
-      } else if (Array.isArray( v)) {  // JSON-compatible array
+        valuesToConvert[i] = util.createIsoDateString(v);
+      } else if (Array.isArray(v)) {  // JSON-compatible array
         valuesToConvert[i] = v.slice(0);  // clone
       } else if (typeof range === "string" && bUSINESSoBJECT[range]) {
         if (typeof v === "object" && v.id !== undefined) {
@@ -193,10 +320,10 @@
         } else {
           valuesToConvert[i] = v.toString();
           propDecl.stringified = true;
-          console.log("Property "+ this.constructor.Name +"::"+ prop +" has a bUSINESSoBJECT object value without an 'id' slot!");
+          console.log("Property " + this.constructor.Name + "::" + prop + " has a bUSINESSoBJECT object value without an 'id' slot!");
         }
       } else {
-        valuesToConvert[i] = JSON.stringify( v);
+        valuesToConvert[i] = JSON.stringify(v);
         propDecl.stringified = true;
       }
     }, this);
@@ -205,7 +332,7 @@
       displayStr = valuesToConvert[0];
       if (propDecl.maxCard && propDecl.maxCard > 1) {
         displayStr = "[" + displayStr;
-        for (k=1; k < valuesToConvert.length; k++) {
+        for (k = 1; k < valuesToConvert.length; k++) {
           displayStr += listSep + valuesToConvert[k];
         }
         displayStr = displayStr + "]";
@@ -216,105 +343,105 @@
   /***************************************************
    * A class-level de-serialization method
    ***************************************************/
-  static createObjectFromRecord( record) {
-    var obj={};
+  static createObjectFromRecord(record) {
+    var obj = {};
     //TODO: does this work?
     const Class = this.constructor;
     try {
-      obj = new Class( record);
+      obj = new Class(record);
     } catch (e) {
-      console.log( e.constructor.name + " while deserializing a "+
-          Class.name +" record: " + e.message);
+      console.log(e.constructor.name + " while deserializing a " +
+        Class.name + " record: " + e.message);
       obj = null;
     }
     return obj;
   }
-   /***************************************************
-    * To be invoked for each BO class definition
-    ***************************************************/
-   static setup() {
-     /*
-     * FOR LATER: support (1) datatype ranges (such as Array), (2) union types,
-     *            (3) converting IdRefs to object references, (4) assigning initial values
-     *            to mandatory properties (if !pDef.optional), including the default values
-     *            0, "", [] and {}
-     */
-     const Class = this,
-           propDefs = Class.properties || {};  // property definitions
-     const propsWithInitialValFunc = [];
-     // initialize the Class.instances map
-     Class.instances = {};
-     // collect all names of BO classes in a map
-     dt.classes[Class.name] = Class;
-     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes), ...Object.keys( eNUMERATION)];
-     // pre-process all property definitions
-     for (const p of Object.keys( propDefs)) {
-       const propDecl = propDefs[p],
-             range = propDecl.range;
-       // check if property definition includes a range declaration
-       if (!range) throw Error(`No range defined for property ${p} of class ${Class.name}`);
-       else if (!admissibleRanges.includes( range) && !(range instanceof eNUMERATION))
-           throw Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
-       // establish standard ID attribute
-       if (propDecl.isIdAttribute) Class.idAttribute = p;
-       // collect properties with initialValue functions
-       if (typeof propDecl.initialValue === "function") propsWithInitialValFunc.push( p);
-       // construct implicit setters and getters
-       Object.defineProperty( Class.prototype, p, {
-         get() { return this["_"+p]; },
-         set( val) {
-           if (bUSINESSoBJECT.areConstraintsToBeChecked) {
-             const validationResults = dt.check( p, propDecl, val, {checkRefInt:true});
-             if (validationResults[0] instanceof NoConstraintViolation) {
-               this["_"+p] = validationResults[0].checkedValue;
-             } else {
-               //TODO: support multiple errors
-               throw validationResults[0];
-             }
-           } else this["_"+p] = val;
-         },
-         enumerable: true
-       });
-     }
-     // call the functions for initial value expressions
-     for (const p of propsWithInitialValFunc) {
-       const f = propDefs[p].initialValue;
-       if (f.length === 0) this[p] = f();
-       else this[p] = f.call( this);
-     }
-     /*
-     if (supertypeName) {
-       constr.supertypeName = supertypeName;
-       superclass = bUSINESSoBJECT[supertypeName];
-       // apply classical inheritance pattern for methods
-       constr.prototype = Object.create( superclass.prototype);
-       constr.prototype.constructor = constr;
-       // merge superclass property declarations with own property declarations
-       constr.properties = Object.create( superclass.properties);
-      //  assign own property declarations, possibly overriding super-props
-       Object.keys( propDefs).forEach( function (p) {
-         constr.properties[p] = propDefs[p];
-       });
-     } else {  // if class is root class
-       constr.properties = propDefs;
-       constr.prototype.set = function ( prop, val) {
-         // this = object
-         var validationResult = null;
-         if (bUSINESSoBJECT.areConstraintsToBeChecked) {
-           validationResult = bUSINESSoBJECT.check( prop, this.constructor.properties[prop], val);
-           if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
-           else this[prop] = validationResult.checkedValue;
-         } else this[prop] = val;
-       };
-     }
-     // store class/constructor as value associated with its name in a map
-     bUSINESSoBJECT[classSlots.Name] = constr;
-     // initialize the class-level instances property
-     if (!classSlots.isAbstract) {
-       bUSINESSoBJECT[classSlots.Name].instances = {};
-     }
-     */
-   }
+  /***************************************************
+   * To be invoked for each BO class definition
+   ***************************************************/
+  static setup() {
+    /*
+    * FOR LATER: support (1) datatype ranges (such as Array), (2) union types,
+    *            (3) converting IdRefs to object references, (4) assigning initial values
+    *            to mandatory properties (if !pDef.optional), including the default values
+    *            0, "", [] and {}
+    */
+    const Class = this,
+      propDefs = Class.properties || {};  // property definitions
+    const propsWithInitialValFunc = [];
+    // initialize the Class.instances map
+    Class.instances = {};
+    // collect all names of BO classes in a map
+    dt.classes[Class.name] = Class;
+    const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys(dt.classes), ...Object.keys(eNUMERATION)];
+    // pre-process all property definitions
+    for (const p of Object.keys(propDefs)) {
+      const propDecl = propDefs[p],
+        range = propDecl.range;
+      // check if property definition includes a range declaration
+      if (!range) throw Error(`No range defined for property ${p} of class ${Class.name}`);
+      else if (!admissibleRanges.includes(range) && !(range instanceof eNUMERATION))
+        throw Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
+      // establish standard ID attribute
+      if (propDecl.isIdAttribute) Class.idAttribute = p;
+      // collect properties with initialValue functions
+      if (typeof propDecl.initialValue === "function") propsWithInitialValFunc.push(p);
+      // construct implicit setters and getters
+      Object.defineProperty(Class.prototype, p, {
+        get() { return this["_" + p]; },
+        set(val) {
+          if (bUSINESSoBJECT.areConstraintsToBeChecked) {
+            const validationResults = dt.check(p, propDecl, val, { checkRefInt: true });
+            if (validationResults[0] instanceof NoConstraintViolation) {
+              this["_" + p] = validationResults[0].checkedValue;
+            } else {
+              //TODO: support multiple errors
+              throw validationResults[0];
+            }
+          } else this["_" + p] = val;
+        },
+        enumerable: true
+      });
+    }
+    // call the functions for initial value expressions
+    for (const p of propsWithInitialValFunc) {
+      const f = propDefs[p].initialValue;
+      if (f.length === 0) this[p] = f();
+      else this[p] = f.call(this);
+    }
+    /*
+    if (supertypeName) {
+      constr.supertypeName = supertypeName;
+      superclass = bUSINESSoBJECT[supertypeName];
+      // apply classical inheritance pattern for methods
+      constr.prototype = Object.create( superclass.prototype);
+      constr.prototype.constructor = constr;
+      // merge superclass property declarations with own property declarations
+      constr.properties = Object.create( superclass.properties);
+     //  assign own property declarations, possibly overriding super-props
+      Object.keys( propDefs).forEach( function (p) {
+        constr.properties[p] = propDefs[p];
+      });
+    } else {  // if class is root class
+      constr.properties = propDefs;
+      constr.prototype.set = function ( prop, val) {
+        // this = object
+        var validationResult = null;
+        if (bUSINESSoBJECT.areConstraintsToBeChecked) {
+          validationResult = bUSINESSoBJECT.check( prop, this.constructor.properties[prop], val);
+          if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
+          else this[prop] = validationResult.checkedValue;
+        } else this[prop] = val;
+      };
+    }
+    // store class/constructor as value associated with its name in a map
+    bUSINESSoBJECT[classSlots.Name] = constr;
+    // initialize the class-level instances property
+    if (!classSlots.isAbstract) {
+      bUSINESSoBJECT[classSlots.Name].instances = {};
+    }
+    */
+  }
 }
 bUSINESSoBJECT.classes = {};
 // A flag for disabling constraint checking
