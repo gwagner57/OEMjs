@@ -12,18 +12,22 @@
   <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
   <link rel="stylesheet" href="../css/normalize.css" />
   <link rel="stylesheet" href="../css/vIEW.css" />
-  <link rel="stylesheet" href="../css/basic-styles.css">
-  <!-- Libraries -->
-  <script src="../lib/browserShims.js"></script>
-  <!-- A small library for defining classes and class hierarchies -->
-  <script src="../lib/dom.mjs"></script>
-  <script src="../src/eNUMERATION.js"></script>
-  <script src="../src/oBJECTvIEW.js"></script>
+    <style>
+        body { padding: 8px;}
+        .failure {color: red;}
+        .info {color: blue;}
+        .okay {color: green;}
+    </style>
 </head>
 <body>
  <h1>Test oBJECTvIEW UI based on model object</h1>
- <script>
-   createViewModelBasedUI = function (o) {
+ <script type="module">
+   import dom from "../lib/dom.mjs";
+   import {test, showSuccessMessage} from "./test.js";
+   import eNUMERATION from "../src/eNUMERATION.mjs";
+   import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
+
+   const createViewModelBasedUI = function (o) {
      var modObjView = null;
      var slots = { modelObject: o};
      slots.userActions = {

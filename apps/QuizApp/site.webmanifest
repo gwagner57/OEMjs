@@ -1,0 +1,14 @@
+// see https://developer.mozilla.org/en-US/docs/Web/Manifest
+{
+  "name": "cLASSjs Validation App",
+  "short_name": "cLASSjs Validation App",
+  "start_url": ".",
+  "display": "standalone",
+  //"background_color": "#fff",
+  "description": "An example of a JavaScript front-end app with constraint validation built with the cLASSjs library supporting model-based development.",
+  "icons": [
+    {"src": "icon.png",
+     "sizes": "192x192",
+     "type": "image/png"}
+  ]
+}

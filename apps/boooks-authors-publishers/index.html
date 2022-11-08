@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>OEMjs Minimal App</title>
+  <meta name="description" content="A minimal app made with OEMjs."/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <meta name="theme-color" content="#ffffff"/>
+  <link rel="icon" href="favicon.svg"/>
+  <link rel="mask-icon" href="mask-icon.svg" color="#000000"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <link rel="manifest" href="manifest.json"/>
+
+  <link rel="stylesheet" href="css/normalize.css"/>
+  <link rel="stylesheet" href="css/main.css"/>
+
+  <script type="module">
+    import { clearData, generateTestData } from "./src/c/app.mjs";
+    const clearButton = document.getElementById("clearData"),
+      generateTestDataButtons = document.querySelectorAll("button.generateTestData");
+    // Set event handlers for the buttons "clearData" and "generateTestData"
+    clearButton.addEventListener("click", clearData);
+    for (const btn of generateTestDataButtons) {
+      btn.addEventListener("click", generateTestData);
+    }
+  </script>
+</head>
+<body>
+<header>
+  <div class="wrapper clearfix">
+    <div class="title">
+      <figure><a href="https://web-engineering.info">
+        <img alt="" title="Icon made by Lorc under CC BY 3.0. Available on https://game-icons.net"
+             src="favicon.svg"/></a></figure>
+      <h1>Public Library</h1>
+      <h2>A Minimal Web App Made with OEMjs</h2>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="authors.html">Authors</a></li>
+        <li><a href="publishers.html">Publishers</a></li>
+        <li><a href="books.html">Books</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="wrapper clearfix">
+    <p>This app, which is accompanied by a
+      <a href="https://web-engineering.info/tech/JsFrontendApp/unidirectional-association-tutorial.html">tutorial</a>, is
+      the
+      4th example app of our incremental sequence of six examples of
+      <a href="https://web-engineering.info/JsFrontendApp">Plain JS Front-End Web Apps</a>.</p>
+    <p>This app supports the following operations:</p>
+    <div class="two-col-menu">
+      <ul class="menu">
+        <li><a href="authors.html">Manage author data</a></li>
+        <li><a href="publishers.html">Manage publisher data</a></li>
+        <li><a href="books.html">Manage book data</a></li>
+      </ul>
+      <ul class="menu">
+        <li><button type="button" class="generateTestData">Generate test data</button></li>
+        <li><button type="button" id="clearData">Clear database</button></li>
+      </ul>
+    </div>
+    <p>For playing with the app, you may first want to
+      <button type="button" class="generateTestData">Generate test data</button>
+      and then view it (e.g. by choosing "Manage books" and then "Retrieve and list all books"). For observing
+      the internal status and error messages, turn on the JavaScript console.
+    </p>
+    <p>This JavaScript front-end data management app takes care of the object types <code>Author</code>,
+      <code>Publisher</code> and <code>Book</code> as well as the two <strong>unidirectional associations that assign
+        a publisher and (one or more) authors to a book</strong>. The app supports the four standard data management operations
+      (<strong>C</strong>reate/<strong>R</strong>etrieve/<strong>U</strong>pdate/<strong>D</strong>elete).
+      It extends the <a href="../2-ValidationApp/index.html">Validation App</a> by adding code for handling
+      <strong>unidirectional associations</strong>.</p>
+  </div>
+</main>
+<footer>
+  <div class="foot-content wrapper">
+    Copyright © 2013-2021 Gerd Wagner,
+    <a href="https://www.b-tu.de/fg-internet-technologie/">Chair of Internet Technology</a>,
+    Brandenburg University of Technology, Germany. The code of this tutorial web app is licensed under
+    <a rel="license" href="https://www.codeproject.com/info/cpol10.aspx">The Code Project Open License (CPOL)</a>,
+    implying that the code is provided "as-is", can be modified to create derivative works,
+    can be redistributed, and can be used in commercial applications, but the associated article
+    must not be distributed or republished without the copyright holder's consent.
+  </div>
+</footer>
+</body>
+</html>

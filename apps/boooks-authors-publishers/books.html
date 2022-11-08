@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Plain JS Unidirectional Association App: Manage Books</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <meta name="theme-color" content="#ffffff"/>
+  <link rel="icon" href="favicon.svg"/>
+  <link rel="mask-icon" href="mask-icon.svg" color="#000000"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <link rel="manifest" href="manifest.json"/>
+
+  <link rel="stylesheet" href="css/normalize.css"/>
+  <link rel="stylesheet" href="css/main.css"/>
+
+  <script src="src/v/books.mjs" type="module"></script>
+</head>
+<body>
+<header>
+  <div class="wrapper clearfix">
+    <div class="title">
+      <figure><a href="https://web-engineering.info">
+        <img alt="" title="Icon made by Lorc under CC BY 3.0. Available on https://game-icons.net"
+             src="favicon.svg"/></a></figure>
+      <h1>Public Library</h1>
+      <h2>Plain JS Unidirectional Association App</h2>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="authors.html">Authors</a></li>
+        <li><a href="publishers.html">Publishers</a></li>
+        <li><a href="books.html">Books</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="wrapper clearfix">
+    <!-- ======================================================= -->
+    <section id="Book-M" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Manage book data</h1>
+      <ul class="menu">
+        <li>
+          <button type="button" id="RetrieveAndListAll">Retrieve/list all book
+            records
+          </button>
+        </li>
+        <li>
+          <button type="button" id="Create">Create a new book record</button>
+        </li>
+        <li>
+          <button type="button" id="Update">Update a book record</button>
+        </li>
+        <li>
+          <button type="button" id="Delete">Delete a book record</button>
+        </li>
+      </ul>
+      <div class="button"><a href="index.html">Back to Main menu</a></div>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Book-R" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Retrieve and list all book records</h1>
+      <table>
+        <thead>
+        <tr>
+          <th>ISBN</th>
+          <th>Title</th>
+          <th>Year</th>
+          <th>Authors</th>
+          <th>Publisher</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="button">
+        <button type="button" class="back-to-menu">Back to menu</button>
+      </div>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Book-C" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Create a new book record</h1>
+      <form>
+        <div class="field">
+          <label>ISBN: <input type="text" name="isbn"/></label>
+        </div>
+        <div class="field">
+          <label>Title: <input type="text" name="title"/></label>
+        </div>
+        <div class="field">
+          <label>Year: <input type="text" name="year"/></label>
+        </div>
+        <div class="select-one">
+          <label>Publisher: <select name="selectPublisher"></select></label>
+        </div>
+        <div class="select-many">
+          <label>Authors:
+            <select name="selectAuthors" multiple="multiple"></select>
+          </label>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit">Save</button>
+          <button type="button" class="back-to-menu">Back to menu</button>
+        </div>
+      </form>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Book-U" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Update a book record</h1>
+      <form autocomplete="off">
+        <div class="select-one">
+          <label>Select book: <select name="selectBook"></select></label>
+        </div>
+        <div class="field">
+          <label>ISBN:
+            <output name="isbn"></output>
+          </label>
+        </div>
+        <div class="field">
+          <label>Title: <input type="text" name="title"/></label>
+        </div>
+        <div class="field">
+          <label>Year: <input type="text" name="year"/></label>
+        </div>
+        <div class="select-one">
+          <label>Publisher: <select name="selectPublisher"></select></label>
+        </div>
+        <div class="widget">
+          <label for="updBookSelectAuthors">Authors:</label>
+          <div id="updBookSelectAuthors" class="MultiSelectionWidget"></div>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit" disabled="disabled">Save</button>
+          <button type="button" class="back-to-menu">Back to menu</button>
+        </div>
+      </form>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Book-D" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Delete a book record</h1>
+      <form>
+        <div class="select-one">
+          <label>Select book: <select name="selectBook"></select></label>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit">Delete</button>
+          <button type="button" class="back-to-menu">Back to menu</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+<footer>
+  <div class="foot-content wrapper">
+    Copyright © 2015-2021 Gerd Wagner,
+    <a rel="license" href="https://www.codeproject.com/info/cpol10.aspx">The Code Project Open License (CPOL)</a>.
+  </div>
+</footer>
+</body>
+</html>

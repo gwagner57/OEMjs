@@ -10,7 +10,7 @@ class ConstraintViolation extends Error {
 }
 class NoConstraintViolation extends ConstraintViolation {
   constructor ( val) {
-    super("okay");
+    super("");
     if (val !== undefined) this.checkedValue = val;
   }
 }

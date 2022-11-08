@@ -5,6 +5,9 @@
 body {
   padding: 8px;
 }
+noscript > p { font-size: 1.2em; color: red;}
+
+
 button {
   border-radius: 3px;  
   background: ghostwhite;
@@ -16,13 +19,8 @@ button[disabled] {
 button[disabled]:hover {
   cursor: default;
 }
-noscript > p { font-size: 1.2em; color: red;}
 
-.oBJECTvIEW h2 {
-  font-size: 110%;
-  margin-top: 0.2em;
-}
-table { 
+table {
   border-collapse:collapse;
   margin: 1em 0;
   empty-cells: show;
@@ -79,9 +77,9 @@ menu {
   border: 1px solid black;
   padding: 8px;
   border-radius: 5px;
+  list-style: none;
 }
 menu li {
-  list-style: none;
   height: 1.5em;
   margin: 2px auto;
 }
@@ -147,6 +145,7 @@ menu li button {
 .modal .closeButton:focus {
   cursor: pointer;
 }
+
 [draggable=true] {
   outline: 1px solid black;
   cursor: move;

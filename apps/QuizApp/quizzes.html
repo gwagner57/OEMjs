@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" vocab="http://schema.org/" typeof="WebApplication">
+<!-- ************************************************************
+ What's new compared to the Minimal App?
+ + add property constraints in Quiz.js
+ + add event listeners for validation on input in pl.v.quizzes.create.setupUserInterface (in v/quiz.js)
+ + add constraint checking code in pl.v.quizzes.create.handleSaveButtonClickEvent
+ + add event listeners for validation on input in pl.v.quizzes.update.setupUserInterface (in v/quiz.js)
+ + add constraint checking code in pl.v.quizzes.update.handleSaveButtonClickEvent
+ ************************************************************* -->
+
+<head>
+  <meta charset="UTF-8" />
+  <title>MakeAQuiz with cLASSjs</title>
+  <meta property="applicationCategory" content="Data management" />
+  <meta property="creator" content="Gerd Wagner" /> <!-- should be a Person object instead of text -->
+
+  <link rel="manifest" href="site.webmanifest">
+  <!--link rel="apple-touch-icon" href="icon.png"-->
+  <!-- Place favicon.ico in the root directory -->
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32"/>
+  <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16"/>
+  <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5"/>
+
+  <link rel="stylesheet" href="../../css/normalize.min.css" />
+  <!--link rel="stylesheet" href="../../css/app-main.css" /-->
+
+  <!-- Load polyfills for supporting >=IE9 -->
+  <script src="https://cdn.polyfill.io/v2/polyfill.js?features=Array.from,Array.prototype.find,Array.prototype.includes,DOMTokenList,Element.prototype.after,Element.prototype.before,Element.prototype.classList,Element.prototype.cloneNode,Number.isInteger,Object.keys,Object.values,Promise,String.prototype.includes,console.log,&flags=gated" defer async></script>
+  <!-- Load the Promised IndexedDB library -->
+  <!--script src="../../lib/idb.js "></script-->
+  <!--
+    <script src="../../dist/cLASSjsBrowserLib.js"></script>
+  -->
+  <!-- cLASSjsBrowserLib.js contains the following  -->
+  <script src="../../lib/browserShims.js"></script>
+  <script src="../../lib/util.mjs"></script>
+  <script src="../../lib/dom.mjs"></script>
+  <script src="../../lib/errorTypes.js"></script>
+  <script src="../../lib/xhr.js"></script>
+  <script src="../../src/eNUMERATION.js"></script>
+  <script src="../../src/cLASS.js"></script>
+  <script src="../../src/oBJECTvIEW.js"></script>
+    <script src="../../src/storage/sTORAGEmANAGER.js"></script>
+  <script src="../../src/storage/sTORAGEmANAGER_IndexedDB.js"></script>
+  <script src="src/c/app.js"></script>
+  <script src="src/c/quizzes.js"></script>
+  <script src="src/v/questions.js"></script>
+  <script src="src/v/quizzes.js"></script>
+  <script src="src/m/Question.js"></script>
+  <script src="src/m/Quiz.js"></script>
+  <script>
+    window.addEventListener("load", pl.c.app.initialize());
+  </script>
+</head>
+<body>
+<main>
+  <div class="wrapper clearfix">
+    <!-- ======================================================= -->
+    <section id="Quiz-M" class="UI-Page">
+      <!-- ======================================================= -->
+      <h1>Manage quiz data</h1>
+      <nav class="two-col-menu">
+        <ul>
+          <li><button type="button" onclick="pl.v.quizzes.list.setupUserInterface()">Retrieve</button> and list all quiz records</li>
+          <li><button type="button" onclick="pl.v.quizzes.create.setupUserInterface()">Create</button> a new quiz record</li>
+          <li><button type="button" onclick="pl.v.quizzes.update.setupUserInterface()">Update</button> a quiz record</li>
+          <li><button type="button" onclick="pl.v.quizzes.destroy.setupUserInterface()">Delete</button> a quiz record</li>
+        </ul>
+        <ul>
+          <li><button type="button" onclick="pl.c.app.loadAppData()">Generate</button> test data</li>
+          <li><button type="button" onclick="pl.c.storeMan.clearDB()">Clear</button> database</li>
+        </ul>
+      </nav>
+      <!-- <div class="button"><a href="index.html">Back to Main menu</a></div> -->
+    </section>
+    <!-- ======================================================= -->
+    <section id="Quiz-R" class="UI-Page" style="display:none">
+      <!-- ======================================================= -->
+      <h1>Retrieve and list all quizzes</h1>
+      <table>
+        <thead><tr><th>ISBN</th><th>Title</th><th>Year</th><th>Edition</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="button">
+        <button type="button" onclick="pl.v.quizzes.manage.refreshUI()">Back to menu</button>
+      </div>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Quiz-C" class="UI-Page" style="display:none">
+      <!-- ======================================================= -->
+      <h1>Create a new quiz record</h1>
+      <form>
+        <div class="I-O-field">
+          <label>ISBN: <input type="text" name="id" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Title: <input type="text" name="title" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Year: <input type="text" name="year" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Edition: <input type="text" name="edition"/></label>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit">Save</button>
+          <button type="button" onclick="pl.v.quizzes.manage.refreshUI()">Back to menu</button>
+        </div>
+      </form>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Quiz-U" class="UI-Page" style="display:none">
+      <!-- ======================================================= -->
+      <h1>Update a quiz record</h1>
+      <form>
+        <div class="select-one">
+          <label>Select quiz: <select name="selectObj"></select></label>
+        </div>
+        <div class="I-O-field">
+          <label>ISBN: <output name="id"/></label>
+        </div>
+        <div class="I-O-field">
+          <label>Title: <input type="text" name="title" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Year: <input type="text" name="year" /></label>
+        </div>
+        <div class="I-O-field">
+          <label>Edition: <input type="text" name="edition"/></label>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit" disabled="disabled">Save</button>
+          <button type="button" onclick="pl.v.quizzes.manage.refreshUI()">Back to menu</button>
+        </div>
+      </form>
+    </section>
+    <!-- ======================================================= -->
+    <section id="Quiz-D" class="UI-Page" style="display:none">
+      <!-- ======================================================= -->
+      <h1>Delete a quiz record</h1>
+      <form id="deleteBookForm">
+        <div class="select-one">
+          <label>Select quiz: <select name="selectObj"></select></label>
+        </div>
+        <div class="button-group">
+          <button type="submit" name="commit">Delete</button>
+          <button type="button" onclick="pl.v.quizzes.manage.refreshUI()">Back to menu</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+</body>
+</html>

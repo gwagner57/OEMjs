@@ -7,8 +7,10 @@
  */
 import util from "../../lib/util.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
-// import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
-import { openDB, deleteDB } from "../../lib/esm.mjs"
+import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
+//import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
+import dt from "../datatypes.mjs";
+import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
 
 /**
  * Library class providing storage management methods for a number of predefined
@@ -72,7 +74,7 @@ class sTORAGEmANAGER {
    * @param {object} Class  The business object class concerned
    * @param {object} rec  A record or record list
    */
-  async add( rec, Class) {
+  async add( Class, rec) {
     var records=[];
     if (typeof rec === "object" && !Array.isArray(rec)) {
       records = [rec];
@@ -167,75 +169,74 @@ class sTORAGEmANAGER {
    * @param {string|number} id  The object ID value
    * @param {object} slots  The object's update slots
    */
-  update( Class, id, slots) {
-    var adapterName = this.adapter.name,
-        dbName = this.adapter.dbName,
-        currentSM = this;
-    return new Promise( function (resolve) {
-      var objectBeforeUpdate = null, properties = Class.properties,
-          updatedProperties=[], noConstraintViolated = true,
-          updSlots = util.cloneObject( slots);
-      // first check if object exists
-      currentSM.retrieve( Class, id).then( function (objToUpdate) {
-        if (objToUpdate) {
-          if (typeof objToUpdate === "object" && objToUpdate.constructor !== Class) {
-            // if the retrieved objToUpdate is not of type Class, check integrity constraints
-            objToUpdate = Class.createObjectFromRecord( objToUpdate);
-            if (!objToUpdate) return;  // constraint violation
-          }
-          objectBeforeUpdate = util.cloneObject( objToUpdate);
-          try {
-            Object.keys( slots).forEach( function (prop) {
-              var oldVal = objToUpdate[prop],
-                  newVal = slots[prop],
-                  propDecl = properties[prop];
-              if (prop !== "id") {
-                if (propDecl.maxCard === undefined || propDecl.maxCard === 1) {  // single-valued
-                  if (Number.isInteger( oldVal) && newVal !== "") {
-                    newVal = parseInt( newVal);
-                  } else if (typeof oldVal === "number" && newVal !== "") {
-                    newVal = parseFloat( newVal);
-                  } else if (oldVal===undefined && newVal==="") {
-                    newVal = undefined;
-                  }
-                  if (newVal !== oldVal) {
-                    updatedProperties.push( prop);
-                    objToUpdate.set( prop, newVal);  // also checking constraints
-                  } else {
-                    delete updSlots[prop];
-                  }
-                } else {   // multi-valued
-                  if (oldVal.length !== newVal.length ||
-                      oldVal.some( function (vi,i) { return (vi !== newVal[i]);})) {
-                    objToUpdate.set(prop, newVal);
-                    updatedProperties.push(prop);
-                  } else {
-                    delete updSlots[prop];
-                  }
-                }
+  async update( Class, id, slots) {
+    var updatedProperties=[], noConstraintViolated = true;
+    const properties = Class.properties,
+          updSlots = {...slots};  // clone
+    // first check if an object record with this ID exists
+    let objToUpdate = await this.retrieve( Class, id);
+    if (objToUpdate) {
+      const objectBeforeUpdate = {...objToUpdate};  // clone
+      for (const prop of Object.keys( slots)) {
+        const oldVal = objToUpdate[prop],
+              propDecl = properties[prop];
+        let newVal = slots[prop];
+        if (prop !== Class.idAttribute) {
+          if (propDecl.maxCard === undefined || propDecl.maxCard === 1) {  // single-valued
+            if (Number.isInteger( oldVal) && newVal !== "") {
+              newVal = parseInt( newVal);
+            } else if (typeof oldVal === "number" && newVal !== "") {
+              newVal = parseFloat( newVal);
+            } else if (oldVal===undefined && newVal==="") {
+              newVal = undefined;
+            }
+            if (newVal !== oldVal) {
+              const validationResults = dt.check( prop, propDecl, newVal);
+              if (!(validationResults[0] instanceof NoConstraintViolation)) {
+                //TODO: support multiple errors
+                const constraintViolation = validationResults[0];
+                console.log( constraintViolation.constructor.name +": "+ constraintViolation.message);
+                noConstraintViolated = false;
+                // restore object to its state before updating
+                objToUpdate = objectBeforeUpdate;
+              } else {
+                updatedProperties.push( prop);
               }
-            });
-          } catch (e) {
-            console.log( e.constructor.name +": "+ e.message);
-            noConstraintViolated = false;
-            // restore object to its state before updating
-            objToUpdate = objectBeforeUpdate;
-          }
-          if (noConstraintViolated) {
-            if (updatedProperties.length > 0) {
-              this.adapter.update( dbName, Class, id, slots, updSlots)
-                  .then( function () {
-                    console.log("Properties "+ updatedProperties.toString() +
-                        " of "+ Class.name +" "+ id +" updated.");
-                    if (typeof resolve === "function") resolve();
-                  });
             } else {
-              console.log("No property value changed for "+ Class.name +" "+ id +"!");
+              delete updSlots[prop];  // no update required
+            }
+          } else {   // multi-valued
+            if (oldVal.length !== newVal.length ||
+                oldVal.some( function (vi,i) { return (vi !== newVal[i]);})) {
+              const validationResults = dt.check( prop, propDecl, newVal);
+              if (!(validationResults[0] instanceof NoConstraintViolation)) {
+                //TODO: support multiple errors
+                const constraintViolation = validationResults[0];
+                console.log( constraintViolation.constructor.name +": "+ constraintViolation.message);
+                noConstraintViolated = false;
+                // restore object to its state before updating
+                objToUpdate = objectBeforeUpdate;
+              } else {
+                delete updSlots[prop];  // no update required
+              }
             }
           }
         }
-      });
-    });
+      }
+      if (noConstraintViolated) {
+        if (updatedProperties.length > 0) {
+          try {
+            this.adapter.update( this.dbName, Class, id, updSlots);
+            console.log("Properties " + updatedProperties.toString() +
+                " of " + Class.name + " " + id + " updated.");
+          } catch (error) {
+            console.log(`${error.name}: ${error.message}`);
+          }
+        }
+      } else {
+        console.log("No property value changed for "+ Class.name +" "+ id +"!");
+      }
+    }
   }
   /**
    * Generic method for deleting model objects
@@ -494,34 +495,25 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
     const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    return await db.get( tableName, id);
+    return db.get( tableName, id);
   },
   //------------------------------------------------
   retrieveAll: async function (dbName, Class) {
   //------------------------------------------------
     const db = await openDB( dbName, Class);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    return await db.getAll( tableName);
+    return db.getAll( tableName);
   },
   //------------------------------------------------
-  update: function (dbName, mc, id, slots) {
+  update: async function (dbName, Class, id, slots) {
     //------------------------------------------------
-    return new Promise( function (resolve) {
-      var tableName = mc.tableName || util.class2TableName( mc.Name);
-      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
-        var tx = idbCx.transaction( tableName, "readwrite");
-        var os = tx.objectStore( tableName);
-        slots["id"] = id;
-        os.put( slots);
-        return tx.complete;
-      }).then( resolve)
-          .catch( function (err) {
-            console.log( err.name +": "+ err.message +"Table: "+ tableName);}
-          );
-    });
+    const db = await openDB( dbName, Class);
+    const tableName = Class.tableName || util.class2TableName( Class.name);
+    slots[Class.idAttribute] = id;
+    db.put( tableName, slots);
   },
   //------------------------------------------------
-  destroy: function (dbName, mc, id) {
+  destroy: async function (dbName, mc, id) {
     //------------------------------------------------
     return new Promise( function (resolve) {
       var tableName = mc.tableName || util.class2TableName( mc.Name);
