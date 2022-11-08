@@ -513,18 +513,12 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     db.put( tableName, slots);
   },
   //------------------------------------------------
-  destroy: async function (dbName, mc, id) {
+  destroy: async function (dbName, Class, id) {
     //------------------------------------------------
-    return new Promise( function (resolve) {
-      var tableName = mc.tableName || util.class2TableName( mc.Name);
-      idb.open( dbName).then( function (idbCx) {  // idbCx is a DB connection
-        var tx = idbCx.transaction( tableName, "readwrite");
-        var os = tx.objectStore( tableName);
-        os.delete( id);
-        return tx.complete;
-      }).then( resolve)
-          .catch( function (err) {console.log( err.name +": "+ err.message);});
-    });
+    const db = await openDB( dbName, Class);
+    const tableName = Class.tableName || util.class2TableName( Class.name);
+    slots[Class.idAttribute] = id;
+    db.delete( tableName, id);
   },
   //------------------------------------------------
   clearTable: async function (dbName, Class) {
@@ -546,10 +540,6 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     await Promise.all( clearInvocationExpressions);
     // wait for the completion of the transaction tx
     await tx.done;
-  },
-  //------------------------------------------------
-  saveOnUnload: function (dbName) {  // not yet implemented
-    //------------------------------------------------
   }
 };
 
