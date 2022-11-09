@@ -1,10 +1,7 @@
 {
-  "name": "UnidirectionalAssociation App",
-  "short_name": "UnidirectionalAssociation App",
-  "icons": [{
-  "src": "google-touch-icon.png",
-  "sizes": "512x512"
-}],
+  "name": "OEMjs Unidirectional Association App",
+  "short_name": "Unidir Association App",
+  "icons": [{"src":"apple-touch-icon.png", "type":"image/png", "sizes":"180x180"}],
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "display": "fullscreen"

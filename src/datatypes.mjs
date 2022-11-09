@@ -16,7 +16,7 @@ const dt = {
   structuredDataTypes: ["List","Record"],
   isStringType(T) {return dt.stringTypes.includes(T);},
   isIntegerType(T) {return dt.integerTypes.includes(T) ||
-      typeof eNUMERATION === "object" && T instanceof eNUMERATION;},
+      (typeof eNUMERATION === "function" && (T instanceof eNUMERATION || T in eNUMERATION));},
   isDecimalType(T) {return dt.decimalTypes.includes(T);},
   isNumberType(T) {return dt.numericTypes.includes(T);},
   patterns: {
@@ -468,7 +468,7 @@ const dt = {
         }
       }
     } else {
-      if (range instanceof eNUMERATION || typeof range === "string" && eNUMERATION[range]) {
+      if (range instanceof eNUMERATION || typeof range === "string" && range in eNUMERATION) {
         if (typeof range === "string") range = eNUMERATION[range];
         for (const v of valuesToCheck) {
           if (!Number.isInteger(v) || v < 1 || v > range.MAX) {

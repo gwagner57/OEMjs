@@ -1,0 +1,91 @@
+<!-- ===========================================================================
+ * Test UI generation based on a model object
+ * @copyright Copyright 2016 Gerd Wagner, BTU (Germany) + ODU (VA, USA)
+ * @author Gerd Wagner
+ * @license The MIT License (MIT)
+================================================================================ -->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Test ObjectView</title>
+  <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
+  <link rel="stylesheet" href="../css/normalize.css" />
+  <link rel="stylesheet" href="../css/vIEW.css" />
+    <style>
+        body { padding: 8px;}
+        .failure {color: red;}
+        .info {color: blue;}
+        .okay {color: green;}
+    </style>
+</head>
+<body>
+ <h1>Test vIEW based on model class</h1>
+ <script type="module">
+   import dom from "../lib/dom.mjs";
+   import {test, showSuccessMessage} from "./test.js";
+   import eNUMERATION from "../src/eNUMERATION.mjs";
+   import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
+   import vIEW from "../src/ui/vIEW.mjs";
+
+   /****************************************
+    *** Test code **************************
+    ****************************************/
+   const BookCategoryEL = new eNUMERATION("BookCategoryEL", ["novel","biography",
+     "textbook","other"]);
+
+   class Publisher extends bUSINESSoBJECT {
+     constructor ({name, address}) {
+       super( name);
+       this.address = address;
+     }
+   }
+   Publisher.properties = {
+     "name": {range:"NonEmptyString", isIdAttribute: true, min: 2, max: 20, label:"Name"},
+     "address": {range:"NonEmptyString", min: 5, max: 50, label:"Address"},
+   }
+   Publisher.setup();
+
+   class Book extends bUSINESSoBJECT {
+     constructor ({isbn, title, year, publisher, edition, category}) {
+       super( isbn);
+       this.title = title;
+       this.year = year;
+       if (publisher) this.publisher = publisher;
+       if (edition) this.edition = edition;
+       if (category) this.category = category;
+     }
+   }
+   Book.properties = {
+     "isbn": {range:"NonEmptyString", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
+       patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+     "title": {range:"NonEmptyString", min: 2, max: 50},
+     "year": {range:"Integer", min: 1459, max: () => (new Date()).getFullYear() + 1},
+     "publisher": {range:"Publisher", optional: true},
+     "edition": {range:"PositiveInteger", optional: true},
+     "category": {range: BookCategoryEL, optional: true}
+   }
+   Book.setup();
+
+   //*** Test 1 ***************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 1: Creating a model-class-based UI"}));
+
+   const createModelClassBasedUI = function (C, viewType) {
+     const slots = { modelClass: C};
+     slots.userActions = {
+       "save": function () {
+         alert("Test successful!");
+         //app.storageManager.add( C, slots);},
+       }
+     };
+     slots.userActions["save"].label = "Save";
+     // create ad-hoc view
+     const view = new vIEW( slots);
+     // render Create view
+     view.render({viewType});
+   };
+   createModelClassBasedUI( Publisher, "C");
+ </script>
+</body>
+</html>
+

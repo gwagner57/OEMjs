@@ -1,12 +1,17 @@
 /* ==========================================================================
    Custom styles
    ========================================================================== */
-
 body {
   padding: 8px;
 }
-noscript > p { font-size: 1.2em; color: red;}
-
+noscript > p {
+  font-size: 1.2em;
+  color: red;
+}
+footer {
+  margin-top: 1em;
+  font-size: smaller;
+}
 
 button {
   border-radius: 3px;  

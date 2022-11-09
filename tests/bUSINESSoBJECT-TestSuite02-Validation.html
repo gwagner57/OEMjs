@@ -24,6 +24,7 @@
  <script type="module">
  import dom from "../lib/dom.mjs";
  import {test, showSuccessMessage} from "./test.js";
+ import dt from "../src/datatypes.mjs";
  import eNUMERATION from "../src/eNUMERATION.mjs";
  import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
 
@@ -131,8 +132,11 @@
    document.body.appendChild(dom.createElement("h2", {content: "Test 6: Enumeration Attribute"}));
    bUSINESSoBJECT.areConstraintsToBeChecked = true;
    try {
-     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: 2022, category: 2});
+     let b1 = new Book({isbn: "123456789X", title: "Hello world", year: "2022", category: 2});
      document.body.appendChild(dom.createElement("p", {content: "OKAY."}));
+     document.body.appendChild(dom.createElement("p", //
+         {content: "Test if BookCategoryEL is an integer type: "+ String(dt.isIntegerType(BookCategoryEL))}));
+
    } catch (e) {
      document.body.appendChild(dom.createElement("p", {content: "FAILED!"}));
      document.body.appendChild(dom.createElement("p", {content: e.constructor.name + ": " + e.message}));
