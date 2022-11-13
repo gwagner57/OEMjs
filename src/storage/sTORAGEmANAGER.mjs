@@ -245,13 +245,12 @@ class sTORAGEmANAGER {
    * @param {string|number} id  The object ID value
    */
   destroy( Class, id) {
-    var adapterName = this.adapter.name,
-        dbName = this.adapter.dbName,
-        currentSM = this;
+    const dbName = this.adapter.dbName;
+    let currentSM = this;
     return new Promise( function (resolve) {
       currentSM.retrieve( Class, id).then( function (record) {
         if (record) {
-          this.adapter.destroy( dbName, Class, id)
+          currentSM.adapter.destroy( dbName, Class, id)
               .then( function () {
                 console.log( Class.name +" "+ id +" deleted.");
                 if (typeof resolve === "function") resolve();
@@ -517,7 +516,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     //------------------------------------------------
     const db = await openDB( dbName, Class);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    slots[Class.idAttribute] = id;
+    // slots[Class.idAttribute] = id;
     db.delete( tableName, id);
   },
   //------------------------------------------------

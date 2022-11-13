@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
+  <base href="." />
   <meta charset="utf-8">
   <title>sTORAGEmANAGER-IndexedDB Test Suite 01</title>
   <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
@@ -66,7 +67,7 @@
    const storeMan = new sTORAGEmANAGER({adapterName:"IndexedDB", dbName: "TestSuite01",
                       createLog: true, validateBeforeSave: true});
 
-   //*** Test 1 ***************************
+   //*** Test 1 - Add **************************
    document.body.appendChild(dom.createElement("h2", {content: "Test 1: Creating a database and adding records"}));
    const classes = Object.keys( dt.classes).map( className => dt.classes[className]).
        filter( c => !c.isAbstract && !c.isComplexDatatype);
@@ -86,8 +87,8 @@
    const b3 = new Book({isbn: "123123123X", title:"Textbook 2", year: 2021,
      category: BookCategoryEL.TEXTBOOK, publisher: "Springer"});
    try {
-     await storeMan.add( p1.toRecord(), Publisher);
-     await storeMan.add( [b1.toRecord(), b2.toRecord(), b3.toRecord()], Book);
+     await storeMan.add(Publisher, p1.toRecord());
+     await storeMan.add(Book, [b1.toRecord(), b2.toRecord(), b3.toRecord()]);
    } catch (e) {
      console.log( e.constructor.name +": "+ e.message);
    }
@@ -95,7 +96,7 @@
        {content: `The "TestSuite01" IndexedDB should contain a "Springer" record in the "publishers" table
         and three records in the "books" table, two of them having the ID reference "Springer" as the value of
         their "publisher" field.`}));
-   //*** Test 2 ***************************
+   //*** Test 2 - Retrieve single book ***************************
    document.body.appendChild(dom.createElement("h2", {content:"Test 2: Retrieving a record"}));
    let bookRec=null;
    try {
@@ -107,7 +108,7 @@
    } catch (e) {
      console.log( e.constructor.name +": "+ e.message);
    }
-   //*** Test 3 ***************************
+   //*** Test 3 - RetrieveAll ***************************
    document.body.appendChild(dom.createElement("h2", {content:"Test 3: Retrieving all records"}));
    let bookRecords=null;
    try {
@@ -139,10 +140,102 @@
      console.log( e.constructor.name +": "+ e.message);
    }
 
+
+  //*** Test 4 - Update ********************
+  document.body.appendChild(dom.createElement("h2", {content:"Test 4: Update Record"}));
+  try {
+    let bookUpdate=null;
+    const bookId = "123456789X";
+    bookUpdate = await storeMan.retrieve( Book, bookId);
+    if (JSON.stringify(bookUpdate)===JSON.stringify(b2.toRecord())) {
+      document.body.appendChild(dom.createElement("p",
+          {content: `Before Update! Retrieved book: ${JSON.stringify(bookUpdate)}`}));
+    }
+    bookUpdate.title = "Updated book title"
+    await storeMan.update(Book, bookId, bookUpdate);
+    bookUpdate = await storeMan.retrieve( Book, bookId);
+    if (JSON.stringify(bookUpdate)===JSON.stringify()) {
+      document.body.appendChild(dom.createElement("p",
+          {content: `After Update! Retrieved book: ${JSON.stringify(bookUpdate)}`}));
+    } else {
+      document.body.appendChild(dom.createElement("p", {content: `Update failed! ${JSON.stringify(bookUpdate)}`}));
+    }
+  } catch (e) {
+    console.log( e.constructor.name +": "+ e.message);
+  }
+
+  //*** Test 5 - Destroy ********************
+  document.body.appendChild(dom.createElement("h2", {content:"Test 5: Destroy"}));
+  try {
+    const bookId = "123456789X";
+    const bookDestroy = await storeMan.retrieve( Book, bookId);
+    if (JSON.stringify(bookDestroy)===JSON.stringify(b2.toRecord())) {
+      document.body.appendChild(dom.createElement("p",
+          {content: `Book is still available. Retrieved book: ${JSON.stringify(bookDestroy)}`}));
+    }
+    const destroyed = await storeMan.destroy(Book, bookId);
+    if (destroyed) {
+      document.body.appendChild(dom.createElement("p",
+          {content: `Book is detroyed: ${JSON.stringify(bookUpdate)}`}));
+    }
+  } catch (e) {
+    console.log( e.constructor.name +": "+ e.message);
+  }
+
+  //*** Test 6 - ClearTable ********************
+  document.body.appendChild(dom.createElement("h2", {content: "Test 6: ClearTable"}));
+  try {
+    let bookRecords = await storeMan.retrieveAll(Book);
+    // Destroyed a book before clearing table -> length - 1
+    if (bookRecords.length === 3) {
+      document.body.appendChild(dom.createElement("p",
+          {content: `Clearing Books: ${JSON.stringify(bookRecords)}`}));
+    } else {
+      document.body.appendChild(dom.createElement("p",
+          {content: `Expacted two books in table, received ${bookRecords.length}`}));
+    }
+    // clear Book table
+    await storeMan.clearTable(Book);
+    // check no book awailable
+    bookRecords = await storeMan.retrieveAll(Book);
+    if (bookRecords.length === 0) {
+      document.body.appendChild(dom.createElement("p",
+          {content: "Success, table `Book` is empty!"}));
+    }
+    
+  } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+  }
+
+  //*** Test 7 - ClearDB ********************
+  document.body.appendChild(dom.createElement("h2", {content: "Test 7: ClearDB"}));
+  try {
+    let pubs = await storeMan.retrieveAll(Publisher);
+    if (pubs.length > 0) {
+      document.body.appendChild(dom.createElement("p",
+          {content: "Database contains entries, clearing DB now!"}));
+    } else {
+      document.body.appendChild(dom.createElement("p",
+          {content: "Failed: Database already empty!"}));
+    }
+    await storeMan.clearDB();
+    pubs = await storeMan.retrieveAll(Publisher);
+    let books = await storeMan.retrieveAll(Book);
+    if (pubs.length === 0 && books.length === 0) {
+      document.body.appendChild(dom.createElement("p",
+          {content: "Success: Database empty!"}));
+    } else {
+      document.body.appendChild(dom.createElement("p",
+          {content: "Failed: Database not cleared!"}));
+    }
+
+  } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+  }
+
  } catch (e) {
    console.log( e.constructor.name +": "+ e.message);
  }
-
  </script>
 </body>
 </html>
