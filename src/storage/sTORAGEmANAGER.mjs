@@ -8,6 +8,7 @@
 import util from "../../lib/util.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
+// import sTORAGEmANAGER_Firestore from "./sTORAGEmANAGER_Firestore.mjs";
 //import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
 import dt from "../datatypes.mjs";
 import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
@@ -19,11 +20,14 @@ import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
  * @class
  */
 class sTORAGEmANAGER {
+  // Private fields
+  #allowedAdapter = ["LocalStorage","IndexedDB", "Firestore"];
+
   constructor({adapterName, dbName, createLog, validateBeforeSave}) {
-    if (!(["LocalStorage","IndexedDB"].includes( adapterName))) {
-      throw new ConstraintViolation("Invalid storage adapter name!");
+    if (!(this.#allowedAdapter.includes( adapterName))) {
+      throw new NoConstraintViolation("Invalid storage adapter name!");
     } else if (!dbName) {
-      throw new ConstraintViolation("Missing DB name!");
+      throw new NoConstraintViolation("Missing DB name!");
     } else {
       this.adapterName = adapterName;
       this.dbName = dbName;
@@ -540,6 +544,24 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     // wait for the completion of the transaction tx
     await tx.done;
   }
+};
+
+sTORAGEmANAGER.adapters["Firestore"] = {
+  //------------------------------------------------
+  createEmptyDb: async function (dbName, modelClasses) {
+  //------------------------------------------------
+    // const firestore = sTORAGEmANAGER_Firestore();
+    return await openDB( dbName, 1, {
+      upgrade(db) {
+        for (const mc of modelClasses) {
+          const tn = mc.tableName || util.class2TableName( mc.name);
+          if (!db.objectStoreNames.contains( tn)) {
+            db.createObjectStore( tn, {keyPath: mc.idAttribute || "id"});
+          }
+        }
+      }
+    });
+  },
 };
 
 export default sTORAGEmANAGER;
