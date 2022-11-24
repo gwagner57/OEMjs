@@ -1,7 +1,9 @@
 ﻿import sTORAGEmANAGER from "./sTORAGEmANAGER.mjs";
-import { initializeApp } from "../../node_modules/firebase/firebase-app.js";
-import { getFirestore } from "firebase/firestore/lite";
-import { getAuth, signInWithPopup, GithubAuthProvider } from "../../node_modules/firebase/firebase-auth.js";
+import { initializeApp } from "firebase/app";
+import { readFileSync } from "fs";
+import { getFirestore, addDoc, deleteDoc, collection, doc, setDoc, getDoc } from "firebase/firestore";
+import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { clearScreenDown } from "readline";
 
 /**
  * @fileOverview  Storage management methods for the "Firestore" adapter
@@ -13,7 +15,10 @@ import { getAuth, signInWithPopup, GithubAuthProvider } from "../../node_modules
 class sTORAGEmANAGER_Firestore extends sTORAGEmANAGER {
   // Firebase Application Object
   #fireApp = null;
-  #creadentials = null;
+  #db = null;
+  #store = {};
+  #firestoreConfig = null;
+  #credentials = null;
 
   /**
    * 
@@ -21,31 +26,49 @@ class sTORAGEmANAGER_Firestore extends sTORAGEmANAGER {
    * @param {*} createLog 
    * @param {*} validateBeforeSave 
    */
-  constructor(dbName, createLog, validateBeforeSave) {
+  constructor({ dbName, configPath, createLog, validateBeforeSave }) {
     super({ adapterName: "Firestore", dbName: dbName, createLog: createLog, validateBeforeSave: validateBeforeSave });
 
     this.dbName = dbName;
     this.createLog = createLog;
     this.validateBeforeSave = validateBeforeSave;
+    if (!configPath) {
+      this.configPath = "../../firestore_config.json";
+    } else {
+      this.configPath = configPath;
+    }
+  }
+
+  getDb() {
+    return this.#db;
+  }
+
+  /**
+   * Read Firestore configuration from provided `configPath` at 
+   * instance initialization.
+   * 
+   * @returns Parsed JSON file containing Firestore configuration
+   */
+  #readFirestoreConfig() {
+    const config = readFileSync(this.configPath);
+    let firestoreConfig = null;
+    if (config) {
+      firestoreConfig = JSON.parse(config);
+      this.#firestoreConfig = firestoreConfig;
+    } else {
+      throw new Error("Firestore config file not found at: ", this.configPath);
+    }
+    return firestoreConfig;
   }
 
   /**
    * Initialize Firebase application with needed parameters
    * 
-   * @param {string} apiKey 
    */
-  #init(apiKey) {
-    const firestoreConfig = {
-      apiKey: "AIzaSyAYW687lC2s47H-VwivJTKeyZLj-l9hPQY",
-      authDomain: "oemjs-e0c77.firebaseapp.com",
-      projectId: "oemjs-e0c77",
-      storageBucket: "oemjs-e0c77.appspot.com",
-      messagingSenderId: "1075763611585",
-      appId: "1:1075763611585:web:78d6b1bd63dfe463451140"
-    };
-
+  #init() {
+    const firestoreConfig = this.#readFirestoreConfig();
     this.#fireApp = initializeApp(firestoreConfig);
-    const db = getFirestore(this.#fireApp);
+    this.#db = getFirestore(this.#fireApp);
   }
 
   /**
@@ -53,42 +76,129 @@ class sTORAGEmANAGER_Firestore extends sTORAGEmANAGER {
    * Firestore database.
    * 
    */
-  #authenticate() {
-    const provider = new GithubAuthProvider()
-    // TODO Remove 557f2b9fda77854fda108d1ae92fa3a25c13014e
-    let credential;
-    signInWithPopup(getAuth, provider).then((result) => {
-      // This gives you a GitHub Access Token. You can use it to access the GitHub API.
-      console.log("Start Github Provider");
-      credential = GithubAuthProvider.credentialFromResult(result);
-      const token = credential.accessToken;
-
+  #authenticate(email, password) {
+    let userCredentials;
+    signInWithEmailAndPassword(getAuth(), email, password).then((result) => {
       // The signed-in user info.
-      const user = result.user;
-      // TODO notice user is signed in
-      console.log("User is signed in: ", user);
-
+      userCredentials = result.user;
     }).catch((error) => {
-      // Handle Errors here.
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      // The email of the user's account used.
-      // const email = error.customData.email;
-      // The AuthCredential type that was used.
-      const credential = GithubAuthProvider.credentialFromError(error);
-      // ...
-      console.log("Github Provider error: ", error);
+      console.log("Error Sign-In: ", error);
     });
+    if (userCredentials) {
+      this.#credentials = userCredentials;
+    }
   }
 
   /**
    * Setting up all needed information for accessing the firestore database
    */
   setup() {
-    this.#init("randomKey");
-    // this.#authenticate();
+    this.#init();
+    this.#authenticate(this.#firestoreConfig.username, this.#firestoreConfig.user_pass);
   }
 
+  quit() {
+    signOut(getAuth());
+  }
+
+  async createEmptyDb(dbName, classes) {
+    // Nothing todo, collections is automatically created
+    // if data is added
+  }
+
+  async deleteDatabase(dbName) {
+    // Find collection and delete them
+    const col = doc(this.#db, dbName);
+    if (col) {
+      await deleteDoc(doc(this.#db, dbName));
+    } else {
+      throw new Error(`dbName ${dbName} not found`);
+    }
+  }
+
+  async add(dbName, record, Class) {
+    try {
+      const docRef = await addDoc(collection(this.#db, Class.name), record.toRecord());
+      // Store all added records of a class
+      if (docRef) {
+        const hasName = Object.keys(this.#store).filter(name => name === Class.name);
+        if (hasName.length > 0) {
+          this.#store[Class.name].push(docRef.id);
+        } else {
+          this.#store[Class.name] = [docRef.id];
+        }
+        return docRef.id;
+      }
+      console.log("Document written with ID: ", docRef.id);
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  }
+
+  async retrieve(dbName, Class, id) {
+    const docRef = doc(this.#db, Class.name + "/" + id);
+    return await getDoc(docRef);
+  }
+
+  async retrieveAll(dbName, Class) {
+    const ref = doc(this.#db, Class.name);
+    return await getDoc(ref);
+  }
+
+  async update(dbName, Class, id, slots) {
+    const docRef = doc(this.#db, Class.name, id);
+    return await setDoc(docRef, slots);
+  }
+
+  async destroy(dbName, Class, id) {
+    return await deleteDoc(doc(this.#db, dbName, Class.name, id));
+  }
+
+  async clearTable(dbName, Class) {
+    const refs = this.#store[Class.name];
+    if (refs) {
+      refs.forEach(e => {
+        this.destroy(dbName, Class, e);
+      });
+    }
+  }
+
+  async clearDB(dbName) {
+    await deleteDoc(doc(this.#db, dbName));
+  }
 }
 
+
 export default sTORAGEmANAGER_Firestore;
+
+// Extend adapters
+sTORAGEmANAGER.adapters["Firestore"] = {
+  //------------------------------------------------
+  createEmptyDb: async (dbName, modelClasses) => {
+    sTORAGEmANAGER_Firestore.createEmptyDb(dbName, modelClasses);
+  },
+  deleteDatabase: async (dbName) => {
+    sTORAGEmANAGER_Firestore.deleteDatabase(dbName);
+  },
+  add: async (dbName, record, Class) => {
+    sTORAGEmANAGER_Firestore.add(dbName, record, Class);
+  },
+  retrieve: async (dbName, Class) => {
+    sTORAGEmANAGER_Firestore.retrieve(dbName, Class);
+  },
+  retrieveAll: async (dbName, Class) => {
+    sTORAGEmANAGER_Firestore.retrieveAll(dbName, Class);
+  },
+  update: async (dbName, Class, id, slots) => {
+    sTORAGEmANAGER_Firestore.update(dbName, Class, id, slots);
+  },
+  destroy: async (dbName, Class, id) => {
+    sTORAGEmANAGER_Firestore.destroy(dbName, Class, id);
+  },
+  clearTable: async (dbName, Class) => {
+    sTORAGEmANAGER_Firestore.clearTable(dbName, Class);
+  },
+  clearDB: async (dbName) => {
+    sTORAGEmANAGER_Firestore.clearDB(dbName);
+  }
+};

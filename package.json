@@ -7,12 +7,14 @@
     "test": "tests"
   },
   "dependencies": {
-    "gulp": "^3.9.1"
+    "@aws-sdk/client-s3": "^3.215.0",
+    "firebase": "^9.14.0",
+    "idb": "^7.1.1"
   },
   "devDependencies": {
-    "@types/jest": "^29.0.3",
+    "@types/jest": "^29.2.2",
     "c8": "^7.12.0",
-    "chai": "^4.3.6",
+    "chai": "^4.3.7",
     "del": "^3.0.0",
     "gulp": "^3.9.1",
     "gulp-concat": "^2.6.1",
@@ -29,7 +31,8 @@
   "scripts": {
     "test": "mocha",
     "test:watch": "mocha --watch --parallel",
-    "test:cov": "c8 mocha"
+    "test:cov": "c8 mocha",
+    "test:static": "http-server --mime mime.types ."
   },
   "repository": {
     "type": "git",
