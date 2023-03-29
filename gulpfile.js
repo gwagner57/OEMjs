@@ -9,9 +9,9 @@
 
 
 // dependency NodeJS modules
-const argv = require( "yargs").argv,
-  gulp = require( "gulp"),
-  concat = require( "gulp-concat"),
+const argv = require("yargs").argv,
+  gulp = require("gulp"),
+  concat = require("gulp-concat"),
   notify = require("gulp-notify"),
   gulpif = require("gulp-if"),
   uglify = require("gulp-uglify"),
@@ -27,87 +27,82 @@ const buildFolder = "dist";
 const cLASSjsBrowserLibFiles = [
   "lib/browserShims.js",
 
-  "lib/errorTypes.js",
-  "lib/util.js",
-  "src/eNUMERATION.js",
-  "src/cLASS.js",
+  "lib/util.mjs",
+  "src/eNUMERATION.mjs",
+  "src/bUSINESSoBJECT.mjs",
 
-  "lib/dom.js",
-  "src/oBJECTvIEW.js",
+  "lib/dom.mjs",
 
   "lib/idb.js",
-  "src/storage/sTORAGEmANAGER.js",
-  "src/storage/sTORAGEmANAGER_IndexedDB.js"
+  "src/storage/sTORAGEmANAGER.mjs",
+  "src/storage/sTORAGEmANAGER_Firestore.mjs"
 ];
 
 // the JS files of the cLASSjs Worker Library
 const cLASSjsWorkerLibFiles = [
   "lib/browserShims.js",
-  "lib/errorTypes.js",
-  "lib/util.js",
-  "src/eNUMERATION.js",
-  "src/cLASS.js",
+  "lib/util.mjs",
+  "src/eNUMERATION.mjs",
+  "src/bUSINESSoBJECT.mjs",
   "lib/idb.js",
-  "src/storage/sTORAGEmANAGER.js",
-  "src/storage/sTORAGEmANAGER_IndexedDB.js"
+  "src/storage/sTORAGEmANAGER.mjs",
+  "src/storage/sTORAGEmANAGER_Firestore.mjs"
 ];
 
 // build the cLASSjsBrowserLib.js file
-gulp.task( "build-browser-lib", function() {
-  return gulp.src( cLASSjsBrowserLibFiles)
-    .pipe( concat("cLASSjsBrowserLib.js"))
-    .pipe( gulpif( argv.production, uglify()))
-    .pipe( gulp.dest( buildFolder))
-    .pipe( notify({message: "cLASSjsBrowserLib.js was built!"}));
+gulp.task("build-browser-lib", function () {
+  return gulp.src(cLASSjsBrowserLibFiles)
+    .pipe(concat("cLASSjsBrowserLib.js"))
+    .pipe(gulpif(argv.production, uglify()))
+    .pipe(gulp.dest(buildFolder))
+    .pipe(notify({ "message": "cLASSjsBrowserLib.js was built!" }));
 });
-gulp.task( "build-css", function() {
+gulp.task("build-css", function () {
   return gulp.src(
-    [ "css/normalize.css",
+    ["css/normalize.css",
       "css/vIEW.css"
-	])
-    .pipe( concat( "cLASS.css"))
-//    .pipe( gulpif( argv.production, cleanCSS()))
-    .pipe( gulp.dest( buildFolder))
+    ])
+    .pipe(concat("cLASS.css"))
+    //    .pipe( gulpif( argv.production, cleanCSS()))
+    .pipe(gulp.dest(buildFolder))
 });
 // build the cLASSjsWorkerLib.js file
-gulp.task( "build-worker-lib", function() {
-  return gulp.src( cLASSjsWorkerLibFiles)
-      .pipe( concat("cLASSjsWorkerLib.js"))
-      .pipe( gulpif( argv.production, uglify()))
-      .pipe( gulp.dest( buildFolder))
-      .pipe( notify({message: "cLASSjsWorkerLib.js was built!"}));
+gulp.task("build-worker-lib", function () {
+  return gulp.src(cLASSjsWorkerLibFiles)
+    .pipe(concat("cLASSjsWorkerLib.js"))
+    .pipe(gulpif(argv.production, uglify()))
+    .pipe(gulp.dest(buildFolder))
+    .pipe(notify({ "message": "cLASSjsWorkerLib.js was built!" }));
 });
-gulp.task( "build", [ 
-    "build-browser-lib",
-	"build-css",
-    "build-worker-lib"
-]);
+// gulp.task( "build", [ 
+//     "build-browser-lib",
+// 	"build-css",
+//     "build-worker-lib"
+// ]);
+gulp.task("build", gulp.series("build-browser-lib", "build-css", "build-worker-lib"));
 
 
 // build the cLASSjsNodeLib.js file
-gulp.task( "build-node", function() {
+gulp.task("build-node", function () {
   return gulp.src([
-    "lib/errorTypes.js",
-    "lib/util.js",
-    "src/eNUMERATION.js",
-    "src/cLASS.js"
+    "lib/util.mjs",
+    "src/eNUMERATION.mjs",
+    "src/bUSINESSoBJECT.mjs"
   ])
-      .pipe( concat("cLASSjsNodeLib.js"))
-      .pipe( gulpif( argv.production, uglify()))
-      .pipe( gulp.dest( buildFolder))
-      .pipe( notify({message: "cLASSjsNodeLib.js was built!"}));
+    .pipe(concat("cLASSjsNodeLib.js"))
+    .pipe(gulpif(argv.production, uglify()))
+    .pipe(gulp.dest(buildFolder))
+    .pipe(notify({ "message": "cLASSjsNodeLib.js was built!" }));
 });
 
 
 gulp.task('dev', function () {
   gulp.src([
-      "lib/browserShims.js",
-      "lib/errorTypes.js",
-      "lib/util.js",
-  	  "src/eNUMERATION.js",
-      "src/cLASS.js",
-      "lib/dom.js",
-      "src/oBJECTvIEW.js"
+    "lib/browserShims.js",
+    "lib/util.mjs",
+    "src/eNUMERATION.mjs",
+    "src/bUSINESSoBJECT.mjs",
+    "lib/dom.mjs",
   ])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'));
