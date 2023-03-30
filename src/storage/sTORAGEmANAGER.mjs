@@ -227,14 +227,13 @@ class sTORAGEmANAGER {
         if (updatedProperties.length > 0) {
           try {
             this.adapter.update( this.dbName, Class, id, updSlots);
-            console.log("Properties " + updatedProperties.toString() +
-                " of " + Class.name + " " + id + " updated.");
+            console.log(`Properties ${updatedProperties.toString()} of ${Class.name} ${id} updated.`);
           } catch (error) {
             console.log(`${error.name}: ${error.message}`);
           }
         }
       } else {
-        console.log("No property value changed for "+ Class.name +" "+ id +"!");
+        console.log(`No property value changed for ${Class.name} ${id}!`);
       }
     }
   }
@@ -510,8 +509,13 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
     const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    slots[Class.idAttribute] = id;
-    db.put( tableName, slots);
+    const obj = await db.get( tableName, id);
+    // update the properties concerned
+    for (const propName of Object.keys( slots)) {
+      obj[propName] = slots[propName];
+    }
+    // save updated object
+    db.put( tableName, obj);
   },
   //------------------------------------------------
   destroy: async function (dbName, Class, id) {
