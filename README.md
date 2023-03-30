@@ -121,28 +121,3 @@ Since the IndexedDB technology is much more powerful, it is normally preferred f
     }
     storageManager = new sTORAGEmANAGER( storageAdapter);
 
-## Development of OEM library
-
-
-All development dependencies should be installed with Node.js Package Manager, this project uses `npm` and command below installed all need
-dependecies.
-
-```bash
-npm install
-```
-### Testing
-
-This library uses JavaScript test framework [mocha](https://mochajs.org/). Mocha support ECMA Script modules nativaly, no need to transform
-any JavaScript to 'CommonJS' with `babel.js`.  It uses [chai.js](https://www.chaijs.com) for test assertions and
-test coverage is made with [c8](https://github.com/bcoe/c8).
-
-Provided test cases can be run with following command:
-
-```bash
-# Run all test cases
-npm test
-# Run test on file changes 
-npm rum test:watch
-# Coverage report
-npm run test:cov
-```

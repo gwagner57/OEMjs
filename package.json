@@ -10,9 +10,6 @@
     "gulp": "^3.9.1"
   },
   "devDependencies": {
-    "@types/jest": "^29.0.3",
-    "c8": "^7.12.0",
-    "chai": "^4.3.6",
     "del": "^3.0.0",
     "gulp": "^3.9.1",
     "gulp-concat": "^2.6.1",
@@ -23,13 +20,10 @@
     "gulp-tap": "^1.0.1",
     "gulp-uglify": "^3.0.0",
     "jshint": "^2.9.5",
-    "mocha": "^10.1.0",
     "yargs": "^9.0.1"
   },
   "scripts": {
-    "test": "mocha",
-    "test:watch": "mocha --watch --parallel",
-    "test:cov": "c8 mocha"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

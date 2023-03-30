@@ -341,20 +341,18 @@ class vIEW {
      */
     function createUiElemsForViewFields() {
       for (const fldOrdEl of fieldOrder) {
-        var containerEl = document.createElement("div"),
-            fields=[], range;
-        if (!Array.isArray( fldOrdEl)) {
-          // single field
+        var containerEl = document.createElement("div");
+        var fields=[], range;
+        if (!Array.isArray( fldOrdEl)) {  // single field
           fields = [fldOrdEl];
-        } else {
-          // field group
+        } else {  // field group
           containerEl.className = "field-group";
           fields = fldOrdEl;
         }
         for (const fld of fields) {
           if (propDecl[fld])  {  // property field
             range = propDecl[fld].range;
-            if (typeof eNUMERATION === "object" && range instanceof eNUMERATION) {  // enumeration field
+            if (typeof eNUMERATION === "function" && range instanceof eNUMERATION) {  // enumeration field
               if (viewType === "D") {
                 containerEl.className = "I-O-field";
                 containerEl.appendChild( createLabeledField( fld));
