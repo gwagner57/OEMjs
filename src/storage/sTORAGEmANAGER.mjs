@@ -227,6 +227,11 @@ class sTORAGEmANAGER {
         if (updatedProperties.length > 0) {
           try {
             this.adapter.update( this.dbName, Class, id, updSlots);
+            if (id in Class.instances) {
+              for (const p of Object.keys( updSlots)) {
+                Class.instances[id][p] = updSlots[p];
+              }
+            }
             console.log(`Properties ${updatedProperties.toString()} of ${Class.name} ${id} updated.`);
           } catch (error) {
             console.log(`${error.name}: ${error.message}`);

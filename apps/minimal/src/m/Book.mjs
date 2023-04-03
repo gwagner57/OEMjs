@@ -24,6 +24,7 @@ Book.properties = {
   "category": {range: BookCategoryEL, label:"Category"},
   "edition": {range:"PositiveInteger", label:"Edition", optional: true}
 }
+Book.attributesToDisplayInLists = ["isbn","title","year"];
 Book.setup();
 
 export { BookCategoryEL, Book};

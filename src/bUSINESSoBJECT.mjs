@@ -161,7 +161,7 @@
     var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
     var propDecl = this.constructor.properties[prop],
         range = propDecl.range, val = this[prop],
-        decimalPlaces = propDecl.displayDecimalPlaces || oes.defaults.displayDecimalPlaces || 2;
+        decimalPlaces = propDecl.displayDecimalPlaces || 2;
     var valuesToConvert=[], displayStr="", k=0,
         listSep = ", ";
     if (val === undefined || val === null) return "";
@@ -317,6 +317,7 @@
    }
 }
 bUSINESSoBJECT.classes = {};
+bUSINESSoBJECT.views = {};
 // A flag for disabling constraint checking
 bUSINESSoBJECT.areConstraintsToBeChecked = true;
 
