@@ -249,7 +249,7 @@ class sTORAGEmANAGER {
    * @param {string|number} id  The object ID value
    */
   destroy( Class, id) {
-    const dbName = this.adapter.dbName;
+    const dbName = this.dbName;
     let currentSM = this;
     return new Promise( function (resolve) {
       currentSM.retrieve( Class, id).then( function (record) {
