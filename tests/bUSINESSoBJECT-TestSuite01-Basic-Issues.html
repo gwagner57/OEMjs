@@ -23,9 +23,10 @@
 
  <script type="module">
  import dom from "../lib/dom.mjs";
- import {test, showSuccessMessage} from "./test.js";
+ import {lIST,rECORD} from "../src/datatypes.mjs";
  import eNUMERATION from "../src/eNUMERATION.mjs";
  import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
+ import {test, showSuccessMessage} from "./test.js";
 
  /****************************************
  *** Test code **************************
@@ -107,7 +108,31 @@
    test("b4.toRecord() failed", JSON.stringify( b4.toRecord()) ===
        JSON.stringify({isbn:"123456789X", title:"Hello world", year: 2022, publisher:"Springer"}));
    if (test.okay) showSuccessMessage();
-   else console.log(JSON.stringify( b4.toRecord()));
+   else {
+     console.log(JSON.stringify( b4.toRecord()));
+     test.okay = true;  // reset test.okay
+   }
+   //*** Test 6 ***********************************************************
+   document.body.appendChild(dom.createElement("h2", {content: "Test 6: collection datatype lIST"}));
+   const PhoneNumbers = new lIST( new rECORD({type:"String", number:"Integer"}));
+   class Person extends bUSINESSoBJECT {
+     constructor ({name, phoneNumbers}) {
+       super( name);
+       this.phoneNumbers = phoneNumbers;
+     }
+   }
+   Person.properties = {
+     "name": {range:"String", isIdAttribute: true, label:"Name"},
+     "phoneNumbers": {range: PhoneNumbers, label:"Phone numbers"}
+   }
+   Person.setup();
+   const gerd = new Person({
+     name: "Gerd",
+     phoneNumbers: [{type:"home", number:834567},
+       {type:"mobile", number:132934565},
+       {type:"business", number:8889912}]
+   });
+   document.body.appendChild(dom.createElement("p", {content: gerd.toString()}));
 
  } catch (e) {
    console.log( e.constructor.name +": "+ e.message);

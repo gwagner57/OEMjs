@@ -32,7 +32,7 @@
  * @license The MIT License (MIT)
  * @author Gerd Wagner
  ******************************************************************************/
- import dt from "./datatypes.mjs";
+ import {dt, lIST, rECORD} from "./datatypes.mjs";
  import { NoConstraintViolation,
    MandatoryValueConstraintViolation, UniquenessConstraintViolation,
    ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
@@ -80,7 +80,7 @@
             propLabel = propDecl?.shortLabel || propDecl?.label || p;
       var valStr = "";
       // is p a declared reference property?
-      if (propDecl && typeof propDecl.range === "string" && propDecl.range in bUSINESSoBJECT.classes) {
+      if (propDecl && typeof propDecl.range === "string" && propDecl.range in dt.classes) {
         // is the property multi-valued?
         if (propDecl.maxCard && propDecl.maxCard > 1) {
           if (Array.isArray( this[p])) {
@@ -158,12 +158,13 @@
   /***************************************************/
   getValueAsString( prop) {
     // make sure the eNUMERATION meta-class object can be checked if available
-    var eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
-    var propDecl = this.constructor.properties[prop],
-        range = propDecl.range, val = this[prop],
-        decimalPlaces = propDecl.displayDecimalPlaces || 2;
-    var valuesToConvert=[], displayStr="", k=0,
-        listSep = ", ";
+    const eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
+    const Class = this.constructor,
+          idAttr = Class.idAttribute ?? "id",
+          propDecl = this.constructor.properties[prop],
+          range = propDecl.range, val = this[prop],
+          decimalPlaces = propDecl.displayDecimalPlaces || 2;
+    var valuesToConvert=[], displayStr="", listSep = ", ";
     if (val === undefined || val === null) return "";
     if (propDecl.maxCard && propDecl.maxCard > 1) {
       if (Array.isArray( val)) {
@@ -187,13 +188,13 @@
         valuesToConvert[i] = util.createIsoDateString( v);
       } else if (Array.isArray( v)) {  // JSON-compatible array
         valuesToConvert[i] = v.slice(0);  // clone
-      } else if (typeof range === "string" && bUSINESSoBJECT[range]) {
-        if (typeof v === "object" && v.id !== undefined) {
-          valuesToConvert[i] = v.id;
+      } else if (typeof range === "string" && range in dt.classes) {
+        if (typeof v === "object") {
+          valuesToConvert[i] = v[idAttr];
         } else {
           valuesToConvert[i] = v.toString();
           propDecl.stringified = true;
-          console.log("Property "+ this.constructor.Name +"::"+ prop +" has a bUSINESSoBJECT object value without an 'id' slot!");
+          console.log(`Reference roperty ${this.constructor.name}::${prop} has value ${v.toString()}`);
         }
       } else {
         valuesToConvert[i] = JSON.stringify( v);
@@ -205,7 +206,7 @@
       displayStr = valuesToConvert[0];
       if (propDecl.maxCard && propDecl.maxCard > 1) {
         displayStr = "[" + displayStr;
-        for (k=1; k < valuesToConvert.length; k++) {
+        for (let k=1; k < valuesToConvert.length; k++) {
           displayStr += listSep + valuesToConvert[k];
         }
         displayStr = displayStr + "]";
@@ -246,14 +247,16 @@
      Class.instances = {};
      // collect all names of BO classes in a map
      dt.classes[Class.name] = Class;
-     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes), ...Object.keys( eNUMERATION)];
+     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes),
+         ...Object.values( eNUMERATION)];
      // pre-process all property definitions
      for (const p of Object.keys( propDefs)) {
        const propDecl = propDefs[p],
              range = propDecl.range;
        // check if property definition includes a range declaration
        if (!range) throw Error(`No range defined for property ${p} of class ${Class.name}`);
-       else if (!admissibleRanges.includes( range) && !(range instanceof eNUMERATION))
+       else if (!(admissibleRanges.includes( range) ||
+                  range instanceof lIST || range instanceof rECORD))
            throw Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
        // establish standard ID attribute
        if (propDecl.isIdAttribute) Class.idAttribute = p;
@@ -316,7 +319,6 @@
      */
    }
 }
-bUSINESSoBJECT.classes = {};
 bUSINESSoBJECT.views = {};
 // A flag for disabling constraint checking
 bUSINESSoBJECT.areConstraintsToBeChecked = true;

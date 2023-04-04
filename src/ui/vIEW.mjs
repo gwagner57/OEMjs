@@ -63,7 +63,7 @@
  * 
  * @class
  */
-import dt from "../datatypes.mjs";
+import {dt} from "../datatypes.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import dom from "../../lib/dom.mjs";

@@ -13,7 +13,7 @@ const dt = {
   integerTypes: ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber","Year"],
   decimalTypes: ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"],
   otherPrimitiveTypes: ["Boolean","Date","DateTime"],
-  structuredDataTypes: ["List","Record"],
+  simpleStructuredDataTypes: ["List","Record"],  // JSON arrays and objects
   isStringType(T) {return dt.stringTypes.includes(T);},
   isIntegerType(T) {return dt.integerTypes.includes(T) ||
       (typeof eNUMERATION === "function" && (T instanceof eNUMERATION || T in eNUMERATION));},
@@ -124,7 +124,7 @@ const dt = {
           try {
             val = JSON.parse( str);
           } catch (error) {
-            val = undefined; break;
+            value = undefined; break;
           }
           if (val) value.push( val);
         }
@@ -349,7 +349,7 @@ const dt = {
     default:
       if (range instanceof eNUMERATION) {
         jsDataType = "number";
-      } else if (typeof range === "string" && mODELcLASS[range]) {
+      } else if (typeof range === "string" && dt.classes[range]) {
         jsDataType = "string";  // for the standard ID (TODO: can also be "number")
       } else if (typeof range === "object") {  // a.g. Array or Object
         jsDataType = "object";
@@ -472,15 +472,23 @@ const dt = {
         if (typeof range === "string") range = eNUMERATION[range];
         for (const v of valuesToCheck) {
           if (!Number.isInteger(v) || v < 1 || v > range.MAX) {
-            constrVio.push( new RangeConstraintViolation("The value "+ v +
-                " is not an admissible enumeration integer for "+ attr));
+            constrVio.push( new RangeConstraintViolation(
+                `The value ${v} is not an admissible enumeration integer for ${attr}`));
+          }
+        }
+      } else if (range instanceof lIST) {
+        for (const v of valuesToCheck) {
+          if (typeof range.itemType === "string" && !isOfType( v, range.itemType) ||
+              !(range.itemType instanceof lIST || range.itemType instanceof rECORD)) {
+            constrVio.push( new RangeConstraintViolation(
+                `The ${attr} value ${v} is not of type ${range.itemType}`));
           }
         }
       } else if (Array.isArray( range)) {  // *** Ad-hoc enumeration ***
         for (const v of valuesToCheck) {
           if (range.indexOf(v) === -1) {
-            constrVio.push( new RangeConstraintViolation("The "+ attr +" value "+ v +
-                " is not in value list "+ range.toString()));
+            constrVio.push( new RangeConstraintViolation(
+                `The ${attr} value ${v} is not in ad-hoc enumeration ${range.toString()}`));
           }
         }
       } else if (typeof range === "string" && range in dt.classes) {
@@ -659,6 +667,43 @@ const dt = {
 }
 dt.numericTypes = dt.integerTypes.concat( dt.decimalTypes);
 dt.primitiveDatatypes = [...dt.stringTypes, ...dt.numericTypes, ...dt.otherPrimitiveTypes];
-dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.structuredDataTypes];
+dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.simpleStructuredDataTypes];
 
-export default dt;
+/*
+ * Collection types are defined as instances of lIST or rECORD specifying
+ * their item type. They can be nested.
+ * Example:
+ const PhoneNumbers = new lIST( new rECORD({type:"String", number:"Integer"}))
+ Person.properties = {
+  "name": {range:"String", isIdAttribute: true, label:"Name"},
+  "phoneNumbers": {range: PhoneNumbers, label:"Phone numbers"}
+ }
+ Person.instances["Gerd"] = new Person({
+        name: "Gerd",
+        phoneNumbers: [{type:"home", number:834567},
+                       {type:"mobile", number:132934565},
+                       {type:"business", number:8889912]
+      });
+ */
+class lIST extends Array {
+  constructor (itemType) {
+    super();
+    if (this instanceof lIST) {  // called with new
+      this.itemType = itemType;
+    } else { // called without new, so return an object
+      return new lIST( itemType);
+    }
+  }
+}
+class rECORD extends Object {
+  constructor (fieldNameTypePairs) {
+    super();
+    this.fieldNames = this.fieldTypes = [];
+    for (const [fldN, fldT] of Object.entries( fieldNameTypePairs)) {
+      this.fieldNames.push( fldN);
+      this.fieldTypes.push( fldT);
+    }
+  }
+}
+
+export {dt, lIST, rECORD};

@@ -171,9 +171,9 @@ form > div:first-child  {
 form > div:not(:last-child)  {
   margin-bottom: 0.5em;
 }
-form > div > label {
-  position: relative;
-}
+/* is this needed?
+form > div > label { position: relative;}
+*/
 form > div.I-O-field > label {
   width: 40em;
   display: block;     /* by default, one labeled control per line*/
