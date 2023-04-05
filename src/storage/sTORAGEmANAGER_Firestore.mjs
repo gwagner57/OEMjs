@@ -1,14 +1,12 @@
 ﻿import sTORAGEmANAGER from "./sTORAGEmANAGER.mjs";
-import { initializeApp } from "firebase/app";
-import { readFileSync } from "fs";
-import { getFirestore, addDoc, deleteDoc, collection, doc, setDoc, getDoc } from "firebase/firestore";
-import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { clearScreenDown } from "readline";
+import { initializeApp } from "../../lib/firebase-app.js";
+import { getFirestore, addDoc, deleteDoc, collection, doc, setDoc, getDoc } from "../../lib/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut } from "../../lib/firebase-auth.js";
 
 /**
  * @fileOverview  Storage management methods for the "Firestore" adapter
- * @author ...
- * @copyright Copyright 2022 ..., Chair of Internet Technology,
+ * @author Benji Miethke
+ * @copyright Copyright 2023, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
  */
@@ -26,17 +24,20 @@ class sTORAGEmANAGER_Firestore extends sTORAGEmANAGER {
    * @param {*} createLog 
    * @param {*} validateBeforeSave 
    */
-  constructor({ dbName, configPath, createLog, validateBeforeSave }) {
+  constructor({ dbName, configPath = "firestore_config.json", createLog, validateBeforeSave }) {
     super({ adapterName: "Firestore", dbName: dbName, createLog: createLog, validateBeforeSave: validateBeforeSave });
 
     this.dbName = dbName;
     this.createLog = createLog;
     this.validateBeforeSave = validateBeforeSave;
     if (!configPath) {
-      this.configPath = "../../firestore_config.json";
-    } else {
-      this.configPath = configPath;
+      console.error("configpath isn't defined!")
     }
+    let rootUrl = new URL(window.location.href);
+    this.configPath = new URL("/" + configPath, rootUrl.origin);
+    fetch(this.configPath).then(response => response.json()).then(data => this.#firestoreConfig = data).catch(err => {
+      console.error("Can't read config", err);
+    })
   }
 
   getDb() {
@@ -49,13 +50,15 @@ class sTORAGEmANAGER_Firestore extends sTORAGEmANAGER {
    * 
    * @returns Parsed JSON file containing Firestore configuration
    */
-  #readFirestoreConfig() {
-    const config = readFileSync(this.configPath);
+  #readFirestoreConfig(config) {
+    // const config = readFileSync(this.configPath);
     let firestoreConfig = null;
     if (config) {
       firestoreConfig = JSON.parse(config);
-      this.#firestoreConfig = firestoreConfig;
-    } else {
+    } if (this.configPath) {
+      firestoreConfig = JSON.parse(config);
+    }
+    else {
       throw new Error("Firestore config file not found at: ", this.configPath);
     }
     return firestoreConfig;
@@ -66,8 +69,8 @@ class sTORAGEmANAGER_Firestore extends sTORAGEmANAGER {
    * 
    */
   #init() {
-    const firestoreConfig = this.#readFirestoreConfig();
-    this.#fireApp = initializeApp(firestoreConfig);
+    // this.#firestoreConfig = this.#readFirestoreConfig();
+    this.#fireApp = initializeApp(this.#firestoreConfig);
     this.#db = getFirestore(this.#fireApp);
   }
 
@@ -118,7 +121,14 @@ class sTORAGEmANAGER_Firestore extends sTORAGEmANAGER {
 
   async add(dbName, record, Class) {
     try {
-      const docRef = await addDoc(collection(this.#db, Class.name), record.toRecord());
+      if (this.validateBeforeSave) {
+        // Validate record
+      }
+      if (Array.isArray(record)) {
+        record.forEach(item => addDoc(collection(this.#db, Class.name)), item);
+      } else {
+        const docRef = await addDoc(collection(this.#db, Class.name), record);
+      }
       // Store all added records of a class
       if (docRef) {
         const hasName = Object.keys(this.#store).filter(name => name === Class.name);

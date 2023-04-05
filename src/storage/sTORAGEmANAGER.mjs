@@ -6,12 +6,10 @@
  * @license The MIT License (MIT)
  */
 import util from "../../lib/util.mjs";
-import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
-import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
-// import sTORAGEmANAGER_Firestore from "./sTORAGEmANAGER_Firestore.mjs";
-//import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
+// import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
+import { openDB, deleteDB } from "../../lib/idb.mjs";
 import dt from "../datatypes.mjs";
-import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
+import { NoConstraintViolation } from "../constraint-violation-error-types.mjs";
 
 /**
  * Library class providing storage management methods for a number of predefined
@@ -21,10 +19,10 @@ import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
  */
 class sTORAGEmANAGER {
   // Private fields
-  #allowedAdapter = ["LocalStorage","IndexedDB", "Firestore"];
+  #allowedAdapter = ["LocalStorage", "IndexedDB", "Firestore"];
 
-  constructor({adapterName, dbName, createLog, validateBeforeSave}) {
-    if (!(this.#allowedAdapter.includes( adapterName))) {
+  constructor({ adapterName, dbName, createLog, validateBeforeSave }) {
+    if (!(this.#allowedAdapter.includes(adapterName))) {
       throw new NoConstraintViolation("Invalid storage adapter name!");
     } else if (!dbName) {
       throw new NoConstraintViolation("Missing DB name!");
@@ -36,10 +34,10 @@ class sTORAGEmANAGER {
       this.adapter = sTORAGEmANAGER.adapters[adapterName];
       // if "LocalStorage", create a main memory DB
       if (this.adapterName === "LocalStorage") {
-        for (const className of Object.keys( dt.classes)) {
+        for (const className of Object.keys(dt.classes)) {
           const Class = dt.classes[className];
           if (Class.instances) {
-            sTORAGEmANAGER.adapters["LocalStorage"].retrieveLocalStorageTable( Class);
+            sTORAGEmANAGER.adapters["LocalStorage"].retrieveLocalStorageTable(Class);
           }
         }
       }
@@ -50,12 +48,12 @@ class sTORAGEmANAGER {
    * @method
    * @param {Array} classes  The business object classes to be persisted
    */
-  async createEmptyDb( classes) {
+  async createEmptyDb(classes) {
     try {
-      await this.adapter.createEmptyDb( this.dbName, classes);
+      await this.adapter.createEmptyDb(this.dbName, classes);
       if (this.createLog) console.log(`Database ${this.dbName} with empty tables created`);
     } catch (error) {
-      console.log( error.name +": "+ error.message);
+      console.log(error.name + ": " + error.message);
     }
   }
   /**
@@ -63,13 +61,13 @@ class sTORAGEmANAGER {
    * @method
    * @param {string} dbName  The business object classes to be persisted
    */
-  async deleteDatabase( dbName) {
+  async deleteDatabase(dbName) {
     try {
       dbName = dbName || this.dbName;
-      await this.adapter.deleteDatabase( dbName);
+      await this.adapter.deleteDatabase(dbName);
       if (this.createLog) console.log(`Database ${dbName} deleted`);
     } catch (error) {
-      console.log( error.name +": "+ error.message);
+      console.log(error.name + ": " + error.message);
     }
   }
   /**
@@ -78,12 +76,13 @@ class sTORAGEmANAGER {
    * @param {object} Class  The business object class concerned
    * @param {object} rec  A record or record list
    */
-  async add( Class, rec) {
-    var records=[];
+  async add(Class, rec) {
+    var records = [];
     if (typeof rec === "object" && !Array.isArray(rec)) {
       records = [rec];
-    } else if (Array.isArray(rec) && rec.every( function (r) {
-      return typeof r === "object" && !Array.isArray(r)})) {
+    } else if (Array.isArray(rec) && rec.every(function (r) {
+      return typeof r === "object" && !Array.isArray(r)
+    })) {
       records = rec;
     } else throw new Error("2nd argument of 'add' must be a record or record list!");
     if (!Class) throw new Error(`Cannot add ${JSON.stringify(rec)} without a Class argument`);
@@ -99,17 +98,17 @@ class sTORAGEmANAGER {
     }
     // check constraints before save if required
     if (this.validateBeforeSave) {
-      for (let i=0; i < records.length; i++) {
+      for (let i = 0; i < records.length; i++) {
         const r = records[i];
-        let newObj=null;
+        let newObj = null;
         try {
-          newObj = new Class( r);  // check constraints
+          newObj = new Class(r);  // check constraints
         } catch (e) {
           if (e instanceof ConstraintViolation) {
-            console.log( e.constructor.name +": "+ e.message);
-          } else console.log( e);
+            console.log(e.constructor.name + ": " + e.message);
+          } else console.log(e);
           // remove record from the records to add
-          records.splice( i, 1);
+          records.splice(i, 1);
         }
       }
     }
@@ -126,10 +125,10 @@ class sTORAGEmANAGER {
    * @param {object} Class  The business object class concerned
    * @param {string|number} id  The object ID value
    */
-  async retrieve( Class, id) {
-    var rec=null;
+  async retrieve(Class, id) {
+    var rec = null;
     try {
-      rec = await this.adapter.retrieve( this.dbName, Class, id);
+      rec = await this.adapter.retrieve(this.dbName, Class, id);
       if (this.createLog) console.log(`Book with ISBN ${id} retrieved.`);
     } catch (error) {
       console.log(`${error.name}: ${error.message}`);
@@ -145,19 +144,19 @@ class sTORAGEmANAGER {
    * @method
    * @param {object} Class  The business object class concerned
    */
-  async retrieveAll( Class) {
+  async retrieveAll(Class) {
     var records = null;
     try {
-      records = await this.adapter.retrieveAll( this.dbName, Class);
-      if (this.createLog) console.log( records.length +" "+ Class.name +" records retrieved.");
+      records = await this.adapter.retrieveAll(this.dbName, Class);
+      if (this.createLog) console.log(records.length + " " + Class.name + " records retrieved.");
       if (this.validateAfterRetrieve) {
-        for (let i=0; i < records.length; i++) {
+        for (let i = 0; i < records.length; i++) {
           try {
-            let newObj = new Class( records[i]);
+            let newObj = new Class(records[i]);
           } catch (e) {
             if (e instanceof ConstraintViolation) {
-              console.log( e.constructor.name +": "+ e.message);
-            } else console.log( e.name +": "+ e.message);
+              console.log(e.constructor.name + ": " + e.message);
+            } else console.log(e.name + ": " + e.message);
           }
         }
       }
@@ -173,50 +172,50 @@ class sTORAGEmANAGER {
    * @param {string|number} id  The object ID value
    * @param {object} slots  The object's update slots
    */
-  async update( Class, id, slots) {
-    var updatedProperties=[], noConstraintViolated = true;
+  async update(Class, id, slots) {
+    var updatedProperties = [], noConstraintViolated = true;
     const properties = Class.properties,
-          updSlots = {...slots};  // clone
+      updSlots = { ...slots };  // clone
     // first check if an object record with this ID exists
-    let objToUpdate = await this.retrieve( Class, id);
+    let objToUpdate = await this.retrieve(Class, id);
     if (objToUpdate) {
-      const objectBeforeUpdate = {...objToUpdate};  // clone
-      for (const prop of Object.keys( slots)) {
+      const objectBeforeUpdate = { ...objToUpdate };  // clone
+      for (const prop of Object.keys(slots)) {
         const oldVal = objToUpdate[prop],
-              propDecl = properties[prop];
+          propDecl = properties[prop];
         let newVal = slots[prop];
         if (prop !== Class.idAttribute) {
           if (propDecl.maxCard === undefined || propDecl.maxCard === 1) {  // single-valued
-            if (Number.isInteger( oldVal) && newVal !== "") {
-              newVal = parseInt( newVal);
+            if (Number.isInteger(oldVal) && newVal !== "") {
+              newVal = parseInt(newVal);
             } else if (typeof oldVal === "number" && newVal !== "") {
-              newVal = parseFloat( newVal);
-            } else if (oldVal===undefined && newVal==="") {
+              newVal = parseFloat(newVal);
+            } else if (oldVal === undefined && newVal === "") {
               newVal = undefined;
             }
             if (newVal !== oldVal) {
-              const validationResults = dt.check( prop, propDecl, newVal);
+              const validationResults = dt.check(prop, propDecl, newVal);
               if (!(validationResults[0] instanceof NoConstraintViolation)) {
                 //TODO: support multiple errors
                 const constraintViolation = validationResults[0];
-                console.log( constraintViolation.constructor.name +": "+ constraintViolation.message);
+                console.log(constraintViolation.constructor.name + ": " + constraintViolation.message);
                 noConstraintViolated = false;
                 // restore object to its state before updating
                 objToUpdate = objectBeforeUpdate;
               } else {
-                updatedProperties.push( prop);
+                updatedProperties.push(prop);
               }
             } else {
               delete updSlots[prop];  // no update required
             }
           } else {   // multi-valued
             if (oldVal.length !== newVal.length ||
-                oldVal.some( function (vi,i) { return (vi !== newVal[i]);})) {
-              const validationResults = dt.check( prop, propDecl, newVal);
+              oldVal.some(function (vi, i) { return (vi !== newVal[i]); })) {
+              const validationResults = dt.check(prop, propDecl, newVal);
               if (!(validationResults[0] instanceof NoConstraintViolation)) {
                 //TODO: support multiple errors
                 const constraintViolation = validationResults[0];
-                console.log( constraintViolation.constructor.name +": "+ constraintViolation.message);
+                console.log(constraintViolation.constructor.name + ": " + constraintViolation.message);
                 noConstraintViolated = false;
                 // restore object to its state before updating
                 objToUpdate = objectBeforeUpdate;
@@ -255,16 +254,16 @@ class sTORAGEmANAGER {
   destroy( Class, id) {
     const dbName = this.dbName;
     let currentSM = this;
-    return new Promise( function (resolve) {
-      currentSM.retrieve( Class, id).then( function (record) {
+    return new Promise(function (resolve) {
+      currentSM.retrieve(Class, id).then(function (record) {
         if (record) {
-          currentSM.adapter.destroy( dbName, Class, id)
-              .then( function () {
-                console.log( Class.name +" "+ id +" deleted.");
-                if (typeof resolve === "function") resolve();
-              });
+          currentSM.adapter.destroy(dbName, Class, id)
+            .then(function () {
+              console.log(Class.name + " " + id + " deleted.");
+              if (typeof resolve === "function") resolve();
+            });
         } else {
-          console.log("There is no "+ Class.name +" with ID value "+ id +" in the database!");
+          console.log("There is no " + Class.name + " with ID value " + id + " in the database!");
         }
       });
     });
@@ -273,8 +272,8 @@ class sTORAGEmANAGER {
    * Generic method for clearing the DB table, or object store, of a cLASS
    * @method
    */
-  async clearTable( Class) {
-    await this.adapter.clearTable( this.dbName, Class);
+  async clearTable(Class) {
+    await this.adapter.clearTable(this.dbName, Class);
   }
   /**
    * Generic method for clearing a DB (clearing all of its tables)
@@ -282,9 +281,9 @@ class sTORAGEmANAGER {
    */
   async clearDB() {
     if ((typeof confirm === "function" &&
-        confirm("Do you really want to delete all data?")) ||
-        typeof confirm !== "function") {
-      await this.adapter.clearDB( this.dbName);
+      confirm("Do you really want to delete all data?")) ||
+      typeof confirm !== "function") {
+      await this.adapter.clearDB(this.dbName);
     }
   }
   /**
@@ -293,8 +292,8 @@ class sTORAGEmANAGER {
    */
   saveOnUnload() {
     var adapterName = this.adapter.name,
-        dbName = this.adapter.dbName;
-    this.adapter.saveOnUnload( dbName);
+      dbName = this.adapter.dbName;
+    this.adapter.saveOnUnload(dbName);
   }
 }
 
@@ -310,7 +309,7 @@ sTORAGEmANAGER.adapters = {};
 sTORAGEmANAGER.adapters["LocalStorage"] = {
   //-----------------------------------------------------------------
   createEmptyDb: function (dbName, modelClasses) {  // nothing to do
-  //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
   },
   //------------------------------------------------
   add: function (dbName, Class, records) {  // does not access localStorage
@@ -318,46 +317,46 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
     const idAttr = Class.idAttribute ?? "id";
     const recordsCopy = [...records];
     for (const rec of recordsCopy) {
-      const newObj = new Class( rec);
+      const newObj = new Class(rec);
       Class.instances[newObj[idAttr]] = newObj;
     }
   },
   //------------------------------------------------
   retrieve: function (dbName, Class, id) {  // does not access localStorage
-  //------------------------------------------------
+    //------------------------------------------------
     return Class.instances[id];
   },
   //-------------------------------------------------------------
   // *** A LocalStorage-specific, and not an interface method ***
   //-------------------------------------------------------------
   retrieveLocalStorageTable: function (Class) {
-  //-------------------------------------------------------------
-    var key="", keys=[], i=0,
-        tableString="", table={},
-        tableName = util.class2TableName( Class.name);
+    //-------------------------------------------------------------
+    var key = "", keys = [], i = 0,
+      tableString = "", table = {},
+      tableName = util.class2TableName(Class.name);
     try {
       if (localStorage[tableName]) {
         tableString = localStorage[tableName];
       }
     } catch (e) {
-      console.log( "Error when reading from Local Storage\n" + e);
+      console.log("Error when reading from Local Storage\n" + e);
     }
     if (tableString) {
-      table = JSON.parse( tableString);
-      keys = Object.keys( table);
-      console.log( keys.length + " " + Class.name + " records loaded.");
-      for (i=0; i < keys.length; i++) {
+      table = JSON.parse(tableString);
+      keys = Object.keys(table);
+      console.log(keys.length + " " + Class.name + " records loaded.");
+      for (i = 0; i < keys.length; i++) {
         key = keys[i];
-        Class.instances[key] = Class.createObjectFromRecord( table[key]);
+        Class.instances[key] = Class.createObjectFromRecord(table[key]);
       }
     }
   },
   //------------------------------------------------
   retrieveAll: function (dbName, Class) {
     //------------------------------------------------
-    var  currentSM = this;
-    return new Promise( function (resolve) {
-      var records=[];
+    var currentSM = this;
+    return new Promise(function (resolve) {
+      var records = [];
       /* OLD
       function retrieveAll (mc) {
         var key = "", keys = [], i = 0,
@@ -374,14 +373,14 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
       retrieveAll( mc);
       */
       // convert entity map mc.instances to an array list
-      records = Object.keys( Class.instances).map( function (key) {return Class.instances[key];});
-      resolve( records);
+      records = Object.keys(Class.instances).map(function (key) { return Class.instances[key]; });
+      resolve(records);
     });
   },
   //------------------------------------------------
   update: function (dbName, Class, id, slots) {  // does not access localStorage
-  //------------------------------------------------
-    return new Promise( function (resolve) {
+    //------------------------------------------------
+    return new Promise(function (resolve) {
       // in-memory object has already been updated in the generic update
       /*
       Object.keys( slots).forEach( function (prop) {
@@ -394,21 +393,21 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
   },
   //------------------------------------------------
   destroy: function (dbName, Class, id) {  // does not access localStorage
-  //------------------------------------------------
-    return new Promise( function (resolve) {
+    //------------------------------------------------
+    return new Promise(function (resolve) {
       delete Class.instances[id];
       resolve();
     });
   },
   //------------------------------------------------
   clearTable: function (dbName, Class) {
-  //------------------------------------------------
-    return new Promise( function (resolve) {
-      var tableName = Class.tableName || util.class2TableName( Class.name);
+    //------------------------------------------------
+    return new Promise(function (resolve) {
+      var tableName = Class.tableName || util.class2TableName(Class.name);
       Class.instances = {};
       try {
         localStorage[tableName] = JSON.stringify({});
-        console.log("Table "+ tableName +" cleared.");
+        console.log("Table " + tableName + " cleared.");
       } catch (e) {
         console.log("Error when writing to Local Storage\n" + e);
       }
@@ -417,14 +416,14 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
   },
   //------------------------------------------------
   clearDB: function () {
-  //------------------------------------------------
-    return new Promise( function (resolve) {
-      for (const className of Object.keys( dt.classes)) {
+    //------------------------------------------------
+    return new Promise(function (resolve) {
+      for (const className of Object.keys(dt.classes)) {
         const Class = dt.classes[className];
-        var tableName="";
-        if (!Class.isComplexDatatype && Object.keys( Class.instances).length > 0) {
+        var tableName = "";
+        if (!Class.isComplexDatatype && Object.keys(Class.instances).length > 0) {
           Class.instances = {};
-          tableName = Class.tableName || util.class2TableName( Class.name);
+          tableName = Class.tableName || util.class2TableName(Class.name);
           try {
             localStorage[tableName] = JSON.stringify({});
           } catch (e) {
@@ -437,22 +436,22 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
   },
   //------------------------------------------------
   saveOnUnload: function () {
-  //------------------------------------------------
-    for (const className of Object.keys( dt.classes)) {
+    //------------------------------------------------
+    for (const className of Object.keys(dt.classes)) {
       const Class = dt.classes[className];
-      var id="", table={}, obj=null, i=0,
-          keys=[], tableName="";
+      var id = "", table = {}, obj = null, i = 0,
+        keys = [], tableName = "";
       if (Class.instances) {
-        keys = Object.keys( Class.instances)
-        tableName = util.class2TableName( Class.name);
-        for (i=0; i < keys.length; i++) {
+        keys = Object.keys(Class.instances)
+        tableName = util.class2TableName(Class.name);
+        for (i = 0; i < keys.length; i++) {
           id = keys[i];
           obj = Class.instances[id];
           table[id] = obj.toRecord();
         }
         try {
-          localStorage[tableName] = JSON.stringify( table);
-          console.log( keys.length +" "+ Class.name +" records saved.");
+          localStorage[tableName] = JSON.stringify(table);
+          console.log(keys.length + " " + Class.name + " records saved.");
         } catch (e) {
           console.log("Error when writing to Local Storage\n" + e);
         }
@@ -464,13 +463,13 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
 sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   createEmptyDb: async function (dbName, modelClasses) {
-  //------------------------------------------------
-    return await openDB( dbName, 1, {
+    //------------------------------------------------
+    return await openDB(dbName, 1, {
       upgrade(db) {
         for (const mc of modelClasses) {
-          const tn = mc.tableName || util.class2TableName( mc.name);
-          if (!db.objectStoreNames.contains( tn)) {
-            db.createObjectStore( tn, {keyPath: mc.idAttribute || "id"});
+          const tn = mc.tableName || util.class2TableName(mc.name);
+          if (!db.objectStoreNames.contains(tn)) {
+            db.createObjectStore(tn, { keyPath: mc.idAttribute || "id" });
           }
         }
       }
@@ -491,20 +490,20 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     // create a transaction involving only the table with the provided name
-    const tx = db.transaction( tableName, "readwrite");
+    const tx = db.transaction(tableName, "readwrite");
     // create a list of add invocation expressions
-    const addInvocationExpressions = records.map( r => tx.store.add( r));
+    const addInvocationExpressions = records.map(r => tx.store.add(r));
     // invoke all of them in parallel and wait for their completion
-    await Promise.all( addInvocationExpressions);
+    await Promise.all(addInvocationExpressions);
     // wait for the completion of the transaction tx
     await tx.done;
   },
   //------------------------------------------------
   retrieve: async function (dbName, Class, id) {
-  //------------------------------------------------
-    const db = await openDB( dbName);
-    const tableName = Class.tableName || util.class2TableName( Class.name);
-    return db.get( tableName, id);
+    //------------------------------------------------
+    const db = await openDB(dbName);
+    const tableName = Class.tableName || util.class2TableName(Class.name);
+    return db.get(tableName, id);
   },
   //------------------------------------------------
   retrieveAll: async function (dbName, Class) {
@@ -532,7 +531,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     // slots[Class.idAttribute] = id;
-    db.delete( tableName, id);
+    db.delete(tableName, id);
   },
   //------------------------------------------------
   clearTable: async function (dbName, Class) {
@@ -543,36 +542,18 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   },
   //------------------------------------------------
   clearDB: async function (dbName) {
-  //------------------------------------------------
-    const db = await openDB( dbName);
+    //------------------------------------------------
+    const db = await openDB(dbName);
     // create a transaction involving all tables of the database
-    const tx = db.transaction( db.objectStoreNames, "readwrite");
+    const tx = db.transaction(db.objectStoreNames, "readwrite");
     // create a list of clear invocation expressions
     const clearInvocationExpressions =
-        Array.from( db.objectStoreNames, osName => tx.objectStore( osName).clear());
+      Array.from(db.objectStoreNames, osName => tx.objectStore(osName).clear());
     // invoke all of them in parallel and wait for their completion
-    await Promise.all( clearInvocationExpressions);
+    await Promise.all(clearInvocationExpressions);
     // wait for the completion of the transaction tx
     await tx.done;
   }
-};
-
-sTORAGEmANAGER.adapters["Firestore"] = {
-  //------------------------------------------------
-  createEmptyDb: async function (dbName, modelClasses) {
-  //------------------------------------------------
-    // const firestore = sTORAGEmANAGER_Firestore();
-    return await openDB( dbName, 1, {
-      upgrade(db) {
-        for (const mc of modelClasses) {
-          const tn = mc.tableName || util.class2TableName( mc.name);
-          if (!db.objectStoreNames.contains( tn)) {
-            db.createObjectStore( tn, {keyPath: mc.idAttribute || "id"});
-          }
-        }
-      }
-    });
-  },
 };
 
 export default sTORAGEmANAGER;
