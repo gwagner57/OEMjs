@@ -114,7 +114,7 @@ class sTORAGEmANAGER {
       }
     }
     try {
-      await this.adapter.add( this.dbName, records, Class);
+      await this.adapter.add( this.dbName, Class, records);
       if (this.createLog) console.log(`${records.length} ${Class.name}(s) added.`);
     } catch (error) {
       console.log(`${error.name}: ${error.message}`);
@@ -231,14 +231,18 @@ class sTORAGEmANAGER {
         if (updatedProperties.length > 0) {
           try {
             this.adapter.update( this.dbName, Class, id, updSlots);
-            console.log("Properties " + updatedProperties.toString() +
-                " of " + Class.name + " " + id + " updated.");
+            if (id in Class.instances) {
+              for (const p of Object.keys( updSlots)) {
+                Class.instances[id][p] = updSlots[p];
+              }
+            }
+            console.log(`Properties ${updatedProperties.toString()} of ${Class.name} ${id} updated.`);
           } catch (error) {
             console.log(`${error.name}: ${error.message}`);
           }
         }
       } else {
-        console.log("No property value changed for "+ Class.name +" "+ id +"!");
+        console.log(`No property value changed for ${Class.name} ${id}!`);
       }
     }
   }
@@ -249,7 +253,7 @@ class sTORAGEmANAGER {
    * @param {string|number} id  The object ID value
    */
   destroy( Class, id) {
-    const dbName = this.adapter.dbName;
+    const dbName = this.dbName;
     let currentSM = this;
     return new Promise( function (resolve) {
       currentSM.retrieve( Class, id).then( function (record) {
@@ -309,7 +313,7 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
   //-----------------------------------------------------------------
   },
   //------------------------------------------------
-  add: function (dbName, records, Class) {  // does not access localStorage
+  add: function (dbName, Class, records) {  // does not access localStorage
   //------------------------------------------------
     const idAttr = Class.idAttribute ?? "id";
     const recordsCopy = [...records];
@@ -472,7 +476,9 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       }
     });
   },
+  //------------------------------------------------
   deleteDatabase: async function (dbName) {
+  //------------------------------------------------
     await deleteDB( dbName, {
       blocked() {
         console.log(`Database ${dbName} can only be deleted after open connections are being closed.`)
@@ -480,8 +486,8 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     });
   },
   //------------------------------------------------
-  add: async function (dbName, records, Class) {
-    //------------------------------------------------
+  add: async function (dbName, Class, records) {
+  //------------------------------------------------
     const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     // create a transaction involving only the table with the provided name
@@ -503,29 +509,34 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   retrieveAll: async function (dbName, Class) {
   //------------------------------------------------
-    const db = await openDB( dbName, Class);
+    const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     return db.getAll( tableName);
   },
   //------------------------------------------------
   update: async function (dbName, Class, id, slots) {
-    //------------------------------------------------
-    const db = await openDB( dbName, Class);
+  //------------------------------------------------
+    const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    slots[Class.idAttribute] = id;
-    db.put( tableName, slots);
+    const obj = await db.get( tableName, id);
+    // update the properties concerned
+    for (const propName of Object.keys( slots)) {
+      obj[propName] = slots[propName];
+    }
+    // save updated object
+    db.put( tableName, obj);
   },
   //------------------------------------------------
   destroy: async function (dbName, Class, id) {
-    //------------------------------------------------
-    const db = await openDB( dbName, Class);
+  //------------------------------------------------
+    const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     // slots[Class.idAttribute] = id;
     db.delete( tableName, id);
   },
   //------------------------------------------------
   clearTable: async function (dbName, Class) {
-    //------------------------------------------------
+  //------------------------------------------------
     const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     await db.clear( tableName);

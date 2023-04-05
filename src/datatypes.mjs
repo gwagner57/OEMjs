@@ -207,6 +207,15 @@ const dt = {
     return Class;
     // Alternative solution: Class = this[name];
   },
+  registerModelClasses( listOfClassNames) {  // Make classes accessible via their name
+    for (const className of listOfClassNames) {
+      dt.classes[className] = dt.getClassByName( className);
+    }
+  },
+  // https://stackoverflow.com/questions/526559/testing-if-something-is-a-class-in-javascript
+  isClass( C) {
+    return typeof C === "function" && C.prototype !== undefined;
+  },
   /********************************************************************
    Assuming that in the case of a simple entity table, the first entity record
    defines the attributes/structure of the table, check if all records include
@@ -247,11 +256,6 @@ const dt = {
       }
     }
     return constrVio;
-  },
-  registerModelClasses( listOfClassNames) {  // Make classes accessible via their name
-    for (const className of listOfClassNames) {
-      dt.classes[className] = dt.getClassByName( className);
-    }
   },
   dataTypes: {
     "String": {phrase:"a string",
@@ -316,10 +320,6 @@ const dt = {
   isOfType( value, Type) {
     const cond = dt.dataTypes[Type]?.condition;
     return cond !== undefined && cond( value);
-  },
-  // https://stackoverflow.com/questions/526559/testing-if-something-is-a-class-in-javascript
-  isClass( C) {
-    return typeof C === "function" && C.prototype !== undefined;
   },
   range2JsDataType( range) {
     var jsDataType="";

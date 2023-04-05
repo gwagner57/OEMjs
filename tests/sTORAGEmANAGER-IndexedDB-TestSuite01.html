@@ -27,134 +27,136 @@
  /****************************************
  *** Test code **************************
  ****************************************/
+ const BookCategoryEL = new eNUMERATION("BookCategoryEL", ["novel","biography",
+   "textbook","other"]);
+
+ class Publisher extends bUSINESSoBJECT {
+   constructor ({name, address}) {
+     super( name);
+     this.address = address;
+   }
+ }
+ Publisher.properties = {
+   "name": {range:"NonEmptyString", isIdAttribute: true, min: 2, max: 20},
+   "address": {range:"NonEmptyString", min: 5, max: 50},
+ }
+ Publisher.setup();
+
+ class Book extends bUSINESSoBJECT {
+   constructor ({isbn, title, year, publisher, edition, category}) {
+     super( isbn);
+     this.title = title;
+     this.year = year;
+     if (publisher) this.publisher = publisher;
+     if (edition) this.edition = edition;
+     if (category) this.category = category;
+   }
+ }
+ Book.properties = {
+   "isbn": {range:"NonEmptyString", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
+     patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+   "title": {range:"NonEmptyString", min: 2, max: 50},
+   "year": {range:"Integer", min: 1459, max: () => (new Date()).getFullYear() + 1},
+   "publisher": {range:"Publisher", optional: true},
+   "edition": {range:"PositiveInteger", optional: true},
+   "category": {range: BookCategoryEL, optional: true}
+ }
  try {
-   const BookCategoryEL = new eNUMERATION("BookCategoryEL", ["novel","biography",
-     "textbook","other"]);
-
-   class Publisher extends bUSINESSoBJECT {
-     constructor ({name, address}) {
-       super( name);
-       this.address = address;
-     }
-   }
-   Publisher.properties = {
-     "name": {range:"NonEmptyString", isIdAttribute: true, min: 2, max: 20},
-     "address": {range:"NonEmptyString", min: 5, max: 50},
-   }
-   Publisher.setup();
-
-   class Book extends bUSINESSoBJECT {
-     constructor ({isbn, title, year, publisher, edition, category}) {
-       super( isbn);
-       this.title = title;
-       this.year = year;
-       if (publisher) this.publisher = publisher;
-       if (edition) this.edition = edition;
-       if (category) this.category = category;
-     }
-   }
-   Book.properties = {
-     "isbn": {range:"NonEmptyString", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
-              patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
-     "title": {range:"NonEmptyString", min: 2, max: 50},
-     "year": {range:"Integer", min: 1459, max: () => (new Date()).getFullYear() + 1},
-     "publisher": {range:"Publisher", optional: true},
-     "edition": {range:"PositiveInteger", optional: true},
-     "category": {range: BookCategoryEL, optional: true}
-   }
    Book.setup();
+ } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+ }
 
-   const storeMan = new sTORAGEmANAGER({adapterName:"IndexedDB", dbName: "TestSuite01",
+ const storeMan = new sTORAGEmANAGER({adapterName:"IndexedDB", dbName: "TestSuite01",
                       createLog: true, validateBeforeSave: true});
 
-   //*** Test 1 - Add **************************
-   document.body.appendChild(dom.createElement("h2", {content: "Test 1: Creating a database and adding records"}));
-   const classes = Object.keys( dt.classes).map( className => dt.classes[className]).
-       filter( c => !c.isAbstract && !c.isComplexDatatype);
-   try {
-     storeMan.deleteDatabase();  // or storeMan.clearDB()
-     storeMan.createEmptyDb( classes);
-   } catch (e) {
-     console.log( e.constructor.name +": "+ e.message);
-   }
+ //*** Test 1 - Add **************************
+ document.body.appendChild(dom.createElement("h2", {content: "Test 1: Creating a database and adding records"}));
+ const classes = Object.keys( dt.classes).map( className => dt.classes[className]).
+ filter( c => !c.isAbstract && !c.isComplexDatatype);
+ try {
+   storeMan.deleteDatabase();  // or storeMan.clearDB()
+   storeMan.createEmptyDb( classes);
+ } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+ }
 
-   const b1 = new Book({isbn: "1234567890", title:"A novel", year: 2022, category: BookCategoryEL.NOVEL});
-   const p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
-   // a book object with a publisher object reference
-   const b2 = new Book({isbn: "123456789X", title:"Textbook 1", year: 2021,
-       category: BookCategoryEL.TEXTBOOK, publisher: p1});
-   // a book object with a publisher ID reference
-   const b3 = new Book({isbn: "123123123X", title:"Textbook 2", year: 2021,
-     category: BookCategoryEL.TEXTBOOK, publisher: "Springer"});
-   try {
-     await storeMan.add(Publisher, p1.toRecord());
-     await storeMan.add(Book, [b1.toRecord(), b2.toRecord(), b3.toRecord()]);
-   } catch (e) {
-     console.log( e.constructor.name +": "+ e.message);
-   }
-   document.body.appendChild(dom.createElement("p",
-       {content: `The "TestSuite01" IndexedDB should contain a "Springer" record in the "publishers" table
+ const b1 = new Book({isbn: "1234567890", title:"A novel", year: 2022, category: BookCategoryEL.NOVEL});
+ const p1 = new Publisher({name:"Springer", address:"Berlin, Germany"});
+ // a book object with a publisher object reference
+ const b2 = new Book({isbn: "123456789X", title:"Textbook 1", year: 2021,
+   category: BookCategoryEL.TEXTBOOK, publisher: p1});
+ // a book object with a publisher ID reference
+ const b3 = new Book({isbn: "123123123X", title:"Textbook 2", year: 2021,
+   category: BookCategoryEL.TEXTBOOK, publisher: "Springer"});
+ try {
+   await storeMan.add( Publisher, p1.toRecord());
+   await storeMan.add( Book, [b1.toRecord(), b2.toRecord(), b3.toRecord()]);
+ } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+ }
+ document.body.appendChild(dom.createElement("p",
+     {content: `The "TestSuite01" IndexedDB should contain a "Springer" record in the "publishers" table
         and three records in the "books" table, two of them having the ID reference "Springer" as the value of
         their "publisher" field.`}));
-   //*** Test 2 - Retrieve single book ***************************
-   document.body.appendChild(dom.createElement("h2", {content:"Test 2: Retrieving a record"}));
-   let bookRec=null;
-   try {
-     bookRec = await storeMan.retrieve( Book, "123456789X");
-     if (JSON.stringify(bookRec)===JSON.stringify(b2.toRecord())) {
-       document.body.appendChild(dom.createElement("p",
-           {content: `Success! Retrieved book: ${JSON.stringify(bookRec)}`}));
-     }
-   } catch (e) {
-     console.log( e.constructor.name +": "+ e.message);
-   }
-   //*** Test 3 - RetrieveAll ***************************
-   document.body.appendChild(dom.createElement("h2", {content:"Test 3: Retrieving all records"}));
-   let bookRecords=null;
-   try {
-     bookRecords = await storeMan.retrieveAll( Book);
-     const books = Object.keys(Book.instances).map( isbn =>  Book.instances[isbn].toRecord());
-     if (bookRecords.length === books.length) { //  && books.every( b => bookRecords.includes(b))
-       document.body.appendChild(dom.createElement("p",
-           {content: `Success! Retrieved books:`}));
-       const tableEl = document.createElement("table");
-       const tableHeadEl = document.createElement("tHead");
-       const tableBodyEl = document.createElement("tBody");
-       let row=null;
-       tableEl.appendChild( tableHeadEl);
-       tableEl.appendChild( tableBodyEl);
-       document.body.appendChild( tableEl);
 
-       row = tableHeadEl.insertRow(-1);
-       Object.keys( Book.properties).forEach( function (prop) {
-         row.insertCell(-1).textContent = Book.properties[prop].label || prop;
-       });
-       for (let i=0; i < bookRecords.length; i++) {
-         row = tableBodyEl.insertRow(-1);
-         Object.keys( Book.properties).forEach( function (prop) {
-           row.insertCell(-1).textContent = bookRecords[i][prop];
-         });
-       }
-     }
-   } catch (e) {
-     console.log( e.constructor.name +": "+ e.message);
+ //*** Test 2 ***************************
+ document.body.appendChild(dom.createElement("h2", {content:"Test 2: Retrieving a record"}));
+ let bookRec=null;
+ try {
+   bookRec = await storeMan.retrieve( Book, "123456789X");
+   if (JSON.stringify(bookRec)===JSON.stringify(b2.toRecord())) {
+     document.body.appendChild(dom.createElement("p",
+         {content: `Success! Retrieved book: ${JSON.stringify(bookRec)}`}));
    }
+ } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+ }
+ //*** Test 3 - RetrieveAll ***************************
+ document.body.appendChild(dom.createElement("h2", {content:"Test 3: Retrieving all records"}));
+ let bookRecords=null;
+ try {
+   bookRecords = await storeMan.retrieveAll( Book);
+   const books = Object.keys(Book.instances).map( isbn =>  Book.instances[isbn].toRecord());
+   if (bookRecords.length === books.length) { //  && books.every( b => bookRecords.includes(b))
+     document.body.appendChild(dom.createElement("p",
+         {content: `Success! Retrieved books:`}));
+     const tableEl = document.createElement("table");
+     const tableHeadEl = document.createElement("tHead");
+     const tableBodyEl = document.createElement("tBody");
+     let row=null;
+     tableEl.appendChild( tableHeadEl);
+     tableEl.appendChild( tableBodyEl);
+     document.body.appendChild( tableEl);
+
+     row = tableHeadEl.insertRow(-1);
+     Object.keys( Book.properties).forEach( function (prop) {
+       row.insertCell(-1).textContent = Book.properties[prop].label || prop;
+     });
+     for (let i=0; i < bookRecords.length; i++) {
+       row = tableBodyEl.insertRow(-1);
+       Object.keys( Book.properties).forEach( function (prop) {
+         row.insertCell(-1).textContent = bookRecords[i][prop];
+       });
+     }
+   }
+ } catch (e) {
+   console.log( e.constructor.name +": "+ e.message);
+ }
 
 
   //*** Test 4 - Update ********************
   document.body.appendChild(dom.createElement("h2", {content:"Test 4: Update Record"}));
   try {
-    let bookUpdate=null;
     const bookId = "123456789X";
-    bookUpdate = await storeMan.retrieve( Book, bookId);
-    if (JSON.stringify(bookUpdate)===JSON.stringify(b2.toRecord())) {
+    const book = await storeMan.retrieve( Book, bookId);
+    if (JSON.stringify(book)===JSON.stringify(b2.toRecord())) {
       document.body.appendChild(dom.createElement("p",
-          {content: `Before Update! Retrieved book: ${JSON.stringify(bookUpdate)}`}));
+          {content: `Before Update! Retrieved book: ${JSON.stringify(book)}`}));
     }
-    bookUpdate.title = "Updated book title"
-    await storeMan.update(Book, bookId, bookUpdate);
-    bookUpdate = await storeMan.retrieve( Book, bookId);
-    if (JSON.stringify(bookUpdate)===JSON.stringify()) {
+    await storeMan.update(Book, bookId, {title:"Updated book title"});
+    const bookUpdate = await storeMan.retrieve( Book, bookId);
+    if (bookUpdate.title === "Updated book title") {
       document.body.appendChild(dom.createElement("p",
           {content: `After Update! Retrieved book: ${JSON.stringify(bookUpdate)}`}));
     } else {
@@ -163,17 +165,16 @@
   } catch (e) {
     console.log( e.constructor.name +": "+ e.message);
   }
-
   //*** Test 5 - Destroy ********************
   document.body.appendChild(dom.createElement("h2", {content:"Test 5: Destroy"}));
   try {
-    const bookId = "123456789X";
-    const bookDestroy = await storeMan.retrieve( Book, bookId);
-    if (JSON.stringify(bookDestroy)===JSON.stringify(b2.toRecord())) {
+    // Book b2 already updated in previous test case, compare only ISBN
+    const bookDestroy = await storeMan.retrieve( Book, b2.isbn);
+    if (JSON.stringify(bookDestroy.isbn)===JSON.stringify(b2.isbn)) {
       document.body.appendChild(dom.createElement("p",
           {content: `Book is still available. Retrieved book: ${JSON.stringify(bookDestroy)}`}));
     }
-    const destroyed = await storeMan.destroy(Book, bookId);
+    const destroyed = await storeMan.destroy(Book, await bookDestroy.isbn);
     if (destroyed) {
       document.body.appendChild(dom.createElement("p",
           {content: `Book is detroyed: ${JSON.stringify(bookUpdate)}`}));
@@ -233,9 +234,6 @@
    console.log( e.constructor.name +": "+ e.message);
   }
 
- } catch (e) {
-   console.log( e.constructor.name +": "+ e.message);
- }
  </script>
 </body>
 </html>
