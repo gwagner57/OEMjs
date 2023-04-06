@@ -124,22 +124,27 @@ class sTORAGEmANAGER_Firestore extends sTORAGEmANAGER {
       if (this.validateBeforeSave) {
         // Validate record
       }
+      let docRecs = []
       if (Array.isArray(record)) {
-        record.forEach(item => addDoc(collection(this.#db, Class.name)), item);
+        record.forEach(item => {
+          let ref = addDoc(collection(this.#db, Class.name));
+          docRecs.push(ref);
+        }, item);
       } else {
-        const docRef = await addDoc(collection(this.#db, Class.name), record);
+        const ref = await addDoc(collection(this.#db, Class.name), record);
+        docRecs.push(ref)
       }
       // Store all added records of a class
-      if (docRef) {
+      if (docRefs.length > 0) {
         const hasName = Object.keys(this.#store).filter(name => name === Class.name);
         if (hasName.length > 0) {
           this.#store[Class.name].push(docRef.id);
         } else {
-          this.#store[Class.name] = [docRef.id];
+          console.error("Class not found in internal store", Class.name);
         }
-        return docRef.id;
+        return docRefs;
       }
-      console.log("Document written with ID: ", docRef.id);
+      console.log("Documents written with IDs: ", docRefs);
     } catch (e) {
       console.error("Error adding document: ", e);
     }
