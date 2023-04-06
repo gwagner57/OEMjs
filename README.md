@@ -24,7 +24,7 @@ A JS library for defining
       }
     }
     Weather.properties = {
-      "weatherState": {range: WeatherStateEL, label: "Weather conditions"},
+      "weatherState": {range: **WeatherStateEL**, label: "Weather conditions"},
       "temperature": {range: "Decimal", label: "Temperature"}
     }
 
