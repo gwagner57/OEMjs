@@ -83,17 +83,18 @@ Suitable *range constraints* can be defined by using one of the supported range 
 <li>"DateTime", "Date"</li>
 </ul>
     
-The constraints defined for a property in a business object class can be checked on input/change 
-and before submit in an HTML form and, in addition, before commit in the `add` and `update` methods 
+The constraints defined for a property in a business object class can be checked in an HTML form on input/change events 
+and on submit events and, in addition, before commit in the `add` and `update` methods 
 of a storage manager, using the generic validation method `bUSINESSoBJECT.check`, as shown in the following example:
 
 <pre>
 const formEl = document.querySelector("#Book-Create > form");
 // loop over Book.properties and add event listeners for validation on input
 for (const propName of Object.keys( Book.properties)) {
-  const propDecl = Book.properties[propName];
+  const propDeclaration = Book.properties[propName];
   formEl[propName].addEventListener("input", function () {
-    var errMsg = bUSINESSoBJECT.check( propName, propDecl, formEl[propName].value).message;
+    const val = formEl[propName].value;
+    const errMsg = bUSINESSoBJECT.check( propName, propDeclaration, val).message;
     formEl[propName].setCustomValidity( errMsg);
   });
 });
@@ -101,7 +102,7 @@ for (const propName of Object.keys( Book.properties)) {
 
 ## Use Case 3: Flexible Data Storage Management with Storage Adapters
 
-OEMjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or `ìndexedDB`. 
+OEMjs comes with a sTORAGEmANAGER class and two storage adapters for using *LocalStorage* or *IndexedDB*. 
 
 A storage manager works like a wrapper of the methods of an adapter. The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking a data retrieval operation on a model class `Book`:
 
@@ -109,15 +110,4 @@ A storage manager works like a wrapper of the methods of an adapter. The storage
     const storageManager = new sTORAGEmANAGER( storageAdapter);
     await books = storageManager.retrieveAll( Book); 
 
-Since the IndexedDB technology is much more powerful, it is normally preferred for local data storage. However, older browsers (such as IE 9) may not support it. In this case we can easily fall back to LocalStorage in the followig way:
-
-    const storageAdapter = {dbName:"Test"},
-          storageManager = null;
-    if (!("indexedDB" in window)) {
-      console.log("This browser doesn't support IndexedDB. Falling back to LocalStorage.");
-      storageAdapter.name = "LocalStorage";
-    } else {
-      storageAdapter.name = "IndexedDB";
-    }
-    storageManager = new sTORAGEmANAGER( storageAdapter);
 
