@@ -685,24 +685,27 @@ dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.simpleStructuredDataTyp
                        {type:"business", number:8889912]
       });
  */
-class lIST extends Array {
+class lIST {
   constructor (itemType) {
-    super();
-    if (this instanceof lIST) {  // called with new
-      this.itemType = itemType;
-    } else { // called without new, so return an object
-      return new lIST( itemType);
+    if (!dt.supportedDatatypes.includes( itemType) &&
+        !(itemType instanceof lIST || itemType instanceof rECORD)) {
+      const fldTypeName = typeof fldT === "string" ? fldT : fldT.name;
+      throw new Error(`${fldTypeName} is not a supported datatype!`);
     }
+    this.itemType = itemType;
   }
 }
-class rECORD extends Object {
+class rECORD {
   constructor (fieldNameTypePairs) {
-    super();
-    this.fieldNames = this.fieldTypes = [];
     for (const [fldN, fldT] of Object.entries( fieldNameTypePairs)) {
-      this.fieldNames.push( fldN);
-      this.fieldTypes.push( fldT);
+      if (fldN === "fieldTypes") throw new Error("Field name must not be 'fieldTypes'!");
+      if (!dt.supportedDatatypes.includes( fldT) &&
+          !(fldT instanceof lIST || fldT instanceof rECORD)) {
+        const fldTypeName = typeof fldT === "string" ? fldT : fldT.name;
+        throw new Error(`${fldTypeName} is not a supported datatype!`);
+      }
     }
+    this.fieldTypes = fieldNameTypePairs;
   }
 }
 
