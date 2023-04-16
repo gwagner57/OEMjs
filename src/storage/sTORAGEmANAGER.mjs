@@ -8,8 +8,11 @@
 import util from "../../lib/util.mjs";
 // import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
 import { openDB, deleteDB } from "../../lib/idb.mjs";
+import sTORAGEmANAGER_Firestore from "./sTORAGEmANAGER_Firestore.mjs";
 import dt from "../datatypes.mjs";
 import { NoConstraintViolation } from "../constraint-violation-error-types.mjs";
+
+let firestore = null;
 
 /**
  * Library class providing storage management methods for a number of predefined
@@ -40,6 +43,10 @@ class sTORAGEmANAGER {
             sTORAGEmANAGER.adapters["LocalStorage"].retrieveLocalStorageTable(Class);
           }
         }
+      } if (this.adapterName === "Firestore") {
+        firestore = new sTORAGEmANAGER_Firestore({dbName: this.dbName, createLog: this.createLog, validateBeforeSave: this.validateBeforeSave});
+        // Initialize authentication
+        firestore.setup()
       }
     }
   }
@@ -553,6 +560,42 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     await Promise.all(clearInvocationExpressions);
     // wait for the completion of the transaction tx
     await tx.done;
+  }
+};
+
+sTORAGEmANAGER.adapters["Firestore"] = {
+  //------------------------------------------------
+  createEmptyDb: async function(dbName, modelClasses) {
+    // Nothing Todo
+  },
+  deleteDatabase: async function(dbName) {
+    if(firestore) {
+      firestore.deleteDatabase(dbName);
+    }
+  },
+  add: async function(dbName, Class, records) {
+    if(firestore) {
+      console.log("Inside Add");
+      firestore.add(dbName, Class, records);
+    }
+  },
+  retrieve: async function(dbName, Class, id) {
+    sTORAGEmANAGER_Firestore.retrieve(dbName, Class, id);
+  },
+  retrieveAll: async function(dbName, Class) {
+    sTORAGEmANAGER_Firestore.retrieveAll(dbName, Class);
+  },
+  update: async function(dbName, Class, id, slots) {
+    sTORAGEmANAGER_Firestore.update(dbName, Class, id, slots);
+  },
+  destroy: async function(dbName, Class, id) {
+    sTORAGEmANAGER_Firestore.destroy(dbName, Class, id);
+  },
+  clearTable: async function(dbName, Class) {
+    sTORAGEmANAGER_Firestore.clearTable(dbName, Class);
+  },
+  clearDB: async function(dbName) {
+    sTORAGEmANAGER_Firestore.clearDB(dbName);
   }
 };
 
