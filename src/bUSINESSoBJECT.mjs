@@ -157,8 +157,6 @@
   // Convert property value to (form field) string.
   /***************************************************/
   getValueAsString( prop) {
-    // make sure the eNUMERATION meta-class object can be checked if available
-    const eNUMERATION = typeof eNUMERATION === "undefined" ? undefined : eNUMERATION;
     const Class = this.constructor,
           idAttr = Class.idAttribute ?? "id",
           propDecl = this.constructor.properties[prop],
@@ -267,7 +265,7 @@
          get() { return this["_"+p]; },
          set( val) {
            if (bUSINESSoBJECT.areConstraintsToBeChecked) {
-             const validationResults = dt.check( p, propDecl, val, {checkRefInt:true});
+             const validationResults = dt.check( p, propDecl, val);
              if (validationResults[0] instanceof NoConstraintViolation) {
                this["_"+p] = validationResults[0].checkedValue;
              } else {

@@ -8,6 +8,7 @@ import { NoConstraintViolation,
 
 const dt = {
   classes: {},
+  checkRefInt: false,  // flag for checking referential integrity
   // define lists of datatype names
   stringTypes: ["String","NonEmptyString","Identifier","Email","URL","PhoneNumber"],
   integerTypes: ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber","Year"],
@@ -375,10 +376,9 @@ const dt = {
    * @param {string} attr  The attribute for which a value is to be checked.
    * @param {object} decl  The attribute's declaration.
    * @param val  The value to be checked.
-   * @param optParams.checkRefInt  Check referential integrity
    * @return {object}  The constraint violation object.
    */
-  check( attr, decl, val, optParams) {
+  check( attr, decl, val) {
     var constrVio=[], valuesToCheck=[],
         minCard = decl.minCard !== "undefined" ? decl.minCard : (decl.optional ? 0 : 1),  // by default, an attribute is mandatory
         maxCard = decl.maxCard || 1,  // by default, an attribute is single-valued
@@ -494,7 +494,6 @@ const dt = {
       } else if (typeof range === "string" && range in dt.classes) {
         const RangeClass = dt.classes[range];
         valuesToCheck.forEach( function (v, i) {
-          var recFldNames=[], propDefs={};
           if (!RangeClass.isComplexDatatype && !(v instanceof RangeClass)) {
             if (typeof v === "object") {
               constrVio.push( new ReferentialIntegrityConstraintViolation(
@@ -502,17 +501,17 @@ const dt = {
             } else {
               // convert IdRef to object reference
               if (RangeClass.instances[v]) {
-                valuesToCheck[i] = RangeClass.instances[String(v)];
-              } else if (optParams?.checkRefInt) {
-                constrVio.push( new ReferentialIntegrityConstraintViolation("The value " + v +
-                    " of attribute '"+ attr +"' is not an ID of any " + range + " object!"));
+                valuesToCheck[i] = RangeClass.instances[v];
+              } else if (dt.checkRefInt) {
+                constrVio.push( new ReferentialIntegrityConstraintViolation(
+                    `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
               }
             }
           } else if (RangeClass.isComplexDatatype && typeof v === "object") {
             v = Object.assign({}, v);  // use a clone
             // v is a record that must comply with the complex datatype
-            recFldNames = Object.keys(v);
-            propDefs = RangeClass.properties;
+            const recFldNames = Object.keys(v);
+            const propDefs = RangeClass.properties;
             // test if all mandatory properties occur in v and if all fields of v are properties
             if (Object.keys( propDefs).every( function (p) {return !!propDefs[p].optional || p in v;}) &&
                 recFldNames.every( function (fld) {return !!propDefs[fld];})) {
@@ -543,7 +542,7 @@ const dt = {
               v = valuesToCheck[i] = v.id;  // convert to IdRef
             }
           } else if (Number.isInteger(v)) {
-            if (optParams && optParams.checkRefInt) {
+            if (dt.checkRefInt) {
               if (!dt.classes[range].instances[String(v)]) {
                 constrVio.push( new ReferentialIntegrityConstraintViolation(
                     `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
