@@ -1,54 +1,61 @@
 /**
  * @fileOverview  This file contains the definition of the meta-class vIEW.
  * @author Gerd Wagner
- * @copyright Copyright 2015 Gerd Wagner, Chair of Internet Technology,
+ * @copyright Copyright 2015-2023 Gerd Wagner, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
  */
+import {dt} from "../datatypes.mjs";
+import eNUMERATION from "../eNUMERATION.mjs";
+import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
+import dom from "../../lib/dom.mjs";
 /**
- * Class for creating view objects (based on model classes), with fields,
- * normally bound to model class properties, and methods, typically implementing
- * user actions and possibly bound to model class methods.
+ * Class for creating "views" (or view models), typically based on model classes,
+ * with fields (typically bound to model class properties) and methods (typically
+ * implementing user actions and possibly bound to model class methods).
  *
- * A view may have a field order definition and field group definitions 
- * in the constructor parameter "fields", which is processed into a "fields" map 
- * of field definition records and a field order definition list "fieldOrder".
- * The constructor parameter "fields" may contain additional fields not based 
+ * A view is a logical representation of the interaction elements of a UI, which
+ * in most cases correspond to properties and methods of a model class. It
+ * consists of fields and of user action types, which are either pre-defined
+ * (like "back", "createRecord", "setViewModelObject", updateRecord" and
+ * "deleteRecord") or developer-defined.
+ *
+ * A view has a "field order" defining the order of fields and field groups,
+ * such that each of them is rendered horizontally in a row.
+ *
+ * The constructor parameter "fields" may contain additional fields not based
  * on model properties. When a view is created without a "fields" argument,
  * the view fields are generated from the labeled properties of the underlying 
  * model class(es).
  * 
- * A view can be rendered for a CRUD operation identified by one of the characters
- * "C", "R", "U" and "D".
- * 
- * A view (or view model) is a logical representation of the interaction elements
- * of a data management UI, which in most cases correspond to properties and
- * methods of a model class. It consists of fields and of user action types,
- * which are either pre-defined (like "back", "createRecord",
- * "setViewModelObject", updateRecord" and "deleteRecord") or developer-defined.
- * 
+ * CRUD views are special views with an underlying "modelClass" and a
+ * "viewType" identified by one of the characters "C", "R", "U" and "D".
+ *
  * A view field has an I/O mode of either "I/O" (input/output) or "O".
- * When a view is rendered, view fields are rendered as UI elements in the 
+ * When a view is rendered, its fields are rendered as UI elements in the
  * following way:
  * 
- * 1) ordinary fields as form (input/output) fields, 
- * 2) Boolean fields as HTML checkbox elements, 
- * 3) enumeration and reference fields as choice widgets (radio button groups or 
- *    checkbox groups, HTML select elements or other HTML custom element widgets)
- *    
- * or as any HTML element that allows for text content, or to special UI widgets 
- * (such as calendar date selection widgets or color pickers). User actions are 
- * exposed in the form of HTML buttons and to other actionable (e.g. clickable) 
- * HTML elements.
+ * 1) numeric or text fields as HTML input/output elements,
+ * 2) Boolean fields as HTML checkbox elements,
+ * 2) Date fields either as HTML input/output elements with ISO date strings,
+ *    or as calendar date selection widgets,
+ * 3) enumeration fields as choice widgets (radio button groups,
+ *    checkbox groups, or HTML select elements)
+ * 4) reference fields as HTML select elements or multi-select widgets, which
+ *    are HTML custom elements,
+ * 5) complex value fields as special widgets (implemented as HTML custom elements)
+ *
+ * User actions are by default exposed in the form of HTML buttons. In principle,
+ * they might also be exposed as other actionable (e.g. clickable) HTML elements.
  * 
- * The UI DOM structure of a view is rendered by the view.render method once 
+ * The UI (DOM structure) of a view is rendered by the view.render method once
  * at app startup time, while its input/output fields are filled by the 
  * vIEW.refreshUI method at runtime.
  * 
  * A user action type is a named JS function where the name indicates the intended 
- * meaning of the user action (such as "save"). It binds a user interface event type, such as 
+ * meaning of the user action (such as "save"). It binds a UI event type, such as
  * clicking on a button, to a view method as its "event handler".
-
+ *
  * TODO: When a view field is bound to a model class property and the view is
  * bound to a model object, the value of the corresponding form field is updated 
  * whenever the corresponding property value of the model object is updated.
@@ -63,12 +70,6 @@
  * 
  * @class
  */
-import {dt} from "../datatypes.mjs";
-import eNUMERATION from "../eNUMERATION.mjs";
-import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
-import dom from "../../lib/dom.mjs";
-
-
 class vIEW {
   constructor({modelClass, modelClasses, fields, methods, validateOnInput,
                 fieldGroupSeparator, viewType}) {
@@ -89,8 +90,8 @@ class vIEW {
           var elList = [], fieldNames = [];
           if (!Array.isArray(el)) elList = [el];  // single field
           else elList = el;  // field group
-          // elList is an array list of property field names or field definitions
-          // fieldNames is a corresponding array list of field names
+          // elList is a list of property field names or field definitions
+          // fieldNames is a corresponding list of field names
           for (const fld of elList) {
             if (typeof fld === "string") {  // property field
               if (!propDecl[fld]) {
@@ -134,7 +135,9 @@ class vIEW {
         }
         this.fieldOrder = [...Object.keys(this.fields)];
       }
-    } else this.modelClasses = modelClasses;  //TODO: views based on multiple model classes
+    } else {  //TODO: views based on multiple model classes
+      this.modelClasses = modelClasses;
+    }
     this.maxNmrOfEnumLitForChoiceButtonRendering = 7;
     this.validateOnInput = validateOnInput ?? true;
     this.methods = methods ?? {};
@@ -152,7 +155,7 @@ class vIEW {
   render({modelObject, showAllFields}={}) {
     var view = this,
         viewType = this.viewType,
-        fields = this.fields,  // fields map
+        fields = this.fields,  // field definition map
         fieldOrder = this.fieldOrder,  // field order array
         // a map for storing the bindings of UI elems to view fields
         dataBinding = this.dataBinding, 
@@ -395,14 +398,14 @@ class vIEW {
     }
     uiContainerEl = document.querySelector(`section#${mc.name}-${this.viewType}`);
     if (!uiContainerEl) {
-      inbetween = (this.viewType !== "R") ? " a " : " ";
-      suffix = (this.viewType === "R") ? "s" : "";
+      const entityTypeName = mc.name.toLowerCase();
+      inbetween = this.viewType !== "R" ?
+          ("aeiou".includes( entityTypeName.charAt(0)) ? " an ":" a ") : " ";
+      suffix = this.viewType === "R" ? "s" : "";
       uiContainerEl = dom.createElement("section", {
         id: mc.name +"-"+ this.viewType,
         classValues:"UI",
-        content:"<h1>"+ vIEW.crudVerbs[this.viewType] +
-            inbetween + mc.name.toLowerCase() +
-            " record"+ suffix +"</h1>"
+        content:`<h2>${vIEW.crudVerbs[this.viewType]} ${inbetween} ${entityTypeName} record${suffix}</h2>`
       });
       const mainEl = document.querySelector("html>body>main"),
             footerEl = document.querySelector("html>body>footer");
@@ -447,26 +450,23 @@ class vIEW {
         }
       }
       rowEl = tblEl.tHead.insertRow(-1);
-      columns.forEach( function (col) {
-        var i=0, colHead="", fldList="",
-            cellEl = rowEl.insertCell(-1);
-        if (typeof(col) === "string") {  // property field
-          /* if (propDecl[fld].range instanceof cOMPLEXdATAtYPE) */
+      for (const col of columns) {
+        const cellEl = rowEl.insertCell(-1);
+        if (typeof col === "string") {  // property field
+          if (!fields[col]) console.log("col = "+col+" "+JSON.stringify(fields));
           cellEl.textContent = fields[col].label;
           cellEl.setAttribute("data-bind", col);
         } else if (Array.isArray( col)) {  // field group
-          colHead = fields[col[0]].label;
-          fldList = col[0];
-          for (i=1; i < col.length; i++) {
-            if (typeof col[i] === "string") {  // property field
-              colHead += this.fieldGroupSeparator + fields[col[i]].label;
-              fldList += " " + col[i];
-            } else {}  //TODO: non-property-field
+          let colHead = fields[col[0]].label;
+          let fldList = col[0];
+          for (let i=1; i < col.length; i++) {
+            colHead += this.fieldGroupSeparator + fields[col[i]].label;
+            fldList += " " + col[i];
           }
           cellEl.textContent = colHead;
           cellEl.setAttribute("data-bind", col);
         }
-      });
+      }
       uiContainerEl.appendChild( dom.createBackButton({
         label:"Back to CRUD menu",
         classValues: "button",
@@ -786,7 +786,7 @@ class vIEW {
       if (!manageUiEl) {
         manageUiEl = dom.createElement("section", { classValues:"UI",
           id: className +"-M",
-          content:"<h1>Manage "+ className.toLowerCase() +" data</h1>"
+          content:"<h2>Manage "+ className.toLowerCase() +" data</h2>"
         });
         if (mainEl) {
           mainEl.appendChild( manageUiEl);
@@ -816,8 +816,8 @@ class vIEW {
         var selectedMenuItemEl=null;
         if (e.target.tagName === "LI") {
           selectedMenuItemEl = e.target;
-        } else if (e.target.parentNode.tagName === "LI") {
-          selectedMenuItemEl = e.target.parentNode;
+        } else if (e.target.parentElement.tagName === "LI") {
+          selectedMenuItemEl = e.target.parentElement;
         } else return;
         const sepPos = selectedMenuItemEl.id.indexOf('-');
         const className = selectedMenuItemEl.id.substr( 0, sepPos);
@@ -886,9 +886,10 @@ class vIEW {
     async function createEntityTable( EntityClass) {
       const entityRecList = await app.storageManager.retrieveAll( EntityClass),
             entityTable = {};
-      // convert entity list to entity table/map
+      // convert list of entity records to entity table (map of entity objects)
       for (const rec of entityRecList) {
         const id = rec[EntityClass.idAttribute];
+        dt.checkRefInt = false;
         entityTable[id] = new EntityClass( rec);
       }
       return entityTable;
