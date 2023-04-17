@@ -4,6 +4,8 @@
  */
 import { BookCategoryEL, Book} from "../m/Book.mjs";
 import sTORAGEmANAGER from "../../../../src/storage/sTORAGEmANAGER.mjs";
+import {dt} from "../../../../src/datatypes.mjs";
+import vIEW from "../../../../src/ui/vIEW.mjs";
 
 const app = {
   title: "Minimal OEMjs App",
@@ -51,6 +53,15 @@ const app = {
         console.log( `${e.constructor.name}: ${e.message}`);
       }
     }
+  }
+}
+// Create and store CRUD views
+app.crudViews = {};
+for (const className of Object.keys( dt.classes)) {
+  app.crudViews[className] = {};
+  const modelClass = dt.classes[className];
+  for (const crudCode of ["R","C","U","D"]) {
+    app.crudViews[className][crudCode] = new vIEW({modelClass: modelClass, viewType: crudCode});
   }
 }
 

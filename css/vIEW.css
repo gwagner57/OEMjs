@@ -169,7 +169,7 @@ form > div:first-child  {
   margin-top: 0.5em;
 }
 form > div:not(:last-child)  {
-  margin-bottom: 0.5em;
+  margin-bottom: 1em;
 }
 /* is this needed?
 form > div > label { position: relative;}
@@ -210,10 +210,12 @@ form div.I-O-field > label > output {
   position: absolute;
   left: 12em;
 }
+/*
 form div.I-O-field > label > input[type="text"],
 form div.I-O-field > label > input[type="number"] {
   width: 7em;
 }
+*/
 /*
 form div.yes-no-field > label > input[type="checkbox"] {
   position: absolute;
