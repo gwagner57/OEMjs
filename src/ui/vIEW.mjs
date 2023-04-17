@@ -9,6 +9,8 @@ import {dt} from "../datatypes.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import dom from "../../lib/dom.mjs";
+import SelectReferenceWidget from "./CustomElements/SelectReferenceWidget.mjs";
+
 /**
  * Class for creating "views" (or view models), typically based on model classes,
  * with fields (typically bound to model class properties) and methods (typically
@@ -369,6 +371,18 @@ class vIEW {
             }
           } else if (range === "Boolean") {
             containerEl.appendChild( createLabeledYesNoField( fld));
+          } else if ((typeof range === "string" && range in dt.classes ||
+                     range.constructor === bUSINESSoBJECT) && !fields[fld].maxCard) {
+            // A field with a reference (functional association) to a bUSINESSoBJECT class
+            const Class = typeof range === "string" ? dt.classes[range] : range,
+                  selEl = new SelectReferenceWidget( fld, Class, view),
+                  labelEl = document.createElement("label");
+            labelEl.textContent = fields[fld].label;
+            labelEl.appendChild( selEl);
+            containerEl.className = "select";
+            containerEl.appendChild( labelEl);
+            // store data binding assignment of UI element to view model field
+            dataBinding[fld] = selEl;
           } else {  // string/numeric property field
             containerEl.className = "I-O-field";
             containerEl.appendChild( createLabeledField( fld));
@@ -518,8 +532,9 @@ class vIEW {
           labelText:"Select "+ mc.name +": ",
           classValues: "select"
       };
-      el = dom.createLabeledSelect( slots);  // div element
-      formEl.appendChild( el);        
+      el = document.createElement("div");  // div element
+      el.appendChild( dom.createLabeledSelect( slots));
+      formEl.appendChild( el);
       selectEl = formEl[slots.name];
       // when an entity is selected, populate the form with its data
       selectEl.addEventListener("change", function () {
@@ -636,12 +651,11 @@ class vIEW {
    * TODO: what about derived view fields?
    */
   setViewField( f, v) {
-    var el=null, elems=null, i=0,
-        fldDef = this.fields[f],
-        uiEl = this.dataBinding[f];
+    var el=null, elems=null, i=0;
+    const fldDef = this.fields[f],
+          uiEl = this.dataBinding[f];
     if (v === undefined) {
       if (fldDef && fldDef.maxCard) v = [];
-      else v = "";
       this.fldValues[f] = v;
       return;
     }
@@ -676,13 +690,21 @@ class vIEW {
         el.checked = v.indexOf(parseInt(el.value)) > -1;
       }
     } else if (uiEl.tagName === "SELECT" && uiEl.multiple !== "multiple") {
-      uiEl.selectedIndex = v;
+      for (const option of uiEl.options) {
+        if (option.value === v) uiEl.selectedIndex = option.index;
+      }
+/*
+    } else if (uiEl instanceof SelectMultipleReferencesWidget) {
+      for (const option of uiEl.options) {
+        if (option.value === v) ...;
+      }
+*/
     } else {
       uiEl.setAttribute("data-value", v);
     }
   }
   /**
-   * Set the view's model object
+   * Set the view's model object and sync the corresponding UI fields
    * this = view object
    * @method 
    * @author Gerd Wagner
@@ -746,13 +768,13 @@ class vIEW {
         liEl.appendChild( btnEl);
       }
       menuEl.addEventListener( "click", function (e) {
-        var menuOption="", selectedMenuItemEl=null;
+        var selectedMenuItemEl=null;
         if (e.target.tagName === "LI") {
           selectedMenuItemEl = e.target;
         } else if (e.target.parentNode.tagName === "LI") {
           selectedMenuItemEl = e.target.parentNode;
         } else return;
-        menuOption = selectedMenuItemEl.id;
+        const menuOption = selectedMenuItemEl.id;
         switch (menuOption) {
           case "createTestData":
             app.createTestData();
@@ -869,20 +891,19 @@ class vIEW {
     vIEW.refreshUI( app, "AppStart");
   }
   static async refreshUI( app, userInterfaceId) {
-    var selectEl=null, formEl=null, records=[],
-        uiPages = vIEW.uiPages;
+    var selectEl=null, formEl=null, uiPages = vIEW.uiPages;
     const sepPos = userInterfaceId.indexOf('-'),
           className = userInterfaceId.substr( 0, sepPos),
           operationCode = userInterfaceId.substr( sepPos+1),
           modelClass = dt.classes[className];
 
     async function createEntityTable( EntityClass) {
-      const entityRecList = await app.storageManager.retrieveAll( EntityClass),
+      const entityRecords = await app.storageManager.retrieveAll( EntityClass),
             entityTable = {};
       // convert list of entity records to entity table (map of entity objects)
-      for (const rec of entityRecList) {
+      dt.checkRefInt = false;
+      for (const rec of entityRecords) {
         const id = rec[EntityClass.idAttribute];
-        dt.checkRefInt = false;
         entityTable[id] = new EntityClass( rec);
       }
       return entityTable;
@@ -909,6 +930,14 @@ class vIEW {
         formEl.reset();
         selectEl = formEl["select"+ className];
         modelClass.instances = await createEntityTable( modelClass);
+        for (const refProp of modelClass.referenceProperties) {
+          const AssociatedClass = dt.classes[modelClass.properties[refProp].range];
+          AssociatedClass.instances = await createEntityTable( AssociatedClass);
+          // refresh the options of the corresponding selection list
+          const view = app.crudViews[className][operationCode],
+                selRefEl = view.dataBinding[refProp];  // a select-reference element
+          if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
+        }
         dom.fillSelectWithOptionsFromEntityTable( selectEl,
             modelClass.instances,
             modelClass.idAttribute);
