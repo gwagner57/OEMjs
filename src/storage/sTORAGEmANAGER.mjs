@@ -21,9 +21,9 @@ import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
 class sTORAGEmANAGER {
   constructor({adapterName, dbName, createLog, validateBeforeSave}) {
     if (!(["LocalStorage","IndexedDB"].includes( adapterName))) {
-      throw new ConstraintViolation("Invalid storage adapter name!");
+      throw new Error("Invalid storage adapter name!");
     } else if (!dbName) {
-      throw new ConstraintViolation("Missing DB name!");
+      throw new Error("Missing DB name!");
     } else {
       this.adapterName = adapterName;
       this.dbName = dbName;
