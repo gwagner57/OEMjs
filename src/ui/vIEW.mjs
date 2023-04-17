@@ -9,7 +9,7 @@ import {dt} from "../datatypes.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import dom from "../../lib/dom.mjs";
-import SelectReferenceWidget from "./CustomElements/SelectReferenceWidget.mjs";
+import SelectReferenceWidget from "./SelectReferenceWidget.mjs";
 
 /**
  * Class for creating "views" (or view models), typically based on model classes,
