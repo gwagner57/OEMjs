@@ -242,30 +242,33 @@
            propDefs = Class.properties || {};  // property definitions
      const propsWithInitialValFunc = [];
      // initialize the Class.instances map
-     Class.instances = {};
+     if (!Class.isAbstract) Class.instances = {};
      // collect all names of BO classes in a map
      dt.classes[Class.name] = Class;
      const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes),
          ...Object.values( eNUMERATION)];
      // pre-process all property definitions
+     Class.referenceProperties = [];
      for (const p of Object.keys( propDefs)) {
-       const propDecl = propDefs[p],
-             range = propDecl.range;
+       const propDef = propDefs[p],
+             range = propDef.range;
        // check if property definition includes a range declaration
        if (!range) throw Error(`No range defined for property ${p} of class ${Class.name}`);
        else if (!(admissibleRanges.includes( range) ||
                   range instanceof lIST || range instanceof rECORD))
            throw Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
        // establish standard ID attribute
-       if (propDecl.isIdAttribute) Class.idAttribute = p;
+       if (propDef.isIdAttribute) Class.idAttribute = p;
+       // collect all reference properties
+       if (range in dt.classes) Class.referenceProperties.push( p);
        // collect properties with initialValue functions
-       if (typeof propDecl.initialValue === "function") propsWithInitialValFunc.push( p);
+       if (typeof propDef.initialValue === "function") propsWithInitialValFunc.push( p);
        // construct implicit setters and getters
        Object.defineProperty( Class.prototype, p, {
          get() { return this["_"+p]; },
          set( val) {
            if (bUSINESSoBJECT.areConstraintsToBeChecked) {
-             const validationResults = dt.check( p, propDecl, val);
+             const validationResults = dt.check( p, propDef, val);
              if (validationResults[0] instanceof NoConstraintViolation) {
                this["_"+p] = validationResults[0].checkedValue;
              } else {
@@ -283,41 +286,8 @@
        if (f.length === 0) this[p] = f();
        else this[p] = f.call( this);
      }
-     /*
-     if (supertypeName) {
-       constr.supertypeName = supertypeName;
-       superclass = bUSINESSoBJECT[supertypeName];
-       // apply classical inheritance pattern for methods
-       constr.prototype = Object.create( superclass.prototype);
-       constr.prototype.constructor = constr;
-       // merge superclass property declarations with own property declarations
-       constr.properties = Object.create( superclass.properties);
-      //  assign own property declarations, possibly overriding super-props
-       Object.keys( propDefs).forEach( function (p) {
-         constr.properties[p] = propDefs[p];
-       });
-     } else {  // if class is root class
-       constr.properties = propDefs;
-       constr.prototype.set = function ( prop, val) {
-         // this = object
-         var validationResult = null;
-         if (bUSINESSoBJECT.areConstraintsToBeChecked) {
-           validationResult = bUSINESSoBJECT.check( prop, this.constructor.properties[prop], val);
-           if (!(validationResult instanceof NoConstraintViolation)) throw validationResult;
-           else this[prop] = validationResult.checkedValue;
-         } else this[prop] = val;
-       };
-     }
-     // store class/constructor as value associated with its name in a map
-     bUSINESSoBJECT[classSlots.Name] = constr;
-     // initialize the class-level instances property
-     if (!classSlots.isAbstract) {
-       bUSINESSoBJECT[classSlots.Name].instances = {};
-     }
-     */
    }
 }
-bUSINESSoBJECT.views = {};
 // A flag for disabling constraint checking
 bUSINESSoBJECT.areConstraintsToBeChecked = true;
 

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+ <meta charset="UTF-8" />
+ <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+ <title>Single-Record-Table-Widget</title>
+ <meta name="description" content="An entity table widget implemented with an HTML Custom Element."/>
+ <meta name="viewport" content="width=device-width, initial-scale=1"/>
+ <link href="../css/index.css" rel="stylesheet" />
+ <link href="../css/normalize.css" rel="stylesheet" />
+</head>
+<body>
+<!------------------------------------------------------------------>
+ <h1>Test the Select-Reference Widget</h1>
+ <p>This data-based widget extends the <code>HTMLSelect</code> element by adding the property
+  <i>BusinessObjectClass</i>, such that the instances of that class provide
+  the contents of the <code>select</code> element's <code>option</code> subelements.</p>
+ <form id="test">
+  <label id="container">Select author: </label>
+ </form>
+
+ <button onclick="console.log( document.forms['test']['author'].value)">Show the value
+  of the selection field in the console</button>
+
+<script type="module">
+ import SelectReferenceWidget from "../src/ui/SelectReferenceWidget.mjs";
+ import Author from "../apps/boooks-authors-publishers/src/m/Author.mjs";
+
+ Author.instances["1"] = new Author({authorId: 1, name:"Daniel Dennett"});
+ Author.instances["2"] = new Author({authorId: 2, name:"Douglas Hofstadter"});
+ Author.instances["3"] = new Author({authorId: 3, name:"Immanuel Kant"});
+
+ const selEl = new SelectReferenceWidget( "author", Author);
+ document.getElementById("container").appendChild( selEl);
+</script>
+</body>
+</html>

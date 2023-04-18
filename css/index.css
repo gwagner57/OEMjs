@@ -1,0 +1,29 @@
+body {
+    font: 1rem 'Arial', sans-serif;
+    line-height: 1.2;
+    max-width: 50em;
+    margin: 0 auto;
+    padding: 8px;
+}
+table {
+    border: thin solid black;
+    margin: 1em 0;
+    border-collapse: collapse;
+    empty-cells: show;
+    background-color: whitesmoke;
+}
+table td, table th {
+    border: thin solid black;
+    padding: 0.2em;
+}
+td[contentEditable="true"] {
+    color: blue;
+    background-color: white;
+    cursor: pointer;
+}
+td[data-type="Integer"],td[data-type="Decimal"] {
+    text-align:right;
+}
+td.invalid {
+    color: red;
+}
