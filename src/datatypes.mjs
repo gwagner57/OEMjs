@@ -9,6 +9,7 @@ import { NoConstraintViolation,
 const dt = {
   classes: {},
   checkRefInt: false,  // flag for checking referential integrity
+  maxLevelOfComplexDatatypeNesting: 3,
   // define lists of datatype names
   stringTypes: ["String","NonEmptyString","Identifier","Email","URL","PhoneNumber"],
   integerTypes: ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber","Year"],
@@ -477,12 +478,35 @@ const dt = {
           }
         }
       } else if (range instanceof lIST) {
-        for (const v of valuesToCheck) {
+        for (const v of val) {
+          console.log("Checking value: ", v);
           if (typeof range.itemType === "string" && !isOfType( v, range.itemType) ||
               !(range.itemType instanceof lIST || range.itemType instanceof rECORD)) {
             constrVio.push( new RangeConstraintViolation(
                 `The ${attr} value ${v} is not of type ${range.itemType}`));
+          }           
+          // Check rECORD properties of lIST
+          if (range.itemType instanceof rECORD) {
+            let fieldType = range.itemType.fieldTypes;
+            Object.entries(v).forEach(([key,value])=> {
+              let fieldDef = fieldType[key];
+              if (fieldDef && fieldDef in dt.dataTypes) {
+                if (!dt.dataTypes[fieldDef].condition(value)) {
+                  constrVio.push( new RangeConstraintViolation(`rECORD value ${value} from ${key} wrong.`));
+                }
+              }
+            });
+            continue;
+          } else if (range.itemType instanceof lIST) {
+            if(dt.maxLevelOfComplexDatatypeNesting > 0) {
+              dt.maxLevelOfComplexDatatypeNesting -= 1;
+              dt.check(attr, decl, range.itemType.itemType);
+            } else {
+              dt.maxLevelOfComplexDatatypeNesting = 3;
+              constrVio.push(new RangeConstraintViolation(`Max level of complex data types reached!`));
+            }
           }
+          // check if nested list is supported
         }
       } else if (Array.isArray( range)) {  // *** Ad-hoc enumeration ***
         for (const v of valuesToCheck) {
