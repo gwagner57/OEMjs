@@ -496,17 +496,14 @@ const dt = {
                 }
               }
             });
-            continue;
           } else if (range.itemType instanceof lIST) {
-            if(dt.maxLevelOfComplexDatatypeNesting > 0) {
-              dt.maxLevelOfComplexDatatypeNesting -= 1;
-              dt.check(attr, decl, range.itemType.itemType);
-            } else {
-              dt.maxLevelOfComplexDatatypeNesting = 3;
-              constrVio.push(new RangeConstraintViolation(`Max level of complex data types reached!`));
+            if (range.itemType.itemType instanceof lIST) {
+              if (range.itemType.itemType.itemType instanceof lIST){
+                // Reached max level of nested complex data types
+                constrVio.push(new RangeConstraintViolation(`Max level of complex data types reached!`));
+              }
             }
           }
-          // check if nested list is supported
         }
       } else if (Array.isArray( range)) {  // *** Ad-hoc enumeration ***
         for (const v of valuesToCheck) {
