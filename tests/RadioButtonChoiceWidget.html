@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Radio Button Choice Widget</title>
+  <meta name="description" content="An radio button Choice widget implemented with an HTML Custom Element." />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="../css/index.css" rel="stylesheet" />
+  <link href="../css/normalize.css" rel="stylesheet" />
+</head>
+
+<body>
+  <!------------------------------------------------------------------>
+  <h1>Test a radio button choice Widget</h1>
+  <p>This data-based widget extends the <code>HTMLFieldset</code> element by adding the property
+    and instance attributes, such that the instances of that class provide
+    the contents of the <code>input</code> element's.
+  </p>
+
+  <div id="container"></div>
+
+  <script type="module">
+    import RadioButtonChoiceWidget from "../src/ui/RadioButtonChoiceWidget.mjs";
+    import Author from "../apps/boooks-authors-publishers/src/m/Author.mjs";
+
+    Author.instances["1"] = new Author({ authorId: 1, name: "Daniel Dennett" });
+    Author.instances["2"] = new Author({ authorId: 2, name: "Douglas Hofstadter" });
+    Author.instances["3"] = new Author({ authorId: 3, name: "Immanuel Kant" });
+
+    const selEl = new RadioButtonChoiceWidget(Author, { legend: "Authors" })
+    document.getElementById("container").appendChild(selEl);
+  </script>
+</body>
+
+</html>
