@@ -10,6 +10,7 @@ const dt = {
   classes: {},
   checkReferentialIntegrity: false,  // flag for disabling referential integrity checking
   defaultDecimalPlaces: 2,
+  maxLevelOfComplexDatatypeNesting: 3,
   // define lists of datatype names
   stringTypes: ["String","NonEmptyString","Identifier","Email","URL","PhoneNumber"],
   integerTypes: ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber","Year"],
@@ -383,7 +384,7 @@ const dt = {
   },
   /**
    * Generic method for checking the integrity constraints defined in attribute declarations.
-   * The values to be checked are first parsed/deserialized if provided as strings.
+   * The values to be checked are first parsed if provided as strings.
    * Copied from the cOMPLEXtYPE class of oNTOjs
    *
    * min/max: numeric (or string length) minimum/maximum
@@ -500,11 +501,31 @@ const dt = {
           }
         }
       } else if (range instanceof lIST) {
-        for (const v of valuesToCheck) {
+        for (const v of val) {
+          console.log("Checking value: ", v);
           if (typeof range.itemType === "string" && !isOfType( v, range.itemType) ||
               !(range.itemType instanceof lIST || range.itemType instanceof rECORD)) {
             constrVio.push( new RangeConstraintViolation(
                 `The ${attr} value ${v} is not of type ${range.itemType}`));
+          }           
+          // Check rECORD properties of lIST
+          if (range.itemType instanceof rECORD) {
+            let fieldType = range.itemType.fieldTypes;
+            Object.entries(v).forEach(([key,value])=> {
+              let fieldDef = fieldType[key];
+              if (fieldDef && fieldDef in dt.dataTypes) {
+                if (!dt.dataTypes[fieldDef].condition(value)) {
+                  constrVio.push( new RangeConstraintViolation(`rECORD value ${value} from ${key} wrong.`));
+                }
+              }
+            });
+          } else if (range.itemType instanceof lIST) {
+            if (range.itemType.itemType instanceof lIST) {
+              if (range.itemType.itemType.itemType instanceof lIST){
+                // Reached max level of nested complex data types
+                constrVio.push(new RangeConstraintViolation(`Max level of complex data types reached!`));
+              }
+            }
           }
         }
       } else if (Array.isArray( range)) {  // *** Ad-hoc enumeration ***
