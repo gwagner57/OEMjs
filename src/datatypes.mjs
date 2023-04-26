@@ -8,18 +8,14 @@ import { NoConstraintViolation,
 
 const dt = {
   classes: {},
-  checkRefInt: false,  // flag for checking referential integrity
+  checkReferentialIntegrity: false,  // flag for disabling referential integrity checking
+  defaultDecimalPlaces: 2,
   // define lists of datatype names
   stringTypes: ["String","NonEmptyString","Identifier","Email","URL","PhoneNumber"],
   integerTypes: ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber","Year"],
   decimalTypes: ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"],
   otherPrimitiveTypes: ["Boolean","Date","DateTime"],
-  simpleStructuredDataTypes: ["List","Record"],  // JSON arrays and objects
-  isStringType(T) {return dt.stringTypes.includes(T);},
-  isIntegerType(T) {return dt.integerTypes.includes(T) ||
-      (typeof eNUMERATION === "function" && (T instanceof eNUMERATION || T in eNUMERATION));},
-  isDecimalType(T) {return dt.decimalTypes.includes(T);},
-  isNumberType(T) {return dt.numericTypes.includes(T);},
+  simpleStructuredDataTypes: ["JSON-Array","JSON-Object"],  // JSON arrays and objects
   patterns: {
     ID: /^([a-zA-Z0-9][a-zA-Z0-9_\-]+[a-zA-Z0-9])$/,
     // defined in WHATWG HTML5 specification
@@ -28,6 +24,15 @@ const dt = {
     URL: /^(?:(?:https?|ftp):\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,}))\.?)(?::\d{2,5})?(?:[/?#]\S*)?$/i,
     INT_PHONE_NO: /^\+(?:[0-9] ?){6,14}[0-9]$/
   },
+  round( x, decimalPlaces=dt.defaultDecimalPlaces) {
+    const roundingFactor = Math.pow(10, decimalPlaces);
+    return Math.round((x + Number.EPSILON) * roundingFactor) / roundingFactor;
+  },
+  isStringType(T) {return dt.stringTypes.includes(T);},
+  isIntegerType(T) {return dt.integerTypes.includes(T) ||
+      (typeof eNUMERATION === "function" && (T instanceof eNUMERATION || T in eNUMERATION));},
+  isDecimalType(T) {return dt.decimalTypes.includes(T);},
+  isNumberType(T) {return dt.numericTypes.includes(T);},
   isIntegerString(x) {
     return typeof(x) === "string" && x.search(/^-?[0-9]+$/) === 0;
   },
@@ -53,9 +58,9 @@ const dt = {
     } else if (typeof value === "number") {
       dataType = "Decimal";
     } else if (Array.isArray( value)) {
-      dataType = "List";
+      dataType = "JSON-Array";
     } else if (typeof value === "object" && Object.keys( value).length > 0) {
-      dataType = "Record";
+      dataType = "JSON-Object";
     }
     return dataType;
   },
@@ -68,15 +73,17 @@ const dt = {
    */
   parseValueString( valStr, type) {
     var value=[], valueStringsToParse=[];
-    if (valStr.includes(",")) {  // a collection value
-      valueStringsToParse = valStr.split(",");
+    if (!dt.isStringType( type) && valStr.includes(", ")) {  // a list/collection value
+      valueStringsToParse = valStr.split(", ");
     } else {
       valueStringsToParse = [valStr];
     }
     if (dt.isStringType( type)) {
       for (const str of valueStringsToParse) {
         if (!dt.dataTypes[type].condition( str)) {
-          value = undefined; break;
+          value = undefined;
+          console.error(`The string value ${str} is not of type ${type}`);
+          break;
         } else {
           value.push( str);
         }
@@ -84,7 +91,9 @@ const dt = {
     } else if (dt.isIntegerType( type)) {
       for (const str of valueStringsToParse) {
         if (isNaN( parseInt( str)) || !dt.dataTypes[type].stringCondition( str)) {
-          value = undefined; break;
+          value = undefined;
+          console.error(`The value string ${str} does not conform to the type ${type}`);
+          break;
         } else {
           value.push( parseInt( str));
         }
@@ -92,7 +101,9 @@ const dt = {
     } else if (dt.isDecimalType( type)) {
       for (const str of valueStringsToParse) {
         if (isNaN( parseFloat( str)) || !dt.dataTypes[type].stringCondition( str)) {
-          value = undefined; break;
+          value = undefined;
+          console.error(`The value string ${str} does not conform to the type ${type}`);
+          break;
         } else {
           value.push( parseFloat( str));
         }
@@ -103,7 +114,9 @@ const dt = {
       case "DateTime":
         for (const str of valueStringsToParse) {
           if (isNaN( Date.parse( str))) {
-            value = undefined; break;
+            value = undefined;
+            console.error(`The value string ${str} does not conform to the type ${type}`);
+            break;
           } else {
             value.push( Date.parse( str));
           }
@@ -112,20 +125,24 @@ const dt = {
       case "Boolean":
         for (const str of valueStringsToParse) {
           if (!["true","yes","false","no"].includes( str)) {
-            value = undefined; break;
+            value = undefined;
+            console.error(`The value string ${str} does not conform to the type ${type}`);
+            break;
           } else {
             value.push(["true","yes"].includes( str));
           }
         }
         break;
-      case "List":
-      case "Record":
+      case "JSON-Array":
+      case "JSON-Object":
         for (const str of valueStringsToParse) {
           let val;
           try {
             val = JSON.parse( str);
           } catch (error) {
-            value = undefined; break;
+            value = undefined;
+            console.error(`The value string ${str} does not conform to the type ${type}`);
+            break;
           }
           if (val) value.push( val);
         }
@@ -135,7 +152,9 @@ const dt = {
           for (const str of valueStringsToParse) {  // should be an ID
             const obj = dt.classes[type].instances[str];
             if (!obj) {
-              value = undefined; break;
+              value = undefined;
+              console.error(`The value string ${str} does not represent an ID of an instance of the class ${type}`);
+              break;
             } else {
               value.push( obj.id);  // convert to object IDs
             }
@@ -160,7 +179,7 @@ const dt = {
    * @param {string} type - one of: Integer, Year, Decimal, List, Record
    * @return {string}
    */
-  stringifyValue( value, type) {
+  stringifyValue( value, type, decimalPlaces=dt.defaultDecimalPlaces) {
     let string="", valuesToStringify=[];
     if (!type) type = dt.determineDatatype( value);
     // make sure value is an array
@@ -175,24 +194,22 @@ const dt = {
     } else {
       valuesToStringify = value;
     }
-    if (dt.isStringType( type)) {
-      string = valuesToStringify.toString();
-    } else if (dt.isNumberType( type)) {
-      string = valuesToStringify.toString();
-    } else if (type in dt.classes) {
-      string = valuesToStringify.toString();
-    } else {
-      switch (type) {
-        case "List":
-        case "Record":
-          string = JSON.stringify( value);
-          break;
-        default:
-          if (type in dt.dataTypes && "val2str" in dt.dataTypes[type] &&
-              dt.isOfType( value, type)) {
-            string = dt.dataTypes[type].val2str( value);
-          }
+    if (type in dt.dataTypes) {
+      if (dt.isDecimalType( type)) {
+        valuesToStringify.map( v => round( v, decimalPlaces));
+      } else {
+        valuesToStringify.map( v => dt.isOfType( v, type) && "val2str" in dt.dataTypes[type] ?
+            dt.dataTypes[type].val2str( v) : String(v));
       }
+      string = valuesToStringify.join(", ");
+    } else if (type instanceof eNUMERATION) {
+      string = type.labels[v-1];
+    } else if (type in dt.classes) {
+      const Class = dt.classes[type];
+      valuesToStringify.map( v => v instanceof Class ? v[Class.idAttribute] : v);
+      string = valuesToStringify.join(", ");
+    } else if (type === "JSON-Array" || type === "JSON-Object") {
+      string = JSON.stringify( value);
     }
     return string;
   },
@@ -217,6 +234,9 @@ const dt = {
   isClass( C) {
     return typeof C === "function" && C.prototype !== undefined;
   },
+  isSubclassOf( C, D) {
+    return C.prototype instanceof D
+  },
   /********************************************************************
    Assuming that in the case of a simple entity table, the first entity record
    defines the attributes/structure of the table, check if all records include
@@ -224,7 +244,10 @@ const dt = {
    check if all records satisfy the declarations.
    ********************************************************************/
   checkEntityTable( entityRecords, columnDeclarations) {
-    if (!(entityRecords instanceof Object) || Object.keys( entityRecords).length === 0) return false;
+    if (!(entityRecords instanceof Object) ||
+        Object.keys( entityRecords).length === 0) {
+      return new Error(`Invalid entity records: ${entityRecords}`);
+    }
     const entityIDs = Object.keys( entityRecords);
     let attributeNames=[], constrVio=[];
     if (columnDeclarations) {
@@ -394,18 +417,18 @@ const dt = {
             `A value for ${attr} is required!`));
     }
     if (maxCard === 1) {  // single-valued attribute
-      if (range === "List" && Array.isArray(val)) {
+      if (range === "JSON-Array" && Array.isArray(val)) {
         valuesToCheck = [[...val]];
-      } else if (range === "Record" && typeof val === "object") {
+      } else if (range === "JSON-Object" && typeof val === "object") {
         valuesToCheck = [{...val}];
       } else {
         valuesToCheck = [val];
       }
     } else {  // multi-valued properties (can be array-valued or map-valued)
       if (Array.isArray( val) ) {
-        if (range === "List" && val.every( el => Array.isArray(el))) {
+        if (range === "JSON-Array" && val.every( el => Array.isArray(el))) {
           valuesToCheck = val.map( a => [...a]);
-        } else if (range === "Record" && val.every( el => typeof el === "object")) {
+        } else if (range === "JSON-Object" && val.every( el => typeof el === "object")) {
           valuesToCheck = val.map( function (o) {return {...o};});
         } else if (typeof range === "string" && range in dt.classes &&
               val.every( el => String(el) in dt.classes[range].instances)) {
@@ -491,23 +514,26 @@ const dt = {
                 `The ${attr} value ${v} is not in ad-hoc enumeration ${range.toString()}`));
           }
         }
-      } else if (typeof range === "string" && range in dt.classes) {
-        const RangeClass = dt.classes[range];
+      } else if (range in dt.classes && dt.checkReferentialIntegrity) {
+        const RangeClass = dt.classes[range];  // a bUSINESSoBJECT class
         valuesToCheck.forEach( function (v, i) {
-          if (!RangeClass.isComplexDatatype && !(v instanceof RangeClass)) {
+          if (!(v instanceof RangeClass)) {
             if (typeof v === "object") {
               constrVio.push( new ReferentialIntegrityConstraintViolation(
-                  `The object ${JSON.stringify(v)} referenced by attribute ${attr} is not from its range ${range}`));
+               `The object ${JSON.stringify(v)} referenced by attribute ${attr} is not from its range ${range}`));
             } else {
               // convert IdRef to object reference
               if (RangeClass.instances[v]) {
                 valuesToCheck[i] = RangeClass.instances[v];
-              } else if (dt.checkRefInt) {
+              } else {
                 constrVio.push( new ReferentialIntegrityConstraintViolation(
                     `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
               }
             }
-          } else if (RangeClass.isComplexDatatype && typeof v === "object") {
+          }
+        });
+/*
+      } else if (RangeClass.isComplexDatatype && typeof v === "object") {
             v = Object.assign({}, v);  // use a clone
             // v is a record that must comply with the complex datatype
             const recFldNames = Object.keys(v);
@@ -528,9 +554,9 @@ const dt = {
                   " must be an instance of "+ range +" or a compatible record!"+
                   JSON.stringify(v) + " is not admissible!"));
             }
-          }
-        });
+ */
       } else if (typeof range === "string" && range.includes("|")) {
+        // range is a union type
         valuesToCheck.forEach( function (v, i) {
           var rangeTypes=[];
           rangeTypes = range.split("|");
@@ -542,7 +568,7 @@ const dt = {
               v = valuesToCheck[i] = v.id;  // convert to IdRef
             }
           } else if (Number.isInteger(v)) {
-            if (dt.checkRefInt) {
+            if (dt.checkReferentialIntegrity) {
               if (!dt.classes[range].instances[String(v)]) {
                 constrVio.push( new ReferentialIntegrityConstraintViolation(
                     `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
@@ -556,7 +582,7 @@ const dt = {
           }
         });
       } else if (typeof range === "object" && range.dataType !== undefined) {
-        // the range is a (collection) datatype declaration record
+        // OLD format for collection datatypes
         for (const v of valuesToCheck) {
           if (typeof v !== "object") {
             constrVio.push( new RangeConstraintViolation("The value of " + attr +
@@ -598,7 +624,7 @@ const dt = {
               break;
           }
         }
-      } else if (range === Object) {
+      } else if (range === Object) {  // is this a useful joker?
         for (const v of valuesToCheck) {
           if (!(v instanceof Object)) {
             constrVio.push( new RangeConstraintViolation("The value of " + attr +
@@ -631,17 +657,14 @@ const dt = {
     if (dt.isNumberType( range)) {
       for (const v of valuesToCheck) {
         if (min !== undefined && v < min) {
-          constrVio.push( new IntervalConstraintViolation( attr +
-              " must be greater than "+ min));
+          constrVio.push( new IntervalConstraintViolation(
+              `${attr} must be greater than ${min-1}`));
         } else if (max !== undefined && v > max) {
-          constrVio.push( new IntervalConstraintViolation( attr +
-              " must be smaller than "+ max));
+          constrVio.push( new IntervalConstraintViolation(
+              `${attr} must be smaller than ${max+1}`));
         }
       }
     }
-    // return constraint violations found in range constraint checks
-    if (constrVio.length > 0) return constrVio;
-
     /********************************************************
      ***  Check cardinality constraints  *********************
      ********************************************************/

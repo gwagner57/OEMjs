@@ -105,6 +105,9 @@
     return str1 + str2;
   }
   // construct a storage serialization/representation of an instance
+  toRecordFieldValue( prop) {
+
+  }
   toRecord() {
     const obj = this, rec={};
     var valuesToConvert=[];
@@ -152,65 +155,6 @@
       }
     }
     return rec;
-  }
-  /***************************************************/
-  // Convert property value to (form field) string.
-  /***************************************************/
-  getValueAsString( prop) {
-    const Class = this.constructor,
-          idAttr = Class.idAttribute ?? "id",
-          propDecl = this.constructor.properties[prop],
-          range = propDecl.range, val = this[prop],
-          decimalPlaces = propDecl.displayDecimalPlaces || 2;
-    var valuesToConvert=[], displayStr="", listSep = ", ";
-    if (val === undefined || val === null) return "";
-    if (propDecl.maxCard && propDecl.maxCard > 1) {
-      if (Array.isArray( val)) {
-        valuesToConvert = val.length>0 ? val.slice(0) : [];  // clone;
-      } else if (typeof val === "object") {
-        valuesToConvert = Object.keys( val);
-      } else console.log("The value of a multi-valued " +
-          "property like "+ prop +" must be an array or a map!");
-    } else valuesToConvert = [val];
-    valuesToConvert.forEach( function (v,i) {
-      if (typeof propDecl.val2str === "function") {
-        valuesToConvert[i] = propDecl.val2str( v);
-      } else if (eNUMERATION && range instanceof eNUMERATION) {
-        valuesToConvert[i] = range.labels[v-1];
-      } else if (["string","boolean"].includes( typeof v) || !v) {
-        valuesToConvert[i] = String( v);
-      } else if (typeof v === "number") {
-        if (Number.isInteger(v)) valuesToConvert[i] = String( v);
-        else valuesToConvert[i] = math.round( v, decimalPlaces);
-      } else if (range === "Date") {
-        valuesToConvert[i] = util.createIsoDateString( v);
-      } else if (Array.isArray( v)) {  // JSON-compatible array
-        valuesToConvert[i] = v.slice(0);  // clone
-      } else if (typeof range === "string" && range in dt.classes) {
-        if (typeof v === "object") {
-          valuesToConvert[i] = v[idAttr];
-        } else {
-          valuesToConvert[i] = v.toString();
-          propDecl.stringified = true;
-          console.log(`Reference roperty ${this.constructor.name}::${prop} has value ${v.toString()}`);
-        }
-      } else {
-        valuesToConvert[i] = JSON.stringify( v);
-        propDecl.stringified = true;
-      }
-    }, this);
-    if (valuesToConvert.length === 0) displayStr = "[]";
-    else {
-      displayStr = valuesToConvert[0];
-      if (propDecl.maxCard && propDecl.maxCard > 1) {
-        displayStr = "[" + displayStr;
-        for (let k=1; k < valuesToConvert.length; k++) {
-          displayStr += listSep + valuesToConvert[k];
-        }
-        displayStr = displayStr + "]";
-      }
-    }
-    return displayStr;
   }
   /***************************************************
    * A class-level de-serialization method

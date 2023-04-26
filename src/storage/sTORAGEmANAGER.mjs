@@ -10,7 +10,7 @@ import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
 //import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
 import {dt} from "../datatypes.mjs";
-import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
+import {NoConstraintViolation, ConstraintViolation} from "../constraint-violation-error-types.mjs";
 
 /**
  * Library class providing storage management methods for a number of predefined
@@ -81,7 +81,8 @@ class sTORAGEmANAGER {
     } else if (Array.isArray(rec) && rec.every( function (r) {
       return typeof r === "object" && !Array.isArray(r)})) {
       records = rec;
-    } else throw new Error("2nd argument of 'add' must be a record or record list!");
+    } else throw new Error("2nd argument of 'add' must be a record or record list! Inavlid value: "+
+                           JSON.stringify(rec));
     if (!Class) throw new Error(`Cannot add ${JSON.stringify(rec)} without a Class argument`);
     const idAttr = Class.idAttribute || "id";
     // create auto-IDs if required
@@ -117,50 +118,49 @@ class sTORAGEmANAGER {
     }
   };
   /**
-   * Generic method for retrieving a record
+   * Generic method for retrieving a record from secondary storage and
+   * convert it to a corresponding typed object that is returned
    * @method
    * @param {object} Class  The business object class concerned
    * @param {string|number} id  The object ID value
    */
   async retrieve( Class, id) {
-    var rec=null;
+    var obj=null;
     try {
-      rec = await this.adapter.retrieve( this.dbName, Class, id);
-      if (this.createLog) console.log(`Book with ISBN ${id} retrieved.`);
-    } catch (error) {
-      console.log(`${error.name}: ${error.message}`);
+      const rec = await this.adapter.retrieve( this.dbName, Class, id);
       if (!rec) {
-        console.log(`There is no ${Class.name} with ID value ${id} in the database!`);
+        console.error(`There is no ${Class.name} with ID value ${id} in the database!`);
+      } else {
+        obj = new Class( rec);
+        if (this.createLog) console.log(`Book with ISBN ${id} retrieved.`);
       }
+    } catch (error) {
+      console.error(`${error.constructor.name}: ${error.message}`);
     }
-    return rec;
+    return obj;
   }
   /**
-   * Generic method for retrieving all records
+   * Generic method for retrieving all records of a table from secondary
+   * storage and convert them to corresponding typed objects that are
+   * returned in the form of a map of objects ("entity table")
    *
    * @method
    * @param {object} Class  The business object class concerned
    */
   async retrieveAll( Class) {
-    var records = null;
+    var entityTable = {};
     try {
-      records = await this.adapter.retrieveAll( this.dbName, Class);
+      const records = await this.adapter.retrieveAll( this.dbName, Class);
       if (this.createLog) console.log( records.length +" "+ Class.name +" records retrieved.");
-      if (this.validateAfterRetrieve) {
-        for (let i=0; i < records.length; i++) {
-          try {
-            let newObj = new Class( records[i]);
-          } catch (e) {
-            if (e instanceof ConstraintViolation) {
-              console.log( e.constructor.name +": "+ e.message);
-            } else console.log( e.name +": "+ e.message);
-          }
-        }
+      dt.checkReferentialIntegrity = false;  // disable referential integrity checking
+      for (const entityRecord of records) {
+        const id = entityRecord[Class.idAttribute];
+        entityTable[id] = new Class( entityRecord);
       }
     } catch (error) {
-      console.log(`${error.name}: ${error.message}`);
+      console.log(`${error.constructor.name}: ${error.message}`);
     }
-    return records;
+    return entityTable;
   }
   /**
    * Generic method for updating model objects
@@ -195,7 +195,7 @@ class sTORAGEmANAGER {
               if (!(validationResults[0] instanceof NoConstraintViolation)) {
                 //TODO: support multiple errors
                 const constraintViolation = validationResults[0];
-                console.log( constraintViolation.constructor.name +": "+ constraintViolation.message);
+                console.error( constraintViolation.constructor.name +": "+ constraintViolation.message);
                 noConstraintViolated = false;
                 // restore object to its state before updating
                 objToUpdate = objectBeforeUpdate;
@@ -212,13 +212,15 @@ class sTORAGEmANAGER {
               if (!(validationResults[0] instanceof NoConstraintViolation)) {
                 //TODO: support multiple errors
                 const constraintViolation = validationResults[0];
-                console.log( constraintViolation.constructor.name +": "+ constraintViolation.message);
+                console.error( constraintViolation.constructor.name +": "+ constraintViolation.message);
                 noConstraintViolated = false;
                 // restore object to its state before updating
                 objToUpdate = objectBeforeUpdate;
-              } else {
-                delete updSlots[prop];  // no update required
+              } else {  // NoConstraintViolation
+                updatedProperties.push(prop);
               }
+            } else {
+              delete updSlots[prop];  // no update required
             }
           }
         }
@@ -514,13 +516,13 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
     const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    const obj = await db.get( tableName, id);
+    const record = await db.get( tableName, id);
     // update the properties concerned
     for (const propName of Object.keys( slots)) {
-      obj[propName] = slots[propName];
+      record[propName] = slots[propName];
     }
     // save updated object
-    db.put( tableName, obj);
+    db.put( tableName, record);
   },
   //------------------------------------------------
   destroy: async function (dbName, Class, id) {

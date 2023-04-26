@@ -2,7 +2,7 @@
   "name": "UnidirectionalAssociation App",
   "short_name": "UnidirectionalAssociation App",
   "icons": [{
-  "src": "google-touch-icon.png",
+  "src": "apple-touch-icon.png",
   "sizes": "512x512"
 }],
   "background_color": "#ffffff",

@@ -10,6 +10,7 @@ import eNUMERATION from "../eNUMERATION.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import dom from "../../lib/dom.mjs";
 import SelectReferenceWidget from "./SelectReferenceWidget.mjs";
+import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
 
 /**
  * Class for creating "views" (or view models), typically based on model classes,
@@ -181,43 +182,39 @@ class vIEW {
     function createLabeledField( fld) {
       var fldEl = null;
       const lblEl = document.createElement("label");
+
+      function validateFieldValue () {
+        const constrVio = dt.check( fld, fields[fld], fldEl.value);
+        let msg = "";
+        if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
+          // update view model field value by assigning the converted range-conform value
+          view.fldValues[fld] = constrVio[0].checkedValue;
+        } else {
+          msg = constrVio[0].message;
+        }
+        fldEl.setCustomValidity( msg);
+      }
+
       if (fields[fld].inputOutputMode === "O" ||
           (viewType === "U" && propDecl[fld]?.isIdAttribute) || viewType === "D") {
-        fldEl = document.createElement("output");        
+        fldEl = document.createElement("output");
+        fldEl.style.width = `${fields[fld].fieldSize || 7}em`;
       } else {
         fldEl = document.createElement("input");
         fldEl.type = "text";
+        fldEl.size = fields[fld].fieldSize || 7;
         if (validateOnInput) {
-          fldEl.addEventListener("input", function () {
-            const constrVio = dt.check( fld, fields[fld], fldEl.value),
-                  msg = constrVio.length === 0 ? "" : constrVio[0].message;
-            fldEl.setCustomValidity( msg);
-            // update view model field value
-            if (fldEl.validity.valid) view.fldValues[fld] = fldEl.value;
-          });
+          fldEl.addEventListener("input", validateFieldValue);
         } else if (viewType === "C") {
           // add event listener for loosing focus
-          fldEl.addEventListener("blur", function () {
-            const constrVio = dt.check( fld, fields[fld], fldEl.value),
-                  msg = constrVio.length === 0 ? "" : constrVio[0].message;
-            fldEl.setCustomValidity( msg);
-            // update view model field value
-            if (fldEl.validity.valid) view.fldValues[fld] = fldEl.value;
-          });
+          fldEl.addEventListener("blur", validateFieldValue);
         } else {  // !validateOnInput && viewType === "U"
-          fldEl.addEventListener("change", function () {
-            const constrVio = dt.check( fld, fields[fld], fldEl.value),
-                  msg = constrVio.length === 0 ? "" : constrVio[0].message;
-            fldEl.setCustomValidity( msg);
-            // update view model field value
-            if (fldEl.validity.valid) view.fldValues[fld] = fldEl.value;
-          });
+          fldEl.addEventListener("change", validateFieldValue);
         }
       }
       // store data binding assignment of UI element to view model field
       dataBinding[fld] = fldEl;
       fldEl.name = fld;
-      fldEl.size = fields[fld].fieldSize || 7;
       lblEl.textContent = fields[fld].label;
       lblEl.appendChild( fldEl);
       return lblEl;
@@ -452,7 +449,7 @@ class vIEW {
       if (this.showAllFields || !displayAttribs) {
         columns = fieldOrder;
       } else {
-        columns = displayAttribs.clone();
+        columns = [...displayAttribs];  // clone
         if (columns[0] !== mc.idAttribute) {
           // add standardIdAttr at beginning of displayAttribs
           columns.unshift( mc.idAttribute);
@@ -495,13 +492,18 @@ class vIEW {
         var slots = {};
         for (const f of Object.keys( fields)) {
           if (fields[f].inputOutputMode === "I/O") {
-            const range = fields[f].range;
             if (fields[f].optional && view.fldValues[f] || !fields[f].optional) {
               // perform validation on save
+              const range = fields[f].range;
+              let msg="";
               slots[f] = view.fldValues[f];
               if (!(range instanceof eNUMERATION) && !(range in dt.classes)) {
-                const constrVio = dt.check( f, fields[f], slots[f]),
-                      msg = constrVio.length === 0 ? "" : constrVio[0].message;
+                const constrVio = dt.check( f, fields[f], slots[f]);
+                if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
+                  slots[f] = constrVio[0].checkedValue;
+                } else {
+                  msg = constrVio[0].message;
+                }
                 formEl[f].setCustomValidity( msg);
               } else if (range instanceof eNUMERATION) {
                 /* Either a field set with child input elements, or
@@ -510,9 +512,13 @@ class vIEW {
                    the first input element instead, and call its setCustomValidity
                 */
                 const elem = formEl.querySelector(`[data-bind=${f}] input:first-of-type`) ||
-                           formEl.querySelector(`select[data-bind=${f}]`);
-                const constrVio = dt.check( f, fields[f], slots[f]),
-                      msg = constrVio.length === 0 ? "" : constrVio[0].message;
+                                 formEl.querySelector(`select[data-bind=${f}]`);
+                const constrVio = dt.check( f, fields[f], slots[f]);
+                if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
+                  slots[f] = constrVio[0].checkedValue;
+                } else {
+                  msg = constrVio[0].message;
+                }
                 elem.setCustomValidity( msg);
               }
             }
@@ -520,7 +526,7 @@ class vIEW {
         }
         if (formEl.checkValidity())  {
           view.userActions["createRecord"]( slots);
-          // clear view slots, otherwise they are sent again even if the form is empty!
+          // clear view fields, otherwise they are sent again even if the form is empty!
           for (const fName in slots) view.fldValues[fName] = undefined;
         }
       });
@@ -573,8 +579,14 @@ class vIEW {
               // check constraints for non-select fields
               if (!(fields[f].range instanceof eNUMERATION) &&
                   !(fields[f].range in dt.classes)) {
-                const constrVio = dt.check( f, fields[f], slots[f]),
-                      msg = constrVio.length === 0 ? "" : constrVio[0].message;
+                const constrVio = dt.check( f, fields[f], slots[f]);
+                let msg = "";
+                if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
+                  // assign the converted range-conform value
+                  slots[f] = constrVio[0].checkedValue;
+                } else {
+                  msg = constrVio[0].message;
+                }
                 formEl[f].setCustomValidity( msg);
               }
             } else {  // optional and no form field value
@@ -644,48 +656,39 @@ class vIEW {
 */
   }
   /**
-   * Generic setter for view fields
+   * Generic setter for view fields, takes also care of bottom-up data-binding
+   * (from view field to corresponding UI widget)
    * this = view object
    * @method 
    * @author Gerd Wagner
-   * TODO: what about derived view fields?
+   * TODO: support derived and dependent view fields
    */
   setViewField( f, v) {
-    var el=null, elems=null, i=0;
+    var el=null, elems=null;
     const fldDef = this.fields[f],
           uiEl = this.dataBinding[f];
     if (v === undefined) {
-      if (fldDef && fldDef.maxCard) v = [];
+      if (fldDef?.maxCard) v = [];
       this.fldValues[f] = v;
       return;
     }
     // assign view field
-    if (Array.isArray(v)) this.fldValues[f] = v.clone();
+    if (Array.isArray(v)) this.fldValues[f] = [...v];  // clone
     else this.fldValues[f] = v;
-    // bottom-up data-binding: assign UI/form field
+    // bottom-up data-binding: set the value of UI widgets (DOM elements)
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
-      if (!Array.isArray(v)) {
-        uiEl.value = dt.stringifyValue( v, fldDef.range);
-      } else {
-        let displayStr = "";
-        v.forEach( function (el,i) {
-          const str = dt.stringifyValue( el, fldDef.range);
-          if (i===0) displayStr = str;
-          else displayStr += this.fieldGroupSeparator + str;
-        }, this);
-        uiEl.value = displayStr;
-      }
-    } else if (uiEl.tagName === "FIELDSET" && 
-        uiEl.classList.contains("radio-button-group")) {
+      uiEl.value = dt.stringifyValue( v, fldDef.range);
+    } else if (uiEl.tagName === "FIELDSET" &&
+               uiEl.classList.contains("radio-button-group")) {
       elems = uiEl.querySelectorAll("input[type='radio']");
-      for (i=0; i < elems.length; i++) {
+      for (let i=0; i < elems.length; i++) {
         el = elems[i];
         if (el.value === String(v)) el.checked = true;
       }
     } else if (uiEl.tagName === "FIELDSET" && 
         uiEl.classList.contains("checkbox-group")) {
       elems = uiEl.querySelectorAll("input[type='checkbox']");
-      for (i=0; i < elems.length; i++) {
+      for (let i=0; i < elems.length; i++) {
         el = elems[i];
         el.checked = v.indexOf(parseInt(el.value)) > -1;
       }
@@ -771,8 +774,8 @@ class vIEW {
         var selectedMenuItemEl=null;
         if (e.target.tagName === "LI") {
           selectedMenuItemEl = e.target;
-        } else if (e.target.parentNode.tagName === "LI") {
-          selectedMenuItemEl = e.target.parentNode;
+        } else if (e.target.parentElement.tagName === "LI") {
+          selectedMenuItemEl = e.target.parentElement;
         } else return;
         const menuOption = selectedMenuItemEl.id;
         switch (menuOption) {
@@ -860,8 +863,9 @@ class vIEW {
           break;
         case "C":  //================ CREATE ============================
           view.userActions = {
-            "createRecord": function (slots) {
-               app.storageManager.add( modelClass, slots);},
+            "createRecord": function (record) {
+               console.log("createRecord: "+JSON.stringify(record));
+               app.storageManager.add( modelClass, record);},
             "back": function () { vIEW.refreshUI( app, className +"-M");}
           };
           break;
@@ -870,6 +874,7 @@ class vIEW {
             "setViewModelObject": function (id) {  // ON object selection
                app.crudViews[className]["U"].setModelObject( id);},
             "updateRecord": function (id, slots) {
+               console.log("updateRecord: "+JSON.stringify(slots));
                app.storageManager.update( modelClass, id, slots);},
             "back": function () { vIEW.refreshUI( app, className +"-M");}
           };
@@ -896,18 +901,6 @@ class vIEW {
           className = userInterfaceId.substr( 0, sepPos),
           operationCode = userInterfaceId.substr( sepPos+1),
           modelClass = dt.classes[className];
-
-    async function createEntityTable( EntityClass) {
-      const entityRecords = await app.storageManager.retrieveAll( EntityClass),
-            entityTable = {};
-      // convert list of entity records to entity table (map of entity objects)
-      dt.checkRefInt = false;
-      for (const rec of entityRecords) {
-        const id = rec[EntityClass.idAttribute];
-        entityTable[id] = new EntityClass( rec);
-      }
-      return entityTable;
-    }
     // store the UI elements in a cache variable
     if (!uiPages) uiPages = document.querySelectorAll("section.UI");
     for (let i=0; i < uiPages.length; i++) {
@@ -921,7 +914,7 @@ class vIEW {
       case "M":
         break;
       case "R":
-        modelClass.instances = await createEntityTable( modelClass);
+        modelClass.instances = await app.storageManager.retrieveAll( modelClass);
         vIEW.fillTable( className);
         break;
       case "U":
@@ -929,10 +922,10 @@ class vIEW {
         formEl = document.querySelector(`section#${className}-${operationCode} > form`);
         formEl.reset();
         selectEl = formEl["select"+ className];
-        modelClass.instances = await createEntityTable( modelClass);
+        modelClass.instances = await app.storageManager.retrieveAll( modelClass);
         for (const refProp of modelClass.referenceProperties) {
           const AssociatedClass = dt.classes[modelClass.properties[refProp].range];
-          AssociatedClass.instances = await createEntityTable( AssociatedClass);
+          AssociatedClass.instances = await app.storageManager.retrieveAll( AssociatedClass);
           // refresh the options of the corresponding selection list
           const view = app.crudViews[className][operationCode],
                 selRefEl = view.dataBinding[refProp];  // a select-reference element
@@ -948,11 +941,11 @@ class vIEW {
     const mc = dt.classes[className],
           tblEl = document.querySelector(`section#${className}-R>table`);
     if (!tblEl) {
-      console.log(`No table found in UI section ${className}-R!`);
+      console.error(`No table found in UI section ${className}-R!`);
       return;
     }
     if (!(tblEl.tBodies[0] && tblEl.tHead && tblEl.tHead.rows[0])) {
-      console.log(`Table in UI section ${className}-R does not have the required structure!`);
+      console.error(`Table in UI section ${className}-R does not have the required structure!`);
       return;
     }
     tblEl.tBodies[0].innerHTML = "";
@@ -965,7 +958,7 @@ class vIEW {
         var cellContent="", properties=[];
         const dataBinding = col.getAttribute("data-bind");
         if (!dataBinding) {
-          console.log(`A column in the table in the ${className}-R UI page does not have any data binding!`);
+          console.error(`A column in the table in the ${className}-R UI page does not have any data binding!`);
           return;
         }
         if (dataBinding.indexOf(" ") === -1) {  // single field column
@@ -976,12 +969,13 @@ class vIEW {
         const propSep = col.getAttribute("data-separator") || ", ";
         properties.forEach( function (prop, k) {
           var cont;
-          const range = mc.properties[prop].range;
+          const propDef = mc.properties[prop],
+                range = propDef.range;
           if (obj[prop] === undefined) return;
           if (range === "Date") {
             cont = dom.createTime( obj[prop]).outerHTML;
           } else {
-            cont = obj.getValueAsString( prop);
+            cont = dt.stringifyValue( obj[prop], range, propDef.displayDecimalPlaces);
           }
           if (k===0) cellContent = cont;
           else cellContent += propSep + cont;

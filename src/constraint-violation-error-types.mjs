@@ -59,7 +59,7 @@ class FrozenValueConstraintViolation extends ConstraintViolation {
     super( msg);
   }
 }
-export { NoConstraintViolation,
+export { ConstraintViolation, NoConstraintViolation,
   MandatoryValueConstraintViolation, RangeConstraintViolation,
   StringLengthConstraintViolation, IntervalConstraintViolation,
   PatternConstraintViolation, CardinalityConstraintViolation, UniquenessConstraintViolation,

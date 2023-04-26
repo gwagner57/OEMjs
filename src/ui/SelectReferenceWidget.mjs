@@ -1,4 +1,4 @@
-import dom from "../../../lib/dom.mjs";
+import dom from "../../lib/dom.mjs";
 
 class SelectReferenceWidget extends HTMLSelectElement {
   constructor( name, BusinessObjectClass, view) {
