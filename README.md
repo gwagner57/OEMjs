@@ -1,12 +1,14 @@
 # OEMjs
-A JS library for defining 
+## A Low Code Business App Framework
 
-1. enumerations;
-2. business object and business event classes (and class hierarchies) with semantic meta-data 
-   (e.g., for declarative constraint validation);
-3. storage adapters that facilitate switching from one storage technology (such as IndexedDB) 
-   to another one (such as MySQL);
-4. view models for model-based user interfaces.
+OEMjs allows defining 
+
+1. **enumerations**;
+2. **business object classes** and **business event classes** (and class hierarchies) with semantic meta-data 
+   (e.g., for *declarative constraint validation*);
+3. **storage adapters** that facilitate switching from one storage technology (such as IndexedDB) 
+   to another one (such as Google FireStore or CloudFlare D1);
+4. **view models** for model-based user interface code generation.
 
 ## Use Case 1: Handling Enumerations and Enumeration Attributes
 
