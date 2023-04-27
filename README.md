@@ -1,7 +1,7 @@
 # OEMjs
 ## A Low Code Business App Framework
 
-OEMjs allows defining 
+OEMjs implements the ***Object Event Modeling*** paradigm. It allows defining 
 
 1. **enumerations**;
 2. **business object classes** and **business event classes** (and class hierarchies) with semantic meta-data 
