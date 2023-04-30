@@ -35,8 +35,8 @@
     import eNUMERATION from "../src/eNUMERATION.mjs";
     import dt from "../src/datatypes.mjs";
     import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
-    //  import sTORAGEmANAGER from "../src/storage/sTORAGEmANAGER.mjs";
-    import sTORAGEmANAGER_Firestore from "../src/storage/sTORAGEmANAGER_Firestore.mjs";
+     import sTORAGEmANAGER from "../src/storage/sTORAGEmANAGER.mjs";
+    // import sTORAGEmANAGER_Firestore from "../src/storage/sTORAGEmANAGER_Firestore.mjs";
     // import sTORAGEmANAGER_Firestore from "../dist/storage/sTORAGEmANAGER_Firestore.js"
 
     /****************************************
@@ -82,8 +82,7 @@
       Book.setup();
       
       // Initialize Storagemanager for Firestore
-      const storeMan = new sTORAGEmANAGER_Firestore({ dbName: "TestSuite01", createLog: true, validateBeforeSave: true });
-      storeMan.setup();
+      const storeMan = new sTORAGEmANAGER({adapterName: "Firestore", dbName: "TestSuite01", createLog: true, validateBeforeSave: true });
 
       //*** Test 1 - Add **************************
       document.body.appendChild(dom.createElement("h2", { content: "Test 1: Creating a database and adding records" }));
@@ -104,8 +103,8 @@
       const b3 = new Book({isbn: "123123123X", title:"Textbook 2", year: 2021,
         category: BookCategoryEL.TEXTBOOK, publisher: "Springer"});
       try {
-        await storeMan.add(Publisher, p1.toRecord(), Publisher);
-        await storeMan.add(Book, [b1.toRecord(), b2.toRecord(), b3.toRecord()], Publisher);
+        await storeMan.add(Publisher, p1, Publisher);
+        await storeMan.add(Book, [b1, b2, b3], Publisher);
       } catch (e) {
         console.log( e.constructor.name +": "+ e.message);
       }
@@ -120,7 +119,10 @@
         bookRec = await storeMan.retrieve( Book, "123456789X");
         if (JSON.stringify(bookRec)===JSON.stringify(b2.toRecord())) {
           document.body.appendChild(dom.createElement("p",
-              {content: `Success! Retrieved book: ${JSON.stringify(bookRec)}`}));
+              {content: `success! retrieved book: ${JSON.stringify(bookRec)}`}));
+        } else {
+          document.body.appendChild(dom.createElement("p",
+              {content: `Failed! retrieved book does not match: ${JSON.stringify(bookRec)}`}));
         }
       } catch (e) {
         console.log( e.constructor.name +": "+ e.message);
@@ -245,11 +247,9 @@
          document.body.appendChild(dom.createElement("p",
              {content: "Failed: Database not cleared!"}));
        }
-   
      } catch (e) {
       console.log( e.constructor.name +": "+ e.message);
      }
-
     } catch (e) {
       console.log(e.constructor.name + ": " + e.message);
     }

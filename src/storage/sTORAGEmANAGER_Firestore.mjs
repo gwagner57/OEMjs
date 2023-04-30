@@ -1,5 +1,5 @@
 ﻿import { initializeApp } from "../../lib/firebase-app.js";
-import { getFirestore, addDoc, deleteDoc, collection, doc, setDoc, getDoc } from "../../lib/firebase-firestore.js";
+import { getFirestore, addDoc, deleteDoc, collection, doc, setDoc, getDoc, query, where, getDocs } from "../../lib/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut } from "../../lib/firebase-auth.js";
 
 /**
@@ -43,9 +43,9 @@ class sTORAGEmANAGER_Firestore {
       delete config["user_pass"];
       this.#firestoreConfig = config;
     }).finally(this.#init())
-    .catch(err => {
-      console.error("Can't read config", err);
-    })
+      .catch(err => {
+        console.error("Can't read config", err);
+      })
   }
 
   getDb() {
@@ -128,15 +128,22 @@ class sTORAGEmANAGER_Firestore {
 
   async add(dbName, Class, record) {
     try {
-      let docRecs = []
+      let docRefs = []
       if (Array.isArray(record)) {
-        record.forEach(item => {
-          let ref = addDoc(collection(this.#db, Class.name), item);
-          docRecs.push(ref);
+        record.forEach(async item => {
+          // console.log("Document ID: ", item[item.constructor.idAttribute], item);
+          const collClass = collection(this.#db, Class.name);
+          const docRef = doc(collClass, item[item.constructor.idAttribute]);
+          await setDoc(docRef, item.toRecord());
+          // let ref = await addDoc(collection(this.#db, Class.name), item);
+          docRefs.push(docRef);
         });
       } else {
-        const ref = await addDoc(collection(this.#db, Class.name), record);
-        docRecs.push(ref)
+        // const ref = await addDoc(collection(this.#db, Class.name), record);
+        const collClass = collection(this.#db, Class.name);
+        const docRef = doc(collClass, item[item.constructor.idAttribute]);
+        await setDoc(docRef, record.toRecord());
+        docRecs.push(docRef)
       }
       return docRefs;
     } catch (e) {
@@ -145,18 +152,18 @@ class sTORAGEmANAGER_Firestore {
   }
 
   async retrieve(dbName, Class, id) {
-    const docRef = doc(this.#db, Class.name + "/" + id);
+    const docRef = doc(this.#db, Class.name, id);
     return await getDoc(docRef);
   }
 
   async retrieveAll(dbName, Class) {
     const ref = doc(this.#db, Class.name);
-    return await getDoc(ref);
+    return await getDocs(ref);
   }
 
   async update(dbName, Class, id, slots) {
     const docRef = doc(this.#db, Class.name, id);
-    return await setDoc(docRef, slots);
+    return await setDoc(docRef, slots.toRecord());
   }
 
   async destroy(dbName, Class, id) {

@@ -575,27 +575,26 @@ sTORAGEmANAGER.adapters["Firestore"] = {
   },
   add: async function(dbName, Class, records) {
     if(firestore) {
-      console.log("Inside Add");
       firestore.add(dbName, Class, records);
     }
   },
   retrieve: async function(dbName, Class, id) {
-    sTORAGEmANAGER_Firestore.retrieve(dbName, Class, id);
+    firestore.retrieve(dbName, Class, id);
   },
   retrieveAll: async function(dbName, Class) {
-    sTORAGEmANAGER_Firestore.retrieveAll(dbName, Class);
+    firestore.retrieveAll(dbName, Class);
   },
   update: async function(dbName, Class, id, slots) {
-    sTORAGEmANAGER_Firestore.update(dbName, Class, id, slots);
+    firestore.update(dbName, Class, id, slots);
   },
   destroy: async function(dbName, Class, id) {
-    sTORAGEmANAGER_Firestore.destroy(dbName, Class, id);
+    firestore.destroy(dbName, Class, id);
   },
   clearTable: async function(dbName, Class) {
-    sTORAGEmANAGER_Firestore.clearTable(dbName, Class);
+    firestore.clearTable(dbName, Class);
   },
   clearDB: async function(dbName) {
-    sTORAGEmANAGER_Firestore.clearDB(dbName);
+    firestore.clearDB(dbName);
   }
 };
 
