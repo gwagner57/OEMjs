@@ -1,5 +1,5 @@
 ﻿import { initializeApp } from "../../lib/firebase-app.js";
-import { getFirestore, addDoc, deleteDoc, collection, doc, setDoc, getDoc, query, where, getDocs } from "../../lib/firebase-firestore.js";
+import { getFirestore, addDoc, deleteDoc, collection, doc, setDoc, getDoc, query, where, getDocs, updateDoc } from "../../lib/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut } from "../../lib/firebase-auth.js";
 
 /**
@@ -18,6 +18,7 @@ class sTORAGEmANAGER_Firestore {
   #username = null;
   #user_pass = null;
   #credentials = null;
+  #collections = new Set();
 
   /**
    * 
@@ -34,18 +35,6 @@ class sTORAGEmANAGER_Firestore {
     }
     let rootUrl = new URL(window.location.href);
     this.configPath = new URL("/" + configPath, rootUrl.origin);
-    fetch(this.configPath).then(response => response.json()).then(data => {
-      let config = data;
-      this.#username = config.username;
-      this.#user_pass = config.user_pass;
-      // remove add data
-      delete config["username"];
-      delete config["user_pass"];
-      this.#firestoreConfig = config;
-    }).finally(this.#init())
-      .catch(err => {
-        console.error("Can't read config", err);
-      })
   }
 
   getDb() {
@@ -76,9 +65,22 @@ class sTORAGEmANAGER_Firestore {
    * Initialize Firebase application with needed parameters
    * 
    */
-  #init() {
-    this.#fireApp = initializeApp(this.#firestoreConfig);
-    this.#db = getFirestore(this.#fireApp);
+  async #init() {
+    try {
+      let response = await fetch(this.configPath);
+      let data = await response.json();
+      this.#username = data.username;
+      this.#user_pass = data.user_pass;
+      // remove data not needed in Firestore
+      delete data["username"];
+      delete data["user_pass"];
+      this.#firestoreConfig = data;
+      console.log("Firestore config: ", data);
+      this.#fireApp = initializeApp(data);
+      this.#db = getFirestore(this.#fireApp);
+    } catch (error) {
+      console.error("Error on init()", error);
+    }
   }
 
   /**
@@ -103,7 +105,7 @@ class sTORAGEmANAGER_Firestore {
    * Setting up all needed information for accessing the firestore database
    */
   setup() {
-    // this.#init();
+    this.#init();
     this.#authenticate(this.#username, this.#user_pass);
   }
 
@@ -131,19 +133,18 @@ class sTORAGEmANAGER_Firestore {
       let docRefs = []
       if (Array.isArray(record)) {
         record.forEach(async item => {
-          // console.log("Document ID: ", item[item.constructor.idAttribute], item);
           const collClass = collection(this.#db, Class.name);
           const docRef = doc(collClass, item[item.constructor.idAttribute]);
           await setDoc(docRef, item.toRecord());
-          // let ref = await addDoc(collection(this.#db, Class.name), item);
           docRefs.push(docRef);
+          this.#collections.add(Class.name);
         });
       } else {
-        // const ref = await addDoc(collection(this.#db, Class.name), record);
         const collClass = collection(this.#db, Class.name);
         const docRef = doc(collClass, item[item.constructor.idAttribute]);
         await setDoc(docRef, record.toRecord());
-        docRecs.push(docRef)
+        docRefs.push(docRef);
+        this.#collections.add(Class.name);
       }
       return docRefs;
     } catch (e) {
@@ -152,18 +153,44 @@ class sTORAGEmANAGER_Firestore {
   }
 
   async retrieve(dbName, Class, id) {
-    const docRef = doc(this.#db, Class.name, id);
-    return await getDoc(docRef);
+    try {
+      const docRef = doc(this.#db, Class.name, id);
+      const docData = await getDoc(docRef);
+      if (docData.exists()) {
+        console.log("Data: ", docData.data());
+        return docData.data();
+      } else {
+        console.error(`Document from ${Class.name} with ID ${id} doesn't exist`)
+      }
+    } catch (error) {
+      console.error(`Error retreiving data from ${Class.name} with ID ${id}`)
+    }
   }
 
   async retrieveAll(dbName, Class) {
-    const ref = doc(this.#db, Class.name);
-    return await getDocs(ref);
+    try {
+      const ref = doc(this.#db, Class.name);
+      const doc = await getDocs(ref);
+      let docs = doc.docs;
+      return docs.map(item => item.data());
+    } catch (error) {
+      console.error(`Error handling retreiveAll from table ${Class.name}`)
+    }
   }
 
   async update(dbName, Class, id, slots) {
-    const docRef = doc(this.#db, Class.name, id);
-    return await setDoc(docRef, slots.toRecord());
+    // Get data first
+    try {
+      const currentItem = this.retrieve(dbName, Class, id);
+      if (currentItem) {
+        const docRef = doc(this.#db, Class.name, id);
+        return await updateDoc(docRef, slots.toRecord());
+      } else {
+        console.error(`Can't update item ${Class.name} with ID ${id}, item not found in storage!`);
+      }
+    } catch (error) {
+      console.error(`Error during update of ${Class.name} with ID ${id}`);
+    }
   }
 
   async destroy(dbName, Class, id) {
@@ -171,16 +198,23 @@ class sTORAGEmANAGER_Firestore {
   }
 
   async clearTable(dbName, Class) {
-    const refs = this.#store[Class.name];
-    if (refs) {
-      refs.forEach(e => {
-        this.destroy(dbName, Class, e);
-      });
+    try {
+      const allData = this.retrieveAll(dbName, Class);
+      if (allData) {
+        await Promise.all(allData.map(item => {
+          this.destroy(dbName, Class, item.id);
+        }))
+      }
+    } catch (error) {
+      console.error(`Error clearing table ${Class.name}`);
     }
   }
 
   async clearDB(dbName) {
-    await deleteDoc(doc(this.#db, dbName));
+    this.#collections.forEach(async item => {
+      await deleteDoc(doc(this.#db, dbName, item));
+    })
+    
   }
 }
 
