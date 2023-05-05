@@ -1,3 +1,4 @@
+import dom from "../../lib/dom.mjs"
 import { dt, rECORD, lIST } from "../datatypes.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import { MandatoryValueConstraintViolation } from "../constraint-violation-error-types.mjs";
@@ -15,6 +16,10 @@ class RadioButtonChoiceWidget extends HTMLFieldSetElement {
         this.record = record;
     }
 
+    static get observedAttributes() {
+        return ['checked', 'disabled'];
+    }
+
     createFieldsetAttributes() {
         if (this.disabled) {
             this.setAttribute("disabled", true);
@@ -23,36 +28,55 @@ class RadioButtonChoiceWidget extends HTMLFieldSetElement {
 
     createInputAndLabel() {
         // creates input and label nodes for each element
-        let innerHTML = "";
+        let innerHTML = [];
         Object.keys(this.record.instances).forEach(oid => {
             const elem = this.record.instances[oid];
             let idKey = elem.idAttribute || oid;
             let nameId = idKey + "_" + elem.name;
-            innerHTML += `<input type="radio" id="${nameId}" value="${elem.name}" />
-                    <label for="${nameId}">${elem.name}</label>`;
+            let slot = {};
+            slot.name = elem.name;
+            slot.type = 'radio';
+            slot.value = elem.name
+            slot.labelText = elem.name
+            slot.id = nameId
+            slot.labelFor = nameId
+            let htmlElem = dom.createLabeledInputField(slot);
+            htmlElem.addEventListener("click", e => {
+                // add attribute to HTML element to store if element already be checked by user
+                if (e.target.nodeName === "INPUT") {
+                    let input = e.target;
+                    if (input.hasAttribute("checked")) {
+                        input.removeAttribute("checked");
+                        input.checked = false;
+                    }
+                    if (input.checked === true && !input.hasAttribute("checked")) {
+                        input.setAttribute("checked", true)
+                    }
+                }
+            });
+
+            innerHTML.push(htmlElem);
         });
+        this.inputElements = innerHTML;
         return innerHTML;
     }
 
     connectedCallback() {
         this.createFieldsetAttributes();
         this.setAttribute("data-bind", this.htmlLegend);
-        let legend_element = `<legend>${this.htmlLegend}</legend>`
-        this.innerHTML = `${legend_element}${this.createInputAndLabel()}`
-        this.addEventListener("change", e => console.log("Change event", e));
-        this.addEventListener("click", e => {
-            if (e.originalTarget.nodeName === "INPUT") {
-                let checked = e.originalTarget.checked;
-                if (checked === true) {
-                    // TODO checked is always true
-                    // e.originalTarget.checked = false;
-                }
-            }
-        });
+        let legend = document.createElement("legend");
+        legend.textContent = this.htmlLegend;
+        this.appendChild(legend);
+        this.createInputAndLabel().map(x => this.appendChild(x));
     }
+    
     disconnectedCallback() {
-        this.removeEventListener("change");
-        this.removeEventListener("click");
+        // remove EventListener from each input element
+        if (this.inputElements.length > 0) {
+            Array.map(item => {
+                item.removeEventListener("click");
+            }, this.inputElements);
+        }
     }
 }
 
