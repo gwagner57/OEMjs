@@ -75,6 +75,7 @@ class sTORAGEmANAGER {
    * @param {object} rec  A record or record list
    */
   async add( Class, rec) {
+    console.log( JSON.stringify( rec));
     var records=[];
     if (typeof rec === "object" && !Array.isArray(rec)) {
       records = [rec];
@@ -126,6 +127,8 @@ class sTORAGEmANAGER {
    */
   async retrieve( Class, id) {
     var obj=null;
+    const checkRefInt = dt.checkReferentialIntegrity;
+    dt.checkReferentialIntegrity = false;  // disable referential integrity checking
     try {
       const rec = await this.adapter.retrieve( this.dbName, Class, id);
       if (!rec) {
@@ -137,30 +140,55 @@ class sTORAGEmANAGER {
     } catch (error) {
       console.error(`${error.constructor.name}: ${error.message}`);
     }
+    dt.checkReferentialIntegrity = checkRefInt;  // restore previous setting
     return obj;
   }
   /**
-   * Generic method for retrieving all records of a table from secondary
-   * storage and convert them to corresponding typed objects that are
-   * returned in the form of a map of objects ("entity table")
+   * Generic method for retrieving all records of a DB table corresponding
+   * to a Class and convert them to instances of that Class, which are then
+   * stored in Class.instances (an "entity table"). Also retrieves all
+   * records from all associated tables.
+   * TODO: retrieve only those records (from associated tables) that are referenced
+   * by these instances.
    *
    * @method
    * @param {object} Class  The business object class concerned
    */
   async retrieveAll( Class) {
     var entityTable = {};
+    const checkRefInt = dt.checkReferentialIntegrity;
+    dt.checkReferentialIntegrity = false;  // disable referential integrity checking
     try {
       const records = await this.adapter.retrieveAll( this.dbName, Class);
+      //console.log("Entity records: ", JSON.stringify(records));
       if (this.createLog) console.log( records.length +" "+ Class.name +" records retrieved.");
-      dt.checkReferentialIntegrity = false;  // disable referential integrity checking
+      // retrieve all records from all associated tables
+      for (const refProp of Class.referenceProperties) {
+        const AssociatedClass = dt.classes[Class.properties[refProp].range];
+        await this.retrieveAll( AssociatedClass);
+      }
+      // create entity from record (and convert ID references to internal references)
       for (const entityRecord of records) {
         const id = entityRecord[Class.idAttribute];
         entityTable[id] = new Class( entityRecord);
+        /*
+        // The conversion of Id references to internal references is already done in the set method
+        const entity = entityTable[id];
+        for (const refProp of Class.referenceProperties) {
+          const AssociatedClass = dt.classes[Class.properties[refProp].range];
+          if (Array.isArray( entity[refProp])) {  // multi-valued reference property
+            entity[refProp] = entity[refProp].map( idRef => AssociatedClass.instances[idRef]);
+          } else {
+            entity[refProp] = AssociatedClass.instances[entity[refProp]];
+          }
+        }
+        */
       }
     } catch (error) {
       console.log(`${error.constructor.name}: ${error.message}`);
     }
-    return entityTable;
+    dt.checkReferentialIntegrity = checkRefInt;  // restore previous setting
+    Class.instances = entityTable;
   }
   /**
    * Generic method for updating model objects

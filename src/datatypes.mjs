@@ -197,20 +197,21 @@ const dt = {
     }
     if (type in dt.dataTypes) {
       if (dt.isDecimalType( type)) {
-        valuesToStringify.map( v => round( v, decimalPlaces));
+        string = valuesToStringify.map( v => round( v, decimalPlaces)).join(", ");
       } else {
-        valuesToStringify.map( v => dt.isOfType( v, type) && "val2str" in dt.dataTypes[type] ?
-            dt.dataTypes[type].val2str( v) : String(v));
+        string = valuesToStringify.map( v => dt.isOfType( v, type) && "val2str" in dt.dataTypes[type] ?
+            dt.dataTypes[type].val2str( v) : String(v)).join(", ");
       }
-      string = valuesToStringify.join(", ");
     } else if (type instanceof eNUMERATION) {
-      string = type.labels[v-1];
+      string = valuesToStringify.map( v => type.labels[v-1]).join(", ");
     } else if (type in dt.classes) {
       const Class = dt.classes[type];
-      valuesToStringify.map( v => v instanceof Class ? v[Class.idAttribute] : v);
-      string = valuesToStringify.join(", ");
+      let displayAttr="";
+      if ("name" in Class.properties) displayAttr = "name";
+      else displayAttr = Class.idAttribute;
+      string = valuesToStringify.map( v => v instanceof Class ? v[displayAttr] : v).join(", ");
     } else if (type === "JSON-Array" || type === "JSON-Object") {
-      string = JSON.stringify( value);
+      string = valuesToStringify.map( v => JSON.stringify( v)).join(", ");
     }
     return string;
   },
@@ -403,12 +404,13 @@ const dt = {
    * @return {object}  The constraint violation object.
    */
   check( attr, decl, val) {
-    var constrVio=[], valuesToCheck=[],
-        minCard = decl.minCard !== "undefined" ? decl.minCard : (decl.optional ? 0 : 1),  // by default, an attribute is mandatory
-        maxCard = decl.maxCard || 1,  // by default, an attribute is single-valued
+    var range = decl.range,
+        constrVio=[], valuesToCheck=[];
+    const maxCard = decl.maxCard || 1,  // by default, an attribute is single-valued
+        // by default, an attribute is mandatory
+        minCard = decl.minCard !== "undefined" ? decl.minCard : (decl.optional ? 0 : 1),
         min = typeof decl.min === "function" ? decl.min() : decl.min,
         max = typeof decl.max === "function" ? decl.max() : decl.max,
-        range = decl.range,
         msg = decl.patternMessage || "",
         pattern = decl.pattern;
     // check Mandatory Value Constraint

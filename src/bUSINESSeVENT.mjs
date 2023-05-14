@@ -4,7 +4,7 @@ import bUSINESSoBJECT from "./bUSINESSoBJECT";
  * An event may be instantaneous or it may have a non-zero duration.
  */
 class bUSINESSeVENT {
-  constructor({id, occTime, startTime, duration, node}) {
+  constructor({id, occTime, startTime, duration}) {
     if (id) this.id = id;
     else this.id = this.constructor.idCounter++;
     if (typeof occTime === "number") {

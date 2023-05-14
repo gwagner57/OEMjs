@@ -17,8 +17,7 @@ class SelectReferenceWidget extends HTMLSelectElement {
   }
   refreshOptions() {
     const busObjClass = this.BusinessObjectClass,
-          busObjects = busObjClass.instances,
-          propDefs = busObjClass.properties;
+          busObjects = busObjClass.instances;
     const choiceItems = {};
     for (const oid of Object.keys( busObjects)) {
       let optionText = oid;

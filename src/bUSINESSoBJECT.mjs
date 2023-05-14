@@ -56,8 +56,7 @@
         this[idAttr] = Class.idCounter = 1;
       }
     }
-    // has an id value been passed and is the class neither a complex datatype nor abstract?
-    if (id && !Class.isComplexDatatype && !Class.isAbstract) {
+    if (!Class.isAbstract) {
       // add new object to the population of the class (represented as a map) 
       Class.instances[this[idAttr]] = this;
     }
@@ -197,10 +196,10 @@
        const propDef = propDefs[p],
              range = propDef.range;
        // check if property definition includes a range declaration
-       if (!range) throw Error(`No range defined for property ${p} of class ${Class.name}`);
+       if (!range) throw new Error(`No range defined for property ${p} of class ${Class.name}`);
        else if (!(admissibleRanges.includes( range) ||
                   range instanceof lIST || range instanceof rECORD))
-           throw Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
+           throw new Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
        // establish standard ID attribute
        if (propDef.isIdAttribute) Class.idAttribute = p;
        // collect all reference properties
@@ -211,7 +210,7 @@
        Object.defineProperty( Class.prototype, p, {
          get() { return this["_"+p]; },
          set( val) {
-           if (bUSINESSoBJECT.areConstraintsToBeChecked) {
+           if (bUSINESSoBJECT.checkConstraints) {
              const validationResults = dt.check( p, propDef, val);
              if (validationResults[0] instanceof NoConstraintViolation) {
                this["_"+p] = validationResults[0].checkedValue;
@@ -233,6 +232,6 @@
    }
 }
 // A flag for disabling constraint checking
-bUSINESSoBJECT.areConstraintsToBeChecked = true;
+bUSINESSoBJECT.checkConstraints = true;
 
 export default bUSINESSoBJECT;

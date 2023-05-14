@@ -914,7 +914,8 @@ class vIEW {
       case "M":
         break;
       case "R":
-        modelClass.instances = await app.storageManager.retrieveAll( modelClass);
+        await app.storageManager.retrieveAll( modelClass);
+        //console.log("Entity table: ", JSON.stringify(modelClass.instances));
         vIEW.fillTable( className);
         break;
       case "U":
@@ -922,10 +923,8 @@ class vIEW {
         formEl = document.querySelector(`section#${className}-${operationCode} > form`);
         formEl.reset();
         selectEl = formEl["select"+ className];
-        modelClass.instances = await app.storageManager.retrieveAll( modelClass);
+        await app.storageManager.retrieveAll( modelClass);
         for (const refProp of modelClass.referenceProperties) {
-          const AssociatedClass = dt.classes[modelClass.properties[refProp].range];
-          AssociatedClass.instances = await app.storageManager.retrieveAll( AssociatedClass);
           // refresh the options of the corresponding selection list
           const view = app.crudViews[className][operationCode],
                 selRefEl = view.dataBinding[refProp];  // a select-reference element

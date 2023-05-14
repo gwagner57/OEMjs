@@ -2,6 +2,12 @@
  * Predefined class for creating enumerations as special JS objects.
  * @copyright Copyright 2014-20 Gerd Wagner, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
+ * Example:
+ *   const WeatherStateEL = new eNUMERATION ("WeatherStateEL",
+ *           ["sunny", "partly cloudy", "cloudy", "cloudy with rain", "rainy"]);
+ *   const CountriesEL = new eNUMERATION ("CountriesEL",
+ *           {"D":"Deutschland", "F":"France", "GB":"Great Britain"});
+ *
  * @license The MIT License (MIT)
  * @author Gerd Wagner
  * @class
@@ -31,7 +37,7 @@ class eNUMERATION {
             "constructor argument must be an array of strings!");
       }
       this.labels = enumArg;
-      this.enumLitNames = this.labels;
+      this.enumLitNames = enumArg;
     } else if (typeof enumArg === "object" && Object.keys(enumArg).length > 0) {
       // a code list defined by a map
       if (!Object.keys(enumArg).every( code => (typeof enumArg[code] === "string"))) {
