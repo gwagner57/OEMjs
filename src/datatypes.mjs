@@ -504,7 +504,6 @@ const dt = {
         }
       } else if (range instanceof lIST) {
         for (const v of val) {
-          console.log("Checking value: ", v);
           if (typeof range.itemType === "string" && !isOfType( v, range.itemType) ||
               !(range.itemType instanceof lIST || range.itemType instanceof rECORD)) {
             constrVio.push( new RangeConstraintViolation(
