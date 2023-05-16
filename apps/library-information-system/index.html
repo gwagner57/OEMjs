@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Library Information System (LIS)</title>
+  <meta name="description" content="A example for model based web application" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="favicon.svg" />
+  <link rel="mask-icon" href="mask-icon.svg" color="#000000" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.json" />
+
+  <link rel="stylesheet" href="../../css/normalize.css" />
+  <link rel="stylesheet" href="../../css/vIEW.css" />
+
+  <script type="module">
+    import vIEW from "../../src/ui/vIEW.mjs";
+    import app from "./src/app.mjs";
+    window.addEventListener("load", vIEW.setupUI(app));
+  </script>
+</head>
+
+<body>
+  <header>
+    <div class="title">
+      <h1>Library Information System (LIS)</h1>
+    </div>
+  </header>
+  <main></main>
+  <footer>
+    <div class="foot-content wrapper">
+      Example Web Application for model based development.
+    </div>
+  </footer>
+</body>
+
+</html>

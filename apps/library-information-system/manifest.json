@@ -1,0 +1,11 @@
+{
+  "name": "Library Information System",
+  "short_name": "LIS",
+  "icons": [{
+  "src": "apple-touch-icon.png",
+  "sizes": "512x512"
+}],
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "display": "fullscreen"
+}
