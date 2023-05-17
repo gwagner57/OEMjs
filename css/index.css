@@ -27,3 +27,6 @@ td[data-type="Integer"],td[data-type="Decimal"] {
 td.invalid {
     color: red;
 }
+div {
+    margin-bottom: 1em;
+}

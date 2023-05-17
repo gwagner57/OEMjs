@@ -10,6 +10,7 @@ import eNUMERATION from "../eNUMERATION.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import dom from "../../lib/dom.mjs";
 import SelectReferenceWidget from "./SelectReferenceWidget.mjs";
+import SelectMultipleItemsWidget from "./SelectMultipleItemsWidget.mjs";
 import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
 
 /**
@@ -369,17 +370,30 @@ class vIEW {
           } else if (range === "Boolean") {
             containerEl.appendChild( createLabeledYesNoField( fld));
           } else if ((typeof range === "string" && range in dt.classes ||
-                     range.constructor === bUSINESSoBJECT) && !fields[fld].maxCard) {
-            // A field with a reference (functional association) to a bUSINESSoBJECT class
+                     range.constructor === bUSINESSoBJECT)) { // A bUSINESSoBJECT reference field
             const Class = typeof range === "string" ? dt.classes[range] : range,
-                  selEl = new SelectReferenceWidget( fld, Class, view),
                   labelEl = document.createElement("label");
+            let widgetEl=null;
             labelEl.textContent = fields[fld].label;
-            labelEl.appendChild( selEl);
-            containerEl.className = "select";
+            if (!fields[fld].maxCard) {
+              // A single-valued reference field (functional association)
+              widgetEl = new SelectReferenceWidget( fld, Class, view);
+              containerEl.className = "select";
+            } else {
+              // A multi-valued reference field (non-functional association)
+              let displayAttr="";
+              if ("name" in Class.properties) displayAttr = "name";
+              else if ("title" in Class.properties) displayAttr = "title";
+              else if (Class.displayAttribute) displayAttr = Class.displayAttribute;
+              widgetEl = new SelectMultipleItemsWidget({name: fld,
+                  selectionRange: Class.instances, idAttr: Class.idAttribute,
+                  displayAttr, minCard:1, view});
+              containerEl.className = "select-multiple-items";
+            }
+            labelEl.appendChild( widgetEl);
             containerEl.appendChild( labelEl);
             // store data binding assignment of UI element to view model field
-            dataBinding[fld] = selEl;
+            dataBinding[fld] = widgetEl;
           } else {  // string/numeric property field
             containerEl.className = "I-O-field";
             containerEl.appendChild( createLabeledField( fld));
@@ -696,12 +710,9 @@ class vIEW {
       for (const option of uiEl.options) {
         if (option.value === v) uiEl.selectedIndex = option.index;
       }
-/*
-    } else if (uiEl instanceof SelectMultipleReferencesWidget) {
-      for (const option of uiEl.options) {
-        if (option.value === v) ...;
-      }
-*/
+    } else if (uiEl.tagName === "SELECT-MULTIPLE-ITEMS") {
+      uiEl.selection = v;
+      uiEl.refresh();
     } else {
       uiEl.setAttribute("data-value", v);
     }
