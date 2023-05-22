@@ -386,8 +386,8 @@ class vIEW {
               else if ("title" in Class.properties) displayAttr = "title";
               else if (Class.displayAttribute) displayAttr = Class.displayAttribute;
               widgetEl = new SelectMultipleItemsWidget({name: fld,
-                  selectionRange: Class.instances, idAttr: Class.idAttribute,
-                  displayAttr, minCard:1, view});
+                  selection: view.fldValues[fld], selectionRange: Class.instances,
+                  idAttr: Class.idAttribute, displayAttr, minCard:1, view});
               containerEl.className = "select-multiple-items";
             }
             labelEl.appendChild( widgetEl);
@@ -473,7 +473,6 @@ class vIEW {
       for (const col of columns) {
         const cellEl = rowEl.insertCell(-1);
         if (typeof col === "string") {  // property field
-          if (!fields[col]) console.log("col = "+col+" "+JSON.stringify(fields));
           cellEl.textContent = fields[col].label;
           cellEl.setAttribute("data-bind", col);
         } else if (Array.isArray( col)) {  // field group
@@ -707,8 +706,11 @@ class vIEW {
         el.checked = v.indexOf(parseInt(el.value)) > -1;
       }
     } else if (uiEl.tagName === "SELECT" && uiEl.multiple !== "multiple") {
+      let val;
+      if (typeof v === "object") val = v[v.constructor.idAttribute];  // a business object
+      else val = v;
       for (const option of uiEl.options) {
-        if (option.value === v) uiEl.selectedIndex = option.index;
+        if (option.value === val) uiEl.selectedIndex = option.index;
       }
     } else if (uiEl.tagName === "SELECT-MULTIPLE-ITEMS") {
       uiEl.selection = v;
@@ -885,7 +887,6 @@ class vIEW {
             "setViewModelObject": function (id) {  // ON object selection
                app.crudViews[className]["U"].setModelObject( id);},
             "updateRecord": function (id, slots) {
-               console.log("updateRecord: "+JSON.stringify(slots));
                app.storageManager.update( modelClass, id, slots);},
             "back": function () { vIEW.refreshUI( app, className +"-M");}
           };
@@ -925,8 +926,8 @@ class vIEW {
       case "M":
         break;
       case "R":
+        // retrieve all objects and store them in modelClass.instances
         await app.storageManager.retrieveAll( modelClass);
-        //console.log("Entity table: ", JSON.stringify(modelClass.instances));
         vIEW.fillTable( className);
         break;
       case "U":
@@ -965,7 +966,7 @@ class vIEW {
             rowEl = tblEl.tBodies[0].insertRow(-1);
       // create cell content for each column
       for (const col of columns) {
-        var cellContent="", properties=[];
+        let cellContent="", properties=[];
         const dataBinding = col.getAttribute("data-bind");
         if (!dataBinding) {
           console.error(`A column in the table in the ${className}-R UI page does not have any data binding!`);
@@ -978,12 +979,22 @@ class vIEW {
         }
         const propSep = col.getAttribute("data-separator") || ", ";
         properties.forEach( function (prop, k) {
-          var cont;
+          var cont="";
           const propDef = mc.properties[prop],
-                range = propDef.range;
-          if (obj[prop] === undefined) return;
+                range = propDef.range,
+                val = obj[prop];
+          if (val === undefined) return;
           if (range === "Date") {
-            cont = dom.createTime( obj[prop]).outerHTML;
+            cont = dom.createTime( val).outerHTML;
+          } else if (range in dt.classes) {  // reference property
+            if (propDef.maxCard && propDef.maxCard > 1) {
+              let objList=[];
+              if (!Array.isArray( val)) objList = Object.values( val);
+              else objList = val;
+              cont = objList.map( o => o.toShortString()).join(", ");
+            } else {
+              cont = val.toShortString();
+            }
           } else {
             cont = dt.stringifyValue( obj[prop], range, propDef.displayDecimalPlaces);
           }

@@ -433,19 +433,13 @@ const dt = {
           valuesToCheck = val.map( a => [...a]);
         } else if (range === "JSON-Object" && val.every( el => typeof el === "object")) {
           valuesToCheck = val.map( function (o) {return {...o};});
-        } else if (typeof range === "string" && range in dt.classes &&
-              val.every( el => String(el) in dt.classes[range].instances)) {
-          valuesToCheck = val.map( id => dt.classes[range].instances[id]);
         } else {
           valuesToCheck = val;
         }
       } else if (typeof val === "object" && typeof range === "string" && range in dt.classes) {
-        if (!decl.isOrdered) {  // convert map to array list
-          valuesToCheck = Object.keys( val).map( id => val[id]);
-        } else {
-          constrVio.push( new RangeConstraintViolation(
+        if (!decl.isOrdered) valuesToCheck = val;
+        else constrVio.push( new RangeConstraintViolation(
             `The ordered-collection-valued attribute ${attr} must not have a map value like ${val}`));
-        }
       } else {
         valuesToCheck = [val];
       }
@@ -538,22 +532,24 @@ const dt = {
         }
       } else if (range in dt.classes && dt.checkReferentialIntegrity) {
         const RangeClass = dt.classes[range];  // a bUSINESSoBJECT class
-        valuesToCheck.forEach( function (v, i) {
-          if (!(v instanceof RangeClass)) {
-            if (typeof v === "object") {
-              constrVio.push( new ReferentialIntegrityConstraintViolation(
-               `The object ${JSON.stringify(v)} referenced by attribute ${attr} is not from its range ${range}`));
-            } else {
-              // convert IdRef to object reference
-              if (RangeClass.instances[v]) {
-                valuesToCheck[i] = RangeClass.instances[v];
-              } else {
+        if (Array.isArray( valuesToCheck)) {
+          valuesToCheck.forEach( function (v, i) {
+            if (!(v instanceof RangeClass)) {
+              if (typeof v === "object") {
                 constrVio.push( new ReferentialIntegrityConstraintViolation(
-                    `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
+                    `The object ${JSON.stringify(v)} referenced by attribute ${attr} is not from its range ${range}`));
+              } else {
+                // convert IdRef to object reference
+                if (RangeClass.instances[v]) {
+                  valuesToCheck[i] = RangeClass.instances[v];
+                } else {
+                  constrVio.push( new ReferentialIntegrityConstraintViolation(
+                      `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
+                }
               }
             }
-          }
-        });
+          });
+        }
 /*
       } else if (RangeClass.isComplexDatatype && typeof v === "object") {
             v = Object.assign({}, v);  // use a clone
@@ -694,7 +690,7 @@ const dt = {
       // check minimum cardinality constraint
       if (minCard > 0 && valuesToCheck.length < minCard) {
         constrVio.push( new CardinalityConstraintViolation(
-            `A collection of at least ${minCard} values is required for ${attr}`));
+            `A collection of at least ${minCard} values is required for ${attr}. Invalid value: ${JSON.stringify(val)}`));
       }
       // check maximum cardinality constraint
       if (valuesToCheck.length > maxCard) {

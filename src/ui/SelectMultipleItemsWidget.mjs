@@ -24,8 +24,10 @@ class SelectMultipleItemsWidget extends HTMLElement {
     this.name = name;
     if (selectionRange) this.selectionRange = selectionRange;
     else throw new Error(`The 'selectionRange' was not specified!`);
-    if (!Array.isArray(selectionRange) && !(selectionRange instanceof eNUMERATION) && !idAttr) {
-      throw new Error(`A class population as 'selectionRange' requires specifying an 'idAttr'!`);
+    if (!Array.isArray(selectionRange) && !(selectionRange instanceof eNUMERATION) &&
+        !(typeof selectionRange === "object" && idAttr)) {
+      throw new Error(`The 'selectionRange' ${JSON.stringify(selectionRange)} is invalid.
+        If it's an entity table, it requires specifying an 'idAttr'!`);
     }
     if (selection) this.selection = selection;
     else if (Array.isArray(selectionRange) || selectionRange instanceof eNUMERATION) {
@@ -39,49 +41,68 @@ class SelectMultipleItemsWidget extends HTMLElement {
     }
     this.minCard = minCard;
     if (view) this.view = view;
+    // define properties for storing important element references
+    this.selectedItemsListEl = null;
+    this.selectEl = null;
     // create shadow DOM root object and assign it to this.shadowRoot
     this.attachShadow({ mode: 'open' });
     // bind event handlers to "this" widget object
-    this.handleSelectedItemsListButtonClickEvents = this.handleSelectedItemsListButtonClickEvents.bind( this);
-    this.handleSelectionListAddButtonClickEvents = this.handleSelectionListAddButtonClickEvents.bind( this);
+    this.handleSelectedItemsListButtonClickEvents =
+        this.handleSelectedItemsListButtonClickEvents.bind( this);
+    this.handleSelectionListAddButtonClickEvents =
+        this.handleSelectionListAddButtonClickEvents.bind( this);
   }
   handleSelectedItemsListButtonClickEvents(e) {
     if (e.target.tagName === "BUTTON") {  // delete/undo button
       const btnEl = e.target,
             listItemEl = btnEl.parentElement,
-            selectedItemsListEl = listItemEl.parentElement,
-            selectEl = selectedItemsListEl.parentElement.lastElementChild.firstElementChild;
+            valueStr = listItemEl.getAttribute("data-value"),
+            selectedItemsListEl = listItemEl.parentElement;
       if (selectedItemsListEl.children.length <= this.minCard) {
         alert(`Selection must have at least ${this.minCard} items!`);
         return;
       }
       if (listItemEl.classList.contains("removed")) {  // Add again
-        // undoing a previous removal
+        // undo a previous removal
         listItemEl.classList.remove("removed");
         // change button text
         btnEl.textContent = SelectMultipleItemsWidget.deleteButtonIconCharacter;
-      } else if (listItemEl.classList.contains("added")) {  // Delete
-        const keyValueString = listItemEl.getAttribute("data-value"),
-              keyValue = dt.parseValueString( keyValueString);
-        if (Array.isArray( this.selection)) {
-          const foundIndex = this.selection.indexOf( keyValue);
+      } else if (listItemEl.classList.contains("added")) {  // Delete (undo a previous addition)
+        // update the widget's value (this.selection)
+        if (Array.isArray( this.selectionRange) || this.selectionRange instanceof eNUMERATION) {
+          let value;
+          if (Array.isArray( this.selectionRange)) value = valueStr;
+          else value = parseInt( valueStr);
+          const foundIndex = this.selection.indexOf( value);
           if (foundIndex >= 0) this.selection.splice( foundIndex, 1);
           else console.log(
-            `data-value attribute value '${keyValueString}' of listItemEl NOT found in ${JSON.stringify(this.selection)}`);
-        } else {
-          delete this.selection[keyValueString];
+            `data-value attribute value '${valueStr}' of listItemEl NOT found in ${JSON.stringify(this.selection)}`);
+        } else {  // a class population
+          delete this.selection[valueStr];
         }
-        // removing a previously added item means moving it back to the selection range
+        // removing a previously added item requires moving it back to the selection list
         listItemEl.parentNode.removeChild( listItemEl);
         const optionEl = document.createElement("option");
         optionEl.value = listItemEl.getAttribute("data-value");
         optionEl.text = listItemEl.firstElementChild.textContent;
-        selectEl.add( optionEl);
-      } else {
-        // removing an ordinary item
+        this.selectEl.add( optionEl);
+      } else {  // Delete an item
+        // update the widget's value (this.selection)
+        if (Array.isArray( this.selectionRange) || this.selectionRange instanceof eNUMERATION) {
+          let value;
+          if (Array.isArray( this.selectionRange)) value = valueStr;
+          else value = parseInt( valueStr);
+          const foundIndex = this.selection.indexOf( value);
+          if (foundIndex >= 0) this.selection.splice( foundIndex, 1);
+          else console.log(
+              `data-value attribute value '${valueStr}' of listItemEl NOT found in ${JSON.stringify(this.selection)}`);
+        } else {  // a class population
+          delete this.selection[valueStr];
+        }
         listItemEl.classList.add("removed");
         // change button text
-        btnEl.textContent = "undo";
+        btnEl.textContent = "⎌";  // Unicode "undo" character
+        btnEl.title = "undo";
       }
     }
   }
@@ -90,10 +111,10 @@ class SelectMultipleItemsWidget extends HTMLElement {
       var el=null;
       const listItemEl = document.createElement("li");
       listItemEl.setAttribute("data-value", stdId);
-      listItemEl.appendChild( SelectMultipleItemsWidget.createDeleteButton());
       el = document.createElement("span");
       el.textContent = humanReadableId;
       listItemEl.appendChild( el);
+      listItemEl.appendChild( SelectMultipleItemsWidget.createDeleteButton());
       if (classValue) listItemEl.classList.add( classValue);
       listEl.appendChild( listItemEl);
     }
@@ -105,9 +126,11 @@ class SelectMultipleItemsWidget extends HTMLElement {
         addItemToListOfSelectedItems( this.selectedItemsListEl, selectEl.value,
             selectEl.options[selectEl.selectedIndex].textContent, "added");
         // update the widget's value (this.selection)
-        if (Array.isArray( this.selection)) {
-          this.selection.push( dt.parseValueString( selectEl.value));
-        } else {
+        if (Array.isArray( this.selectionRange)) {
+          this.selection.push( selectEl.value);
+        } else if (this.selectionRange instanceof eNUMERATION) {
+          this.selection.push( parseInt( selectEl.value));
+        } else {  // a class population
           this.selection[selectEl.value] = this.selectionRange[selectEl.value];
         }
         selectEl.remove( selectEl.selectedIndex);
@@ -124,18 +147,39 @@ class SelectMultipleItemsWidget extends HTMLElement {
           self = this;
     this.shadowRoot.innerHTML =
       `<style>
+      :host {
+        /* outline: solid grey 1px; */
+        display: block;
+        max-width: 15em;
+        max-height: 10em;  /* of the widget container */
+        /* margin-left: 12em; */
+      }
       ul {
-        border: 1px solid black;
+        border: 1px solid grey;
         padding: 6px;
         list-style: none;
       }
-      ul li {
+      ul > li {
         margin: 2px 0;
+        width: 100%;
+        clear: right;
       }
-      ul li button {
-        margin-right: 1em;
+      ul > li.removed {
+        color: red;
+        text-decoration: line-through;
+      }
+      ul > li.added {
+        color: green;
+      }
+      ul > li > button {
         font-size: 70%;
-      }    
+        float: right;
+        margin-left: 0.5em;
+       /* vertical-align: middle; */
+      }
+      select {
+        margin-right: 1em;
+      }
       </style>`;
     if (this.name) this.setAttribute("data-bind", this.name);
     // store element references
@@ -163,7 +207,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
     var selectedItems = [];
     this.selectedItemsListEl.innerHTML = "";  // delete old contents
     if (Array.isArray( this.selection)) selectedItems = this.selection;
-    else selectedItems = Object.keys( this.selection);
+    else selectedItems = Object.values( this.selection);
     for (const item of selectedItems) {
       let el=null, key, text;
       const listItemEl = document.createElement("li");
@@ -179,10 +223,10 @@ class SelectMultipleItemsWidget extends HTMLElement {
         text = item[this.displayAttr];
       }
       listItemEl.setAttribute("data-value", key);
-      listItemEl.appendChild( SelectMultipleItemsWidget.createDeleteButton());
       el = document.createElement("span");
       el.textContent = text;
       listItemEl.appendChild( el);
+      listItemEl.appendChild( SelectMultipleItemsWidget.createDeleteButton());
       this.selectedItemsListEl.appendChild( listItemEl);
     }
   }
@@ -206,8 +250,14 @@ class SelectMultipleItemsWidget extends HTMLElement {
     for (let i=0; i < selectionItems.length; i++) {
       const item = selectionItems[i];
       if (Array.isArray( selRange)) {
-        key = text = item;
-        alreadySelected = this.selection.includes( key);
+        if (typeof item === "object") {
+          key = item[this.idAttr];
+          text = item[this.displayAttr];
+          alreadySelected = this.selection.includes( item);
+        } else {
+          key = text = item;
+          alreadySelected = this.selection.includes( key);
+        }
       } else if (selRange instanceof eNUMERATION) {
         key = i;
         alreadySelected = this.selection.includes( key);
@@ -228,6 +278,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
     }
   }
   refresh() {
+    if (this.view) this.view.fldValues[this.name] = this.selection;
     this.fillSelectedItemsList();
     this.fillSelectionListWithOptions();
   }

@@ -2,9 +2,11 @@
  * @fileOverview  Auxiliary data management procedures
  * @author Gerd Wagner
  */
+// import Business Object classes
 import Author from "../m/Author.mjs";
 import Publisher from "../m/Publisher.mjs";
 import Book from "../m/Book.mjs";
+// import framework code files
 import sTORAGEmANAGER from "../../../../src/storage/sTORAGEmANAGER.mjs";
 import vIEW from "../../../../src/ui/vIEW.mjs";
 import {dt} from "../../../../src/datatypes.mjs";

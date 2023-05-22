@@ -76,8 +76,8 @@
     str2 = "{ ";
     for (const p of Object.keys( this)) {
       const propDecl = Class.properties[p],
-            propLabel = propDecl?.shortLabel || propDecl?.label || p;
-      var valStr = "";
+            propLabel = propDecl?.label || p;
+      let valStr = "";
       // is p a declared reference property?
       if (propDecl && typeof propDecl.range === "string" && propDecl.range in dt.classes) {
         // is the property multi-valued?
@@ -103,57 +103,14 @@
     if (str2 === "{ }") str2 = "";
     return str1 + str2;
   }
-  // construct a storage serialization/representation of an instance
-  toRecordFieldValue( prop) {
-
-  }
-  toRecord() {
-    const obj = this, rec={};
-    var valuesToConvert=[];
-    for (const p of Object.keys( obj)) {
-      if (p.charAt(0) === "_" && obj[p] !== undefined) {
-        const val = obj[p];
-        // remove underscore prefix from internal property name
-        const prop = p.substr(1);
-        const propDecl = obj.constructor.properties[prop];
-        const range = propDecl.range;
-        // create a list of values to convert
-        if (propDecl.maxCard && propDecl.maxCard > 1) {
-          if (val instanceof bUSINESSoBJECT) { // object reference(s)
-            if (Array.isArray( val)) {
-              valuesToConvert = [...val];  // clone;
-            } else {  // val is a map from ID refs to obj refs
-              valuesToConvert = Object.values( val);
-            }
-          } else if (Array.isArray( val)) {
-            valuesToConvert = [...val];  // clone;
-          } else console.log("Invalid non-array collection in toRecord!");
-        } else {  // maxCard=1
-          valuesToConvert = [val];
-        }
-        valuesToConvert.forEach( function (v,i) {
-          // alternatively: enum literals as labels
-          // if (range instanceof eNUMERATION) rec[p] = range.labels[val-1];
-          if (["number","string","boolean"].includes( typeof v)) {
-            valuesToConvert[i] = v;
-          } else if (range === "Date") {
-            valuesToConvert[i] = dt.dataTypes["Date"].val2str( v);
-          } else if (v instanceof bUSINESSoBJECT) { // replace object reference with ID ref.
-            // get ID attribute of referenced class
-            const idAttr = v.constructor.idAttribute || "id";
-            valuesToConvert[i] = v[idAttr];
-          } else if (Array.isArray( v)) {  // JSON-compatible array
-            valuesToConvert[i] = [...v];  // clone
-          } else valuesToConvert[i] = JSON.stringify( v);
-        });
-        if (!propDecl.maxCard || propDecl.maxCard <= 1) {
-          rec[prop] = valuesToConvert[0];
-        } else {
-          rec[prop] = valuesToConvert;
-        }
-      }
-    }
-    return rec;
+  toShortString() {
+    const Class = this.constructor,
+          idAttr = Class.idAttribute,
+          id = this[idAttr];
+    var str = String( id);
+    if (idAttr !== "name" && "name" in this) str += ": "+ this.name;
+    else if (Class.displayAttribute) str += ": "+ this[Class.displayAttribute];
+    return str;
   }
   /***************************************************
    * A class-level de-serialization method
@@ -171,9 +128,9 @@
     }
     return obj;
   }
-   /***************************************************
-    * To be invoked for each BO class definition
-    ***************************************************/
+  /***************************************************
+   * To be invoked for each BO class definition
+   ***************************************************/
    static setup() {
      /*
      * FOR LATER: support (1) datatype ranges (such as Array), (2) union types,

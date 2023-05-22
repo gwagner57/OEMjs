@@ -75,7 +75,7 @@ class sTORAGEmANAGER {
    * @param {object} rec  A record or record list
    */
   async add( Class, rec) {
-    console.log( JSON.stringify( rec));
+    console.log("Create/add: ", JSON.stringify( rec));
     var records=[];
     if (typeof rec === "object" && !Array.isArray(rec)) {
       records = [rec];
@@ -159,30 +159,52 @@ class sTORAGEmANAGER {
     const checkRefInt = dt.checkReferentialIntegrity;
     dt.checkReferentialIntegrity = false;  // disable referential integrity checking
     try {
-      const records = await this.adapter.retrieveAll( this.dbName, Class);
-      //console.log("Entity records: ", JSON.stringify(records));
-      if (this.createLog) console.log( records.length +" "+ Class.name +" records retrieved.");
+      const entityRecords = await this.adapter.retrieveAll( this.dbName, Class);
+      //console.log("Entity records: ", JSON.stringify(entityRecords));
+      if (this.createLog) console.log( entityRecords.length +" "+ Class.name +" records retrieved.");
       // retrieve all records from all associated tables
       for (const refProp of Class.referenceProperties) {
         const AssociatedClass = dt.classes[Class.properties[refProp].range];
-        await this.retrieveAll( AssociatedClass);
+        if (AssociatedClass !== Class) await this.retrieveAll( AssociatedClass);
       }
-      // create entity from record (and convert ID references to internal references)
-      for (const entityRecord of records) {
-        const id = entityRecord[Class.idAttribute];
-        entityTable[id] = new Class( entityRecord);
-        /*
-        // The conversion of Id references to internal references is already done in the set method
-        const entity = entityTable[id];
+      // create entities from records
+      for (const entityRec of entityRecords) {
+        const id = entityRec[Class.idAttribute];
+        entityTable[id] = new Class(entityRec);
+      }
+      // convert ID references to internal object references
+      nextEntity: for (const entity of Object.values( entityTable)) {
         for (const refProp of Class.referenceProperties) {
-          const AssociatedClass = dt.classes[Class.properties[refProp].range];
-          if (Array.isArray( entity[refProp])) {  // multi-valued reference property
-            entity[refProp] = entity[refProp].map( idRef => AssociatedClass.instances[idRef]);
+          const propDecl = Class.properties[refProp],
+                AssociatedClass = dt.classes[propDecl.range];
+          let idRefs=[], objRefs=[];
+          if (!Array.isArray(entity[refProp])) {
+            if (entity[refProp] !== undefined) idRefs = [entity[refProp]];
           } else {
-            entity[refProp] = AssociatedClass.instances[entity[refProp]];
+            idRefs = entity[refProp];
+          }
+          for (const idRef of idRefs) {
+            const associatedEntity = AssociatedClass.instances[idRef];
+            if (associatedEntity) {
+              objRefs.push( associatedEntity);
+            } else {
+              delete entityTable[entity[Class.idAttribute]];
+              console.error(`The ID reference ${idRef} of ${Class.name} ${entity[Class.idAttribute]} `+
+                  `does not reference an existing ${AssociatedClass.name} entity`);
+              continue nextEntity;
+            }
+          }
+          if (!propDecl.maxCard || propDecl.maxCard === 1) {
+            entity[refProp] = objRefs[0];
+          } else {  // multi-valued reference property
+            const assObjMap = {};  // create a map of associated objects
+            for (const obj of objRefs) {
+              const assObjId = obj[AssociatedClass.idAttribute];
+              assObjMap[assObjId] = obj;
+            }
+            entity[refProp] = assObjMap;  // a map of associated objects
           }
         }
-        */
       }
     } catch (error) {
       console.log(`${error.constructor.name}: ${error.message}`);
@@ -199,16 +221,15 @@ class sTORAGEmANAGER {
    */
   async update( Class, id, slots) {
     var updatedProperties=[], noConstraintViolated = true;
-    const properties = Class.properties,
-          updSlots = {...slots};  // clone
+    const updSlots = this.adapter.toRecord( slots, Class);
     // first check if an object record with this ID exists
     let objToUpdate = await this.retrieve( Class, id);
     if (objToUpdate) {
       const objectBeforeUpdate = {...objToUpdate};  // clone
-      for (const prop of Object.keys( slots)) {
+      for (const prop of Object.keys( updSlots)) {
         const oldVal = objToUpdate[prop],
-              propDecl = properties[prop];
-        let newVal = slots[prop];
+              propDecl = Class.properties[prop];
+        let newVal = updSlots[prop];
         if (prop !== Class.idAttribute) {
           if (propDecl.maxCard === undefined || propDecl.maxCard === 1) {  // single-valued
             if (Number.isInteger( oldVal) && newVal !== "") {
@@ -488,6 +509,49 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
 }
 
 sTORAGEmANAGER.adapters["IndexedDB"] = {
+  //------------------------------------------------
+  toRecord: function (slots, Class) {
+  //------------------------------------------------
+    let rec={}, valuesToConvert=[], convertedValues=[];
+    for (let p of Object.keys( slots)) {
+      // remove underscore prefix from internal property name
+      if (p.charAt(0) === "_") p = p.slice(1);
+      const val = slots[p],
+            propDecl = Class.properties[p],
+            range = propDecl.range;
+      // create a list of values to convert
+      if (propDecl.maxCard && propDecl.maxCard > 1) {
+        if (range in dt.classes) { // object reference(s)
+          if (Array.isArray( val)) {
+            valuesToConvert = [...val];  // clone;
+          } else {  // val is a map from ID refs to obj refs
+            valuesToConvert = Object.values( val);
+          }
+        } else if (Array.isArray( val)) {
+          valuesToConvert = [...val];  // clone;
+        } else console.log("Invalid non-array collection in toRecord!");
+      } else {  // maxCard=1
+        valuesToConvert = [val];
+      }
+      if (dt.supportedDatatypes.includes( range)) {
+        convertedValues = valuesToConvert;
+      } else if (range in dt.classes) { // object reference(s)
+        // get ID attribute of referenced class
+        const idAttr = dt.classes[range].idAttribute || "id";
+        convertedValues = valuesToConvert.map( v => v[idAttr]);
+        /*
+      } else if (range === "Date") {
+        valuesToConvert[i] = dt.dataTypes["Date"].val2str( v);
+         */
+      }
+      if (!propDecl.maxCard || propDecl.maxCard <= 1) {
+        rec[p] = convertedValues[0];
+      } else {
+        rec[p] = convertedValues;
+      }
+    }
+    return rec;
+  },
   //------------------------------------------------
   createEmptyDb: async function (dbName, modelClasses) {
   //------------------------------------------------
