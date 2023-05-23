@@ -15,6 +15,7 @@ OEMjs allows defining
 ## Use Case 1: Enumerations
 
 <details><summary>Handling Enumerations and Enumeration Attributes</summary>
+   
 ### Defining an Enumeration
 
     const WeatherStateEL = new eNUMERATION ("WeatherStateEL", 
@@ -60,6 +61,8 @@ We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 
    
 ## Use Case 2: Declarative Constraint Valdiation
 
+<details><summary>Define Constraints in the Model and Validate Them in the View and Storage</summary>
+
 OEMjs allows defining property constraints for a business object class:
 
     class Book extends bUSINESSoBJECT {
@@ -103,9 +106,12 @@ for (const propName of Object.keys( Book.properties)) {
   });
 });
 </pre>
+</details>
 
-## Use Case 3: Flexible Data Storage Management with Storage Adapters
+## Use Case 3: Storage Adapters
 
+<details><summary>Flexible Data Storage Management with Storage Adapters</summary>
+   
 OEMjs comes with a sTORAGEmANAGER class and two storage adapters for using `localStorage` or `ìndexedDB`. 
 
 A storage manager works like a wrapper of the methods of an adapter. The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking a data retrieval operation on a model class `Book`:
@@ -126,3 +132,4 @@ Since the IndexedDB technology is much more powerful, it is normally preferred f
     }
     storageManager = new sTORAGEmANAGER( storageAdapter);
 
+</details>
