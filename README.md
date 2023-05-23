@@ -14,7 +14,7 @@ OEMjs allows defining
 
 ## Use Case 1: Enumerations
 
-<detail><summary>Handling Enumerations and Enumeration Attributes</summary>
+<details><summary>Handling Enumerations and Enumeration Attributes</summary>
 ### Defining an Enumeration
 
     const WeatherStateEL = new eNUMERATION ("WeatherStateEL", 
@@ -56,7 +56,7 @@ We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 
         break;
       }
     }
-</detail>
+</details>
    
 ## Use Case 2: Declarative Constraint Valdiation
 
