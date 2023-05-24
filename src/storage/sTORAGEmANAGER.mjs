@@ -75,20 +75,19 @@ class sTORAGEmANAGER {
    * @param {object} rec  A record or record list
    */
   async add( Class, rec) {
-    console.log("Create/add: ", JSON.stringify( rec));
-    var records=[];
-    if (typeof rec === "object" && !Array.isArray(rec)) {
-      records = [rec];
-    } else if (Array.isArray(rec) && rec.every( function (r) {
-      return typeof r === "object" && !Array.isArray(r)})) {
-      records = rec;
-    } else throw new Error("2nd argument of 'add' must be a record or record list! Inavlid value: "+
-                           JSON.stringify(rec));
+    var recordsToAdd=[];
     if (!Class) throw new Error(`Cannot add ${JSON.stringify(rec)} without a Class argument`);
-    const idAttr = Class.idAttribute || "id";
+    if (typeof rec === "object" && !Array.isArray(rec)) {
+      recordsToAdd = [this.adapter.obj2rec( rec, Class)];
+    } else if (Array.isArray(rec) && rec.every( r => typeof r === "object" && !Array.isArray(r))) {
+      recordsToAdd = rec.map( r => this.adapter.obj2rec( r, Class));
+    } else throw new Error("2nd argument of 'add' must be a record or record list! Invalid value: "+
+                           JSON.stringify(rec));
+    //console.log("recordsToAdd: ", JSON.stringify( recordsToAdd));
+    const idAttr = Class.idAttribute;
     // create auto-IDs if required
     if (Class.properties[idAttr].range === "AutoIdNumber") {
-      for (const r of records) {
+      for (const r of recordsToAdd) {
         if (!r[idAttr]) {  // do not overwrite assigned ID values
           if (typeof Class.getAutoId === "function") r[idAttr] = Class.getAutoId();
           else if (Class.idCounter !== undefined) r[idAttr] = ++Class.idCounter;
@@ -97,8 +96,8 @@ class sTORAGEmANAGER {
     }
     // check constraints before save if required
     if (this.validateBeforeSave) {
-      for (let i=0; i < records.length; i++) {
-        const r = records[i];
+      for (let i=0; i < recordsToAdd.length; i++) {
+        const r = recordsToAdd[i];
         let newObj=null;
         try {
           newObj = new Class( r);  // check constraints
@@ -107,13 +106,13 @@ class sTORAGEmANAGER {
             console.log( e.constructor.name +": "+ e.message);
           } else console.log( e);
           // remove record from the records to add
-          records.splice( i, 1);
+          recordsToAdd.splice( i, 1);
         }
       }
     }
     try {
-      await this.adapter.add( this.dbName, Class, records);
-      if (this.createLog) console.log(`${records.length} ${Class.name}(s) added.`);
+      await this.adapter.add( this.dbName, Class, recordsToAdd);
+      if (this.createLog) console.log(`${recordsToAdd.length} ${Class.name}(s) added.`);
     } catch (error) {
       console.log(`${error.name}: ${error.message}`);
     }
@@ -134,8 +133,21 @@ class sTORAGEmANAGER {
       if (!rec) {
         console.error(`There is no ${Class.name} with ID value ${id} in the database!`);
       } else {
-        obj = new Class( rec);
-        if (this.createLog) console.log(`Book with ISBN ${id} retrieved.`);
+        // retrieve all associated records
+        for (const refProp of Class.referenceProperties) {
+          const refPropDef = Class.properties[refProp],
+                AssociatedClass = dt.classes[refPropDef.range];
+          let idRefs=[];
+          if (AssociatedClass === Class) continue;
+          if (refPropDef.maxCard && refPropDef.maxCard > 1) idRefs = rec[refProp];
+          else  idRefs = [rec[refProp]];
+          for (const idRef of idRefs) {
+            AssociatedClass.instances[idRef] = await this.retrieve( AssociatedClass, idRef);
+          }
+        }
+        // create entity/object from record
+        obj = this.adapter.rec2obj( rec, Class);
+        if (this.createLog) console.log(`${Class.name} with ${Class.idAttribute} ${id} retrieved.`);
       }
     } catch (error) {
       console.error(`${error.constructor.name}: ${error.message}`);
@@ -169,42 +181,9 @@ class sTORAGEmANAGER {
       }
       // create entities from records
       for (const entityRec of entityRecords) {
-        const id = entityRec[Class.idAttribute];
-        entityTable[id] = new Class(entityRec);
-      }
-      // convert ID references to internal object references
-      nextEntity: for (const entity of Object.values( entityTable)) {
-        for (const refProp of Class.referenceProperties) {
-          const propDecl = Class.properties[refProp],
-                AssociatedClass = dt.classes[propDecl.range];
-          let idRefs=[], objRefs=[];
-          if (!Array.isArray(entity[refProp])) {
-            if (entity[refProp] !== undefined) idRefs = [entity[refProp]];
-          } else {
-            idRefs = entity[refProp];
-          }
-          for (const idRef of idRefs) {
-            const associatedEntity = AssociatedClass.instances[idRef];
-            if (associatedEntity) {
-              objRefs.push( associatedEntity);
-            } else {
-              delete entityTable[entity[Class.idAttribute]];
-              console.error(`The ID reference ${idRef} of ${Class.name} ${entity[Class.idAttribute]} `+
-                  `does not reference an existing ${AssociatedClass.name} entity`);
-              continue nextEntity;
-            }
-          }
-          if (!propDecl.maxCard || propDecl.maxCard === 1) {
-            entity[refProp] = objRefs[0];
-          } else {  // multi-valued reference property
-            const assObjMap = {};  // create a map of associated objects
-            for (const obj of objRefs) {
-              const assObjId = obj[AssociatedClass.idAttribute];
-              assObjMap[assObjId] = obj;
-            }
-            entity[refProp] = assObjMap;  // a map of associated objects
-          }
-        }
+        const id = entityRec[Class.idAttribute],
+              entity = this.adapter.rec2obj( entityRec, Class);
+        entityTable[id] = entity;
       }
     } catch (error) {
       console.log(`${error.constructor.name}: ${error.message}`);
@@ -221,55 +200,45 @@ class sTORAGEmANAGER {
    */
   async update( Class, id, slots) {
     var updatedProperties=[], noConstraintViolated = true;
-    const updSlots = this.adapter.toRecord( slots, Class);
-    // first check if an object record with this ID exists
-    let objToUpdate = await this.retrieve( Class, id);
-    if (objToUpdate) {
-      const objectBeforeUpdate = {...objToUpdate};  // clone
-      for (const prop of Object.keys( updSlots)) {
-        const oldVal = objToUpdate[prop],
-              propDecl = Class.properties[prop];
-        let newVal = updSlots[prop];
+    // convert special values to storage representation (e.g., objRefs -> idRefs)
+    const updRec = this.adapter.obj2rec( slots, Class);
+    // check if an object record with this ID exists and its values have been changed
+    const objectBeforeUpdate = await this.retrieve( Class, id),
+          recordBeforeUpdate = this.adapter.obj2rec( objectBeforeUpdate, Class);
+    if (objectBeforeUpdate) {
+      for (const prop of Object.keys( updRec)) {
+        const oldVal = recordBeforeUpdate[prop],
+              propDef = Class.properties[prop];
+        let newVal = updRec[prop];
         if (prop !== Class.idAttribute) {
-          if (propDecl.maxCard === undefined || propDecl.maxCard === 1) {  // single-valued
-            if (Number.isInteger( oldVal) && newVal !== "") {
-              newVal = parseInt( newVal);
-            } else if (typeof oldVal === "number" && newVal !== "") {
-              newVal = parseFloat( newVal);
-            } else if (oldVal===undefined && newVal==="") {
-              newVal = undefined;
-            }
+          if (propDef.maxCard === undefined || propDef.maxCard === 1) {  // single-valued
             if (newVal !== oldVal) {
-              const validationResults = dt.check( prop, propDecl, newVal);
+              const validationResults = dt.check( prop, propDef, newVal);
               if (!(validationResults[0] instanceof NoConstraintViolation)) {
                 //TODO: support multiple errors
                 const constraintViolation = validationResults[0];
                 console.error( constraintViolation.constructor.name +": "+ constraintViolation.message);
                 noConstraintViolated = false;
-                // restore object to its state before updating
-                objToUpdate = objectBeforeUpdate;
               } else {
                 updatedProperties.push( prop);
               }
-            } else {
-              delete updSlots[prop];  // no update required
+            } else {  // no update required
+              delete updRec[prop];
             }
-          } else {   // multi-valued
+          } else {  // multi-valued
             if (oldVal.length !== newVal.length ||
-                oldVal.some( function (vi,i) { return (vi !== newVal[i]);})) {
-              const validationResults = dt.check( prop, propDecl, newVal);
+                oldVal.some( (vi,i) => vi !== newVal[i])) {
+              const validationResults = dt.check( prop, propDef, newVal);
               if (!(validationResults[0] instanceof NoConstraintViolation)) {
                 //TODO: support multiple errors
                 const constraintViolation = validationResults[0];
                 console.error( constraintViolation.constructor.name +": "+ constraintViolation.message);
                 noConstraintViolated = false;
-                // restore object to its state before updating
-                objToUpdate = objectBeforeUpdate;
               } else {  // NoConstraintViolation
-                updatedProperties.push(prop);
+                updatedProperties.push( prop);
               }
-            } else {
-              delete updSlots[prop];  // no update required
+            } else {  // no update required
+              delete updRec[prop];
             }
           }
         }
@@ -277,19 +246,20 @@ class sTORAGEmANAGER {
       if (noConstraintViolated) {
         if (updatedProperties.length > 0) {
           try {
-            this.adapter.update( this.dbName, Class, id, updSlots);
+            this.adapter.update( this.dbName, Class, id, updRec);
+            // update in-memory object
             if (id in Class.instances) {
-              for (const p of Object.keys( updSlots)) {
-                Class.instances[id][p] = updSlots[p];
+              for (const p of Object.keys( slots)) {
+                Class.instances[id][p] = slots[p];
               }
             }
             console.log(`Properties ${updatedProperties.toString()} of ${Class.name} ${id} updated.`);
           } catch (error) {
             console.log(`${error.name}: ${error.message}`);
           }
+        } else {
+          console.log(`No property value changed for ${Class.name} ${id}!`);
         }
-      } else {
-        console.log(`No property value changed for ${Class.name} ${id}!`);
       }
     }
   }
@@ -510,7 +480,7 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
 
 sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
-  toRecord: function (slots, Class) {
+  obj2rec: function (slots, Class) {
   //------------------------------------------------
     let rec={}, valuesToConvert=[], convertedValues=[];
     for (let p of Object.keys( slots)) {
@@ -529,7 +499,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
           }
         } else if (Array.isArray( val)) {
           valuesToConvert = [...val];  // clone;
-        } else console.log("Invalid non-array collection in toRecord!");
+        } else console.error("Invalid collection in obj2rec:", JSON.stringify(val));
       } else {  // maxCard=1
         valuesToConvert = [val];
       }
@@ -537,8 +507,18 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         convertedValues = valuesToConvert;
       } else if (range in dt.classes) { // object reference(s)
         // get ID attribute of referenced class
-        const idAttr = dt.classes[range].idAttribute || "id";
-        convertedValues = valuesToConvert.map( v => v[idAttr]);
+        const idAttr = dt.classes[range].idAttribute;
+        /*
+        for (const v of valuesToConvert) {
+          let convVal;
+          if (typeof v === "object") convVal = v["_"+idAttr];
+          else convVal = v;
+          convertedValues.push( convVal)
+        }
+        */
+        convertedValues = valuesToConvert.map( v => typeof v === "object" ? v["_"+idAttr] : v);
+        //console.log("valuesToConvert: ", JSON.stringify( valuesToConvert));
+        //console.log("convertedValues: ", JSON.stringify( convertedValues));
         /*
       } else if (range === "Date") {
         valuesToConvert[i] = dt.dataTypes["Date"].val2str( v);
@@ -551,6 +531,49 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       }
     }
     return rec;
+  },
+  //------------------------------------------------
+  rec2obj: function (rec, Class) {
+  //------------------------------------------------
+    let obj = null;
+    try {
+      obj = new Class( rec);
+    } catch (e) {
+      console.error( `${e.constructor.name}: ${e.message}`);
+      return null;
+    }
+    // convert ID references to internal object references
+    for (const refProp of Class.referenceProperties) {
+      const propDef = Class.properties[refProp],
+            AssociatedClass = dt.classes[propDef.range];
+      let idRefs=[], objRefs=[];
+      if (!Array.isArray(obj[refProp])) {  // single-valued reference property
+        if (obj[refProp] !== undefined) idRefs = [obj[refProp]];
+      } else {  // multi-valued reference property (stored as list of ID references)
+        idRefs = obj[refProp];
+      }
+      for (const idRef of idRefs) {
+        const associatedEntity = AssociatedClass.instances[idRef];
+        if (associatedEntity) {
+          objRefs.push( associatedEntity);
+        } else {
+          console.error(`The ID reference ${idRef} of ${Class.name} ${obj[Class.idAttribute]} `+
+              `does not reference an existing ${AssociatedClass.name} entity`);
+          return null;
+        }
+      }
+      if (!propDef.maxCard || propDef.maxCard === 1) {
+        obj[refProp] = objRefs[0];
+      } else {  // multi-valued reference property
+        const assObjMap = {};  // create a map of associated objects
+        for (const object of objRefs) {
+          const assObjId = object[AssociatedClass.idAttribute];
+          assObjMap[assObjId] = object;
+        }
+        obj[refProp] = assObjMap;  // a map of associated objects
+      }
+    }
+    return obj;
   },
   //------------------------------------------------
   createEmptyDb: async function (dbName, modelClasses) {

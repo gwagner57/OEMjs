@@ -133,10 +133,8 @@
    ***************************************************/
    static setup() {
      /*
-     * FOR LATER: support (1) datatype ranges (such as Array), (2) union types,
-     *            (3) converting IdRefs to object references, (4) assigning initial values
-     *            to mandatory properties (if !pDef.optional), including the default values
-     *            0, "", [] and {}
+     * FOR LATER: support (1) union types, (2) assigning initial values to mandatory
+     * properties (if !pDef.optional), including the default values 0, "", [] and {}
      */
      const Class = this,
            propDefs = Class.properties || {};  // property definitions

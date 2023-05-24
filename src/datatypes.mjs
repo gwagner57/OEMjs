@@ -343,6 +343,13 @@ const dt = {
         str2val: s => ["true","yes"].includes(s) ? true :
             (["false","no"].includes(s) ? false : undefined)}
   },
+  getDefaultValue( Type) {
+    if (dt.isIntegerType( Type)) return 0;
+    else if (dt.isDecimalType( Type)) return 0.0;
+    else if (Type === "Boolean") return false;
+    else if (Type === "Date") return new Date(0);
+    else return "";
+  },
   isOfType( value, Type) {
     const cond = dt.dataTypes[Type]?.condition;
     return cond !== undefined && cond( value);

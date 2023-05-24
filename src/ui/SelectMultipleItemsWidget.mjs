@@ -278,7 +278,10 @@ class SelectMultipleItemsWidget extends HTMLElement {
     }
   }
   refresh() {
-    if (this.view) this.view.fldValues[this.name] = this.selection;
+    if (this.view) {
+      if (this.view.viewType === "U") this.view.fldValues[this.name] = this.selection;
+      else this.selection = this.view.fldValues[this.name] = {};
+    }
     this.fillSelectedItemsList();
     this.fillSelectionListWithOptions();
   }

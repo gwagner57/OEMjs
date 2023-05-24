@@ -3,7 +3,7 @@ import dom from "../../lib/dom.mjs";
 class SelectReferenceWidget extends HTMLSelectElement {
   constructor( name, BusinessObjectClass, view) {
     super();
-    this.name = name;
+    this.name = name;  // the name of the field to which the widget is bound
     this.BusinessObjectClass = BusinessObjectClass;
     if (view) this.view = view;
     // bind the syncRecordField event handler to this widget object
@@ -12,7 +12,7 @@ class SelectReferenceWidget extends HTMLSelectElement {
   // change event handler
   updateViewField() {
     if (this.value !== "") {
-      if (this.view) this.view.fldValues[this.name] = this.value;
+      if (this.view) this.view.fldValues[this.name] = this.BusinessObjectClass.instances[this.value];
     }
   }
   refreshOptions() {
@@ -30,7 +30,7 @@ class SelectReferenceWidget extends HTMLSelectElement {
   }
   // use for initializing element (e.g., for setting up event listeners)
   connectedCallback() {
-    this.setAttribute("data-bind", this.name);
+    this.className = "select-reference";
     this.refreshOptions();
     this.addEventListener("change", this.updateViewField);
   }
