@@ -60,35 +60,43 @@
   </ol>
   
   <details><summary>Example 1: <a href="apps/minimal/">Minimal CRUD App</a></summary>
-  <p>The purpose of this app is to manage book data. It consists of two files, <kbd>app.mjs</kbd> and <kbd>Book.mjs</kbd>, with together 70 lines of code, only.</p>
+  <p>The purpose of this app is to manage book data. It consists of two JS module files, <kbd>app.mjs</kbd> and <kbd>Book.mjs</kbd>, with together 70 lines of code, only.</p>
   </details>
   
-  <h2>Use Case 1: Handling Enumerations and Enumeration Attributes</h2>
-  <h3>Defining an Enumeration</h3>
-  <p><span
-  style="font-family:monospace;">var WeatherStateEL = new eNUMERATION ("WeatherStateEL", </span></p><pre> ["sunny", "partly cloudy", "cloudy", "cloudy with rain", "rainy"]);</pre>
+  <details><summary>Example 2: <a href="apps/boooks-authors-publishers/">A CRUD App with 3 Associated Classes</a></summary>
+  <p>The purpose of this app is to manage data about books and their authors and publishers. It consists of four files, <kbd>app.mjs</kbd>, <kbd>Book.mjs</kbd>, <kbd>Author.mjs</kbd> and <kbd>Publisher.mjs</kbd>, with together 105 lines of code, only.</p>
+  </details>
   
-  <h3>Using an Enumeration as the Range of an Attribute</h3><pre>var Weather = new cLASS({
-    Name: "Weather",
-    properties: {
-      "weatherState": {range: WeatherStateEL, label: "Weather conditions"},
-      "temperature": {range: "Decimal", label: "Temperature"}
-    },
-    methods: {...}
-});
-</pre>
+  <h2>Use Case 1: Enumerations</h2>
+  <details><summary>Handling Enumerations and Enumeration Attributes</summary>
+   <h3>Defining an Enumeration</h3>
+   <pre>var WeatherStateEL = new eNUMERATION ("WeatherStateEL", ["sunny", "partly cloudy", "cloudy", "cloudy with rain", "rainy"]);</pre>
+  
+   <h3>Using an Enumeration as the Range of an Attribute</h3>
+   <pre>class Weather extends bUSINESSoBJECT {
+  constructor (ws, t) {
+    this.weatherState = ws;
+    this.temperature = t;
+  }
+}
+Weather.properties = {
+  "weatherState": {range: WeatherStateEL, label: "Weather conditions"},
+  "temperature": {range: "Decimal", label: "Temperature"}
+}</pre>
    
-   <h3>Using Enumeration Literals</h3>
-   <p>Recall that <em>enumeration literals</em> are constants that stand for a positive integer (the
-  <em>enumeration index</em>).</p><p>For instance, the enum literal <code>WeatherStateEL.SUNNY</code> stands for the enum index 1. In program code, we
-  do not use the enum index, but rather the enum literal. For instance,</p><pre>var theWeather = new Weather({
-      weatherState: WeatherStateEL.SUNNY, // do not use the enum index value 1
-      temperature: 30
-})
-</pre>
+  <h3>Using Enumeration Literals</h3>
+  <p>Recall that <em>enumeration literals</em> are constants that stand for a positive integer (the <em>enumeration index</em>).</p>
+  <p>For instance, the enum literal <code>WeatherStateEL.SUNNY</code> stands for the enum index 1. In program code, we
+   do not use the enum index, but rather the enum literal. For instance,</p>
+<pre>var theWeather = new Weather({
+  weatherState: WeatherStateEL.SUNNY, // do not use the enum index value 1
+  temperature: 30
+})</pre>
 
-   <h3>Looping over an Enumeration</h3><p>We loop over the enumeration <code>WeatherStateEL</code> with a <code>for</code> loop counting from 1
-  to <code>WeatherStateEL.MAX</code>:</p><pre>for (let weatherState = 1; weatherState &lt;= WeatherStateEL.MAX; weatherState++) {
+  <h3>Looping over an Enumeration</h3>
+  <p>We loop over the enumeration <code>WeatherStateEL</code> with a <code>for</code> loop counting from 1
+   to <code>WeatherStateEL.MAX</code>:</p>
+  <pre>for (let weatherState = 1; weatherState &lt;= WeatherStateEL.MAX; weatherState++) {
   switch (weatherState) {
   case WeatherStateEL.SUNNY: 
     ...
@@ -99,52 +107,64 @@
   }
 }
 </pre>
+  </details>
 
-   <h2>Use Case 2: Flexible Data Storage Management with Storage Adapters</h2><p>OEMjs comes with a sTORAGEmANAGER class and two storage
-  adapters for using <code>localStorage</code> or <code>ìndexedDB</code>.</p><p>A storage manager works like a wrapper of the methods of an adapter.
+  <h2>Use Case 2: Storage Adapters</h2>
+  <details><summary>Flexible Data Storage Management with Storage Adapters</summary>
+   <p>OEMjs comes with a sTORAGEmANAGER class and two storage adapters for using <code>IndexedDB</code> or <code>Google FireStore</code>.</p>
+   <p>A storage manager works like a wrapper of the methods of an adapter.
   The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking
-  a data retrieval operation on a model class <code>Book</code>:</p><pre><code>var storageAdapter = {name:"IndexedDB", dbName:"Test"};
-var storageManager = new sTORAGEmANAGER( storageAdapter);
+  a data retrieval operation on a model class <code>Book</code>:</p>
+  <pre>const storageAdapter = {name:"IndexedDB", dbName:"Test"};
+const storageManager = new sTORAGEmANAGER( storageAdapter);
 storageManager.retrieveAll( Book).then( list); 
-</code></pre><p>Since the IndexedDB technology is much more powerful, it is normally preferred for local data storage. However, older browsers (such
-  as IE 9) may not support it. In this case we can easily fall back to LocalStorage in the following way:</p><pre>var storageAdapter = {dbName:"Test"},
-    storageManager = null;
-if (!("indexedDB" in window)) {
-  console.log("This browser doesn't support IndexedDB. Falling back to LocalStorage.");
-  storageAdapter.name = "LocalStorage";
-} else {
-  storageAdapter.name = "IndexedDB";
-}
-storageManager = new sTORAGEmANAGER( storageAdapter);
 </pre>
+  </details>
 
-   <h2>Use Case 3: Declarative Constraint Valdiation</h2>
+
+   <h2>Use Case 3: Constraint Valdiation</h2>
+  <details><summary>Defining Constraints in the Model and Checking Them in the View</summary>
+   <p>OEMjs allows defining property constraints in a model class:</p>
    
-   <p>OEMjs allows defining property constraints in a model class created with
-  cLASS:</p><pre>var Book = new cLASS({
-  Name: "Book",
-  properties: {
-    "id": {range:"NonEmptyString", label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
-        patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
-    "title": {range:"NonEmptyString", min: 2, max: 50}, 
-    "year": {range:"Integer", min: 1459, max: util.nextYear()},
-    "edition": {range:"PositiveInteger", optional: true}
+   <pre>class Book extends bUSINESSoBJECT {
+  constructor ({isbn, title, year, edition}) {
+    super( isbn); 
+    this.title = title;
+    this.year = year;
+    if (edition) this.edition = edition;
   }
-});
-</pre><p>The constraints defined for a property in a model class can be checked on input/change and before submit in an HTML form and, in addition,
-  before commit in the <code>add</code> and <code>update</code> methods of a storage manager, using the generic validation method
-  <code>cLASS.check</code>, as shown in the following example:</p><pre>var formEl = document.querySelector("#Book-Create &gt; form");
+}
+Book.properties = {
+  "isbn": {range:"NonEmptyString", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
+        patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+  "title": {range:"NonEmptyString", min: 2, max: 50}, 
+  "year": {range:"Integer", min: 1459, max: util.nextYear()},
+  "edition": {range:"PositiveInteger", optional: true}
+}</pre>
+  <p>Suitable range constraints can be defined by using one of the supported range keywords listed below.</p>
+  <ul>
+  <li>"String", "NonEmptyString", "Identifier", "Email", "URL", "PhoneNumber"</li>
+  <li>"Integer", "PositiveInteger", "NonNegativeInteger", "AutoNumber"</li>
+  <li>"Decimal", "Number", "Percent", "ClosedUnitInterval", "OpenUnitInterval"</li>
+  <li>"Boolean"</li>
+  <li>"DateTime", "Date", "Time"</li>
+  </ul>
+
+  <p>The constraints defined for a property in a business object class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the <code>add</code> and <code>update</code> methods of a storage manager, using the generic validation method
+  <code>bUSINESSoBJECT.check</code>, as shown in the following example:</p>
+  <pre>const formEl = document.querySelector("#Book-Create > form");
 // loop over Book.properties and add event listeners for validation on input
-Object.keys( Book.properties).forEach( function (prop) {
-  var propDecl = Book.properties[prop];
-  formEl[prop].addEventListener("input", function () {
-    var errMsg = <b>cLASS.check</b>( prop, propDecl, formEl[prop].value).message;
-    formEl[prop].setCustomValidity( errMsg);
+for (const propName of Object.keys( Book.properties)) {
+  const propDecl = Book.properties[propName];
+  formEl[propName].addEventListener("input", function () {
+    var errMsg = bUSINESSoBJECT.check( propName, propDecl, formEl[propName].value).message;
+    formEl[propName].setCustomValidity( errMsg);
   });
 });</pre>
+  </details>
  </main>
   <footer>
-   <p>© 2019 G. Wagner (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC</a>), Brandenburg University of Technology, Germany</p>
+   <p>© 2023 G. Wagner (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC</a>), Brandenburg University of Technology, Germany</p>
  </footer>
 <script>
 var shareButton = document.getElementById("share-this"),
