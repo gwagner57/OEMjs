@@ -5,19 +5,18 @@
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
  *
- * TODO: + Reset select-multiple-items-widget after save for "c" and "U"
- * + When updating a book, the value of publisher changes to undefined!?
- * + Check ID constrained in "C"
+ * TODO: + Reset select-multiple-items widget after save for "c" and "U"
+ * + Check ID constraint in "C"
  */
 
 import {dt} from "../datatypes.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import dom from "../../lib/dom.mjs";
+import util from "../../lib/util.mjs";
 import SelectReferenceWidget from "./SelectReferenceWidget.mjs";
 import SelectMultipleItemsWidget from "./SelectMultipleItemsWidget.mjs";
 import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
-import util from "../../lib/util.mjs";
 
 /**
  * Class for creating "views" (or view models), typically based on model classes,
