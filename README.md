@@ -12,7 +12,7 @@ OEMjs allows defining
    to another one (such as Google FireStore or CloudFlare D1);
 4. **view models** for model-based user interface code generation.
 
-<details><summary>Example 1: A <a href="/apps/minimal/">Minimal CRUD App</a></summary>
+<details><summary>Example 1: A <a href="/apps/minimal/index.html">Minimal CRUD App</a></summary>
    <p>The purpose of this app is to manage book data. It has only two code files, app.mjs and Book.mjs, with 70 lines of code. Run the <a href="/apps/minimal/">Minimal CRUD App</a>.</p>
 </details>
 
