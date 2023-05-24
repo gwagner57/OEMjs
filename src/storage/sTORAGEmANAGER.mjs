@@ -7,6 +7,7 @@
  */
 import util from "../../lib/util.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
+import eNUMERATION from "../eNUMERATION.mjs";
 import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
 //import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
 import {dt} from "../datatypes.mjs";
@@ -495,7 +496,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       } else {  // maxCard=1
         valuesToConvert = [val];
       }
-      if (dt.supportedDatatypes.includes( range)) {
+      if (dt.supportedDatatypes.includes( range) || range instanceof eNUMERATION) {
         convertedValues = valuesToConvert;
       } else if (range in dt.classes) { // object reference(s)
         // get ID attribute of referenced class
@@ -515,6 +516,9 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       } else if (range === "Date") {
         valuesToConvert[i] = dt.dataTypes["Date"].val2str( v);
          */
+      } else {
+        console.log(`The range ${range} is not yet considered in obj2rec.`);
+        convertedValues = valuesToConvert;
       }
       if (!propDecl.maxCard || propDecl.maxCard <= 1) {
         rec[p] = convertedValues[0];
