@@ -1,31 +1,31 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <meta charset="UTF-8"/>
- <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-  <title>The cLASSjs library</title>
-  <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
+ <meta charset="UTF-8"/>
+ <title>The OEMjs Business App Framework</title>
+ <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
  <meta name="description"
-       content="cLASSjs is a JavaScript library for model-based app development, defining a semantically rich concept of classes with property ranges and other property constraints. cLASSjs can be used as the model component in a Model-View-Controller (MVC) application. It helps to avoid boilerplate code for data storage management, constraint validation and CRUD user interfaces."/>
+       content="The Object Event Modeling JavaScript (OEMjs) framework allows low-code app development, based on business object, business event and business activity classes defined with property ranges and other property constraints. OEMjs allows building MVC apps quickly without boilerplate code for UIs, constraint validation and data storage management."/>
  <!-- Facebook Open Graph annotations -->
- <meta property="og:site_name" content="cLASSjs"/>
- <meta property="og:title" content="The cLASSjs library"/>
+ <meta property="og:site_name" content="OEMjs"/>
+ <meta property="og:title" content="The OEMjs Business App Framework"/>
  <meta property="og:locale" content="en" />
  <meta property="og:description"
-       content="cLASSjs is a JavaScript library for model-based app development, defining a semantically rich concept of classes with property ranges and other property constraints. cLASSjs can be used as the model component in a Model-View-Controller (MVC) application. It helps to avoid boilerplate code for data storage management, constraint validation and CRUD user interfaces."/>
- <meta property="og:url" content="https://gwagner57.github.io/cLASSjs/"/>
+       content="The Object Event Modeling JavaScript (OEMjs) framework allows low-code app development, based on business object, business event and business activity classes defined with property ranges and other property constraints. OEMjs allows building MVC apps quickly without boilerplate code for UIs, constraint validation and data storage management."/>
+ <meta property="og:url" content="https://gwagner57.github.io/OEMjs/"/>
  <meta property="og:image" content=""/>  <!-- recommended 1200 x 630 -->
  <meta name="twitter:card" content="summary_large_image"/>
  <!--
  <link rel="icon" type="image/png" href="img/favicon32px.png" sizes="32x32"/>
  <link rel="icon" type="image/png" href="img/favicon16px.png" sizes="16x16"/>
  -->
- <link rel="stylesheet" type="text/css" href="css/normalize.css" />
- <link rel="stylesheet" type="text/css" href="css/prio-menu.css" />
- <link rel="stylesheet" type="text/css" href="css/dpmn.css" />
+ <link rel="stylesheet" type="text/css" href="docs/css/normalize.css" />
+ <link rel="stylesheet" type="text/css" href="docs/css/prio-menu.css" />
+ <link rel="stylesheet" type="text/css" href="docs/css/dpmn.css" />
 </head>
 <body>
  <header>
+ <!--
  <div id="navigation" class="priority-nav">
    <nav id="menu">
     <ul id="menu-closed">
@@ -38,6 +38,7 @@
     </ul>
    </nav>
  </div>
+ -->
  <div id="share"><button id="share-this" title="Share this"><svg width="20" height="20" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
  <g transform="translate(0 -552.36)">
   <path d="m380.24 566.95a62.704 62.704 0 0 0 -62.704 62.704 62.704 62.704 0 0 0 1.956 15.302l-173.93 100.42a62.704 62.704 0 0 0 -43.011 -17.184 62.704 62.704 0 0 0 -62.704 62.704 62.704 62.704 0 0 0 62.704 62.704 62.704 62.704 0 0 0 43.05 -17.163l173.91 100.41a62.704 62.704 0 0 0 -1.9735 15.291 62.704 62.704 0 0 0 62.704 62.704 62.704 62.704 0 0 0 62.704 -62.704 62.704 62.704 0 0 0 -62.704 -62.704 62.704 62.704 0 0 0 -42.42 16.61l-174.32-100.66a62.704 62.704 0 0 0 1.7706 -14.493 62.704 62.704 0 0 0 -1.774 -14.493l174.35-100.66a62.704 62.704 0 0 0 42.406 16.621 62.704 62.704 0 0 0 62.704 -62.704 62.704 62.704 0 0 0 -62.704 -62.704z" fill="black" /></g></svg> Share</button>
@@ -49,20 +50,25 @@
  </ul></div>
  </header>
  <main>
-  <h1>cLASSjs</h1>
-  <p>A JS library for defining</p><ol>
-      <li>enumerations;</li>
-      <li>constructor-based classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);</li>
-      <li>storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as MySQL);</li>
-      <li>view models for model-based user interfaces.</li>
-    </ol><h2>Use Case 1: Handling Enumerations and Enumeration Attributes</h2><h3>Defining an Enumeration</h3><p><span
-  style="font-family:monospace;">var WeatherStateEL = new eNUMERATION ("WeatherStateEL", </span></p><pre> ["sunny", "partly cloudy", "cloudy", "cloudy with rain", "rainy"]);</pre><h3><a
-  aria-hidden="true" class="anchor" href="#using-an-enumeration-as-the-range-of-an-attribute"
-  id="user-content-using-an-enumeration-as-the-range-of-an-attribute"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1"
-      viewBox="0 0 16 16" width="16">
-      <path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"
-            fill-rule="evenodd"></path>
-    </svg></a>Using an Enumeration as the Range of an Attribute</h3><pre>var Weather = new cLASS({
+  <h1>The Object Event Modeling JavaScript (OEMjs) App Framework</h1>
+  <p>OEMjs allows defining</p>
+  <ol>
+   <li>enumerations;</li>
+   <li>constructor-based classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);</li>
+   <li>storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as MySQL);</li>
+   <li>view models for model-based user interface code generation.</li>
+  </ol>
+  
+  <details><summary>Example 1: <a href="apps/minimal/">Minimal CRUD App</a></summary>
+  <p>The purpose of this app is to manage book data. It consists of two files, <kbd>app.mjs</kbd> and <kbd>Book.mjs</kbd>, with together 70 lines of code, only.</p>
+  </details>
+  
+  <h2>Use Case 1: Handling Enumerations and Enumeration Attributes</h2>
+  <h3>Defining an Enumeration</h3>
+  <p><span
+  style="font-family:monospace;">var WeatherStateEL = new eNUMERATION ("WeatherStateEL", </span></p><pre> ["sunny", "partly cloudy", "cloudy", "cloudy with rain", "rainy"]);</pre>
+  
+  <h3>Using an Enumeration as the Range of an Attribute</h3><pre>var Weather = new cLASS({
     Name: "Weather",
     properties: {
       "weatherState": {range: WeatherStateEL, label: "Weather conditions"},
@@ -70,21 +76,18 @@
     },
     methods: {...}
 });
-</pre><h3><a aria-hidden="true" class="anchor" href="#using-enumeration-literals" id="user-content-using-enumeration-literals"><svg aria-hidden="true"
-      class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-      <path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"
-            fill-rule="evenodd"></path>
-    </svg></a>Using Enumeration Literals</h3><p>Recall that <em>enumeration literals</em> are constants that stand for a positive integer (the
+</pre>
+   
+   <h3>Using Enumeration Literals</h3>
+   <p>Recall that <em>enumeration literals</em> are constants that stand for a positive integer (the
   <em>enumeration index</em>).</p><p>For instance, the enum literal <code>WeatherStateEL.SUNNY</code> stands for the enum index 1. In program code, we
   do not use the enum index, but rather the enum literal. For instance,</p><pre>var theWeather = new Weather({
       weatherState: WeatherStateEL.SUNNY, // do not use the enum index value 1
       temperature: 30
 })
-</pre><h3><a aria-hidden="true" class="anchor" href="#looping-over-an-enumeration" id="user-content-looping-over-an-enumeration"><svg
-      aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-      <path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"
-            fill-rule="evenodd"></path>
-    </svg></a>Looping over an Enumeration</h3><p>We loop over the enumeration <code>WeatherStateEL</code> with a <code>for</code> loop counting from 1
+</pre>
+
+   <h3>Looping over an Enumeration</h3><p>We loop over the enumeration <code>WeatherStateEL</code> with a <code>for</code> loop counting from 1
   to <code>WeatherStateEL.MAX</code>:</p><pre>for (let weatherState = 1; weatherState &lt;= WeatherStateEL.MAX; weatherState++) {
   switch (weatherState) {
   case WeatherStateEL.SUNNY: 
@@ -95,12 +98,9 @@
     break;
   }
 }
-</pre><h2><a aria-hidden="true" class="anchor" href="#use-case-2-flexible-data-storage-management-with-storage-adapters"
-  id="user-content-use-case-2-flexible-data-storage-management-with-storage-adapters"><svg aria-hidden="true" class="octicon octicon-link" height="16"
-      version="1.1" viewBox="0 0 16 16" width="16">
-      <path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"
-            fill-rule="evenodd"></path>
-    </svg></a>Use Case 2: Flexible Data Storage Management with Storage Adapters</h2><p>cLASSjs comes with a sTORAGEmANAGER class and two storage
+</pre>
+
+   <h2>Use Case 2: Flexible Data Storage Management with Storage Adapters</h2><p>OEMjs comes with a sTORAGEmANAGER class and two storage
   adapters for using <code>localStorage</code> or <code>ìndexedDB</code>.</p><p>A storage manager works like a wrapper of the methods of an adapter.
   The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking
   a data retrieval operation on a model class <code>Book</code>:</p><pre><code>var storageAdapter = {name:"IndexedDB", dbName:"Test"};
@@ -116,12 +116,11 @@ if (!("indexedDB" in window)) {
   storageAdapter.name = "IndexedDB";
 }
 storageManager = new sTORAGEmANAGER( storageAdapter);
-</pre><h2><a aria-hidden="true" class="anchor" href="#use-case-3-declarative-constraint-valdiation"
-  id="user-content-use-case-3-declarative-constraint-valdiation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1"
-      viewBox="0 0 16 16" width="16">
-      <path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"
-            fill-rule="evenodd"></path>
-    </svg></a>Use Case 3: Declarative Constraint Valdiation</h2><p>cLASSjs allows defining property constraints in a model class created with
+</pre>
+
+   <h2>Use Case 3: Declarative Constraint Valdiation</h2>
+   
+   <p>OEMjs allows defining property constraints in a model class created with
   cLASS:</p><pre>var Book = new cLASS({
   Name: "Book",
   properties: {
