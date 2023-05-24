@@ -17,6 +17,7 @@ import dom from "../../lib/dom.mjs";
 import SelectReferenceWidget from "./SelectReferenceWidget.mjs";
 import SelectMultipleItemsWidget from "./SelectMultipleItemsWidget.mjs";
 import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
+import util from "../../lib/util.mjs";
 
 /**
  * Class for creating "views" (or view models), typically based on model classes,
@@ -363,7 +364,7 @@ class vIEW {
           containerEl.className = "field-group";
           fieldNames = fldOrdEl;
         }
-        for (const fld of fieldNames) {
+        for (const fld of fieldNames) { // fieldNames contains a single field or a field group
           const range = fieldDef[fld].range;
           if (range instanceof eNUMERATION) {  // enumeration field
             if (viewType === "D") {
@@ -380,27 +381,41 @@ class vIEW {
           } else if (range === "Boolean") {
             containerEl.appendChild( createLabeledYesNoField( fld));
           } else if ((typeof range === "string" && range in dt.classes ||
-                     range.constructor === bUSINESSoBJECT)) { // A bUSINESSoBJECT reference field
+                     range.constructor === bUSINESSoBJECT)) { // a bUSINESSoBJECT reference field
             const Class = typeof range === "string" ? dt.classes[range] : range,
                   labelEl = document.createElement("label");
             labelEl.textContent = fieldDef[fld].label;
             if (!fieldDef[fld].maxCard || fieldDef[fld].maxCard===1) {
-              // A single-valued reference field (functional association)
-              widgetEl = new SelectReferenceWidget( fld, Class, view);
-              containerEl.className = "select";
+              if (viewType === "D") {
+                containerEl.className = "I-O-field";
+                containerEl.appendChild( createLabeledField( fld));
+              } else {
+                // A single-valued reference field (functional association)
+                widgetEl = new SelectReferenceWidget( fld, Class, view);
+                containerEl.className = "select";
+                labelEl.appendChild( widgetEl);
+                containerEl.appendChild( labelEl);
+                // store data binding assignment of UI element to view model field
+                dataBinding[fld] = widgetEl;
+              }
             } else {  // A multi-valued reference field (non-functional association)
-              let displayAttr="";
-              if (Class.displayAttribute) displayAttr = Class.displayAttribute;
-              else if ("name" in Class.properties) displayAttr = "name";
-              widgetEl = new SelectMultipleItemsWidget({name: fld,
+              if (viewType === "D") {
+                containerEl.className = "I-O-field";
+                containerEl.appendChild( createLabeledField( fld));
+              } else {
+                let displayAttr="";
+                if (Class.displayAttribute) displayAttr = Class.displayAttribute;
+                else if ("name" in Class.properties) displayAttr = "name";
+                widgetEl = new SelectMultipleItemsWidget({name: fld,
                   selection: view.fldValues[fld], selectionRange: Class.instances,
                   idAttr: Class.idAttribute, displayAttr, minCard: fieldDef[fld].minCard, view});
-              containerEl.className = "select-multiple-items";
+                containerEl.className = "select-multiple-items";
+                labelEl.appendChild( widgetEl);
+                containerEl.appendChild( labelEl);
+                // store data binding assignment of UI element to view model field
+                dataBinding[fld] = widgetEl;
+              }
             }
-            labelEl.appendChild( widgetEl);
-            containerEl.appendChild( labelEl);
-            // store data binding assignment of UI element to view model field
-            dataBinding[fld] = widgetEl;
           } else {  // string/numeric property field
             containerEl.className = "I-O-field";
             containerEl.appendChild( createLabeledField( fld));
@@ -432,7 +447,7 @@ class vIEW {
     if (!uiContainerEl) {
       const entityTypeName = mc.name.toLowerCase();
       inbetween = this.viewType !== "R" ?
-          ("aeiou".includes( entityTypeName.charAt(0)) ? " an ":" a ") : " ";
+          util.getIndefiniteArticle( entityTypeName) : " ";
       suffix = this.viewType === "R" ? "s" : "";
       uiContainerEl = dom.createElement("section", {
         id: mc.name +"-"+ this.viewType,
@@ -499,7 +514,7 @@ class vIEW {
         }
       }
       uiContainerEl.appendChild( dom.createBackButton({
-        label:"Back to CRUD menu",
+        label:"Back to menu",
         classValues: "button",
         handler: this.userActions["back"]  // map UI event to logical action
       }));
@@ -647,9 +662,11 @@ class vIEW {
             name:"select"+ mc.name,
             labelText:"Select "+ mc.name +": "
         };
-        el = dom.createLabeledSelect( slots);  // div element
+        const divEl = document.createElement("div");  // div element
+        formEl.appendChild( divEl);
+        el = dom.createLabeledSelect( slots);
+        divEl.appendChild( el);
         selectEl = el.querySelector('select');
-        formEl.appendChild( el);        
         // when an object is selected, populate the form with its data
         selectEl.addEventListener("change", function () {
           var id = selectEl.value;
@@ -738,7 +755,7 @@ class vIEW {
       }
       if (uiEl.className === "select-reference") uiEl.updateViewField();
     } else if (uiEl.tagName === "SELECT-MULTIPLE-ITEMS") {
-      uiEl.selection = v;
+      uiEl.selection = v;  // shared reference
       uiEl.refresh();
     } else {
       uiEl.setAttribute("data-value", v);
@@ -860,12 +877,11 @@ class vIEW {
         manageUiEl.appendChild( menuEl);
       }
       for (const crudCode of ["R","C","U","D"]) {
-        var inbetween = (crudCode !== "R") ? " a " : " ",
+        var inbetween = (crudCode !== "R") ? util.getIndefiniteArticle( className) : "",
             suffix = (crudCode === "R") ? "s" : "";
         liEl = dom.createMenuItem({
           id: className +"-"+ crudCode ,
-          content: vIEW.crudVerbs[crudCode] + inbetween +
-              className.toLowerCase() +" record"+ suffix
+          content: vIEW.crudVerbs[crudCode] +` ${inbetween} ${className.toLowerCase()} record${suffix}`
         });
         menuEl.appendChild( liEl);
       }

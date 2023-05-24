@@ -13,6 +13,8 @@ class SelectReferenceWidget extends HTMLSelectElement {
   updateViewField() {
     if (this.value !== "") {
       if (this.view) this.view.fldValues[this.name] = this.BusinessObjectClass.instances[this.value];
+    } else {
+      if (this.view) this.view.fldValues[this.name] = null;
     }
   }
   refreshOptions() {

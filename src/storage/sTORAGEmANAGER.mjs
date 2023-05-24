@@ -269,22 +269,14 @@ class sTORAGEmANAGER {
    * @param {object} Class  The business object class concerned
    * @param {string|number} id  The object ID value
    */
-  destroy( Class, id) {
+  async destroy( Class, id) {
     const dbName = this.dbName;
-    let currentSM = this;
-    return new Promise( function (resolve) {
-      currentSM.retrieve( Class, id).then( function (record) {
-        if (record) {
-          currentSM.adapter.destroy( dbName, Class, id)
-              .then( function () {
-                console.log( Class.name +" "+ id +" deleted.");
-                if (typeof resolve === "function") resolve();
-              });
-        } else {
-          console.log("There is no "+ Class.name +" with ID value "+ id +" in the database!");
-        }
-      });
-    });
+    try {
+      this.adapter.destroy( dbName, Class, id);
+      console.log(`${Class.name} ${id} deleted.`);
+    } catch (error) {
+      console.log(`${error.name}: ${error.message}`);
+    }
   }
   /**
    * Generic method for clearing the DB table, or object store, of a cLASS
