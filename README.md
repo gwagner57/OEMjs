@@ -1,4 +1,4 @@
-# OEMjs
+# Object Event Modeling JavaScript Business App Framework (OEMjs)
 ## A Low-Code Business App Framework
 
 OEMjs implements the ***Object Event Modeling*** paradigm for model-based business application engineering, based on the ideas of the MVC architecure paradigm, the [Onion Architecture](http://jeffreypalermo.com/blog/the-onion-architecture-part-1/) metaphor, and the [Event Modeling](https://eventmodeling.org/posts/what-is-event-modeling/) approach. See also [Object Event Modeling for DES and IS Engineering](https://ceur-ws.org/Vol-3211/CR_099.pdf). 
@@ -11,6 +11,10 @@ OEMjs allows defining
 3. **storage adapters** that facilitate switching from one storage technology (such as IndexedDB) 
    to another one (such as Google FireStore or CloudFlare D1);
 4. **view models** for model-based user interface code generation.
+
+<details><summary>Example 1: A [Minimal CRUD App](/apps/minimal/)</summary>
+   <p>The purpose of this app is to manage book data. It has only two code files, app.mjs and Book.mjs, with 70 lines of code.</p>
+</details>
 
 ## Use Case 1: Enumerations
 
