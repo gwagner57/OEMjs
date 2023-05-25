@@ -50,11 +50,11 @@
  </ul></div>
  </header>
  <main>
-  <h1>The Object Event Modeling JavaScript (OEMjs) App Framework</h1>
+  <h1>The Object Event Modeling Low Code JavaScript App Framework OEMjs</h1>
   <p>OEMjs allows defining</p>
   <ol>
    <li>enumerations;</li>
-   <li>constructor-based classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);</li>
+   <li>business object, event and activity classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);</li>
    <li>storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as MySQL);</li>
    <li>view models for model-based user interface code generation.</li>
   </ol>
@@ -63,8 +63,11 @@
   <p>The purpose of this app is to manage book data. It consists of two JS module files, <kbd>app.mjs</kbd> and <kbd>Book.mjs</kbd>, with together 70 lines of code, only.</p>
   </details>
   
-  <details><summary>Example 2: <a href="apps/boooks-authors-publishers/">A CRUD App with 3 Associated Classes</a></summary>
-  <p>The purpose of this app is to manage data about books and their authors and publishers. It consists of four files, <kbd>app.mjs</kbd>, <kbd>Book.mjs</kbd>, <kbd>Author.mjs</kbd> and <kbd>Publisher.mjs</kbd>, with together 105 lines of code, only.</p>
+  <details><summary>Example 2: <a href="apps/books-authors-publishers/">A CRUD App with 3 Associated Classes</a></summary>
+  <p>The purpose of this app is to manage data about books and their authors and publishers. It consists of four files,
+   <kbd>app.mjs</kbd>, <kbd>Book.mjs</kbd>, <kbd>Author.mjs</kbd> and <kbd>Publisher.mjs</kbd>, with together 105 lines
+   of code, only. The app manages a many-to-many unidrectional association between books and authors, and a many-to-one
+   unidrectional association between books and publishers.</p>
   </details>
   
   <h2>Use Case 1: Enumerations</h2>
@@ -109,20 +112,7 @@ Weather.properties = {
 </pre>
   </details>
 
-  <h2>Use Case 2: Storage Adapters</h2>
-  <details><summary>Flexible Data Storage Management with Storage Adapters</summary>
-   <p>OEMjs comes with a sTORAGEmANAGER class and two storage adapters for using <code>IndexedDB</code> or <code>Google FireStore</code>.</p>
-   <p>A storage manager works like a wrapper of the methods of an adapter.
-  The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking
-  a data retrieval operation on a model class <code>Book</code>:</p>
-  <pre>const storageAdapter = {name:"IndexedDB", dbName:"Test"};
-const storageManager = new sTORAGEmANAGER( storageAdapter);
-storageManager.retrieveAll( Book).then( list); 
-</pre>
-  </details>
-
-
-   <h2>Use Case 3: Constraint Valdiation</h2>
+   <h2>Use Case 2: Constraint Valdiation</h2>
   <details><summary>Defining Constraints in the Model and Checking Them in the View</summary>
    <p>OEMjs allows defining property constraints in a model class:</p>
    
@@ -162,6 +152,19 @@ for (const propName of Object.keys( Book.properties)) {
   });
 });</pre>
   </details>
+  
+  <h2>Use Case 3: Storage Adapters</h2>
+  <details><summary>Flexible Data Storage Management with Storage Adapters</summary>
+   <p>OEMjs comes with a sTORAGEmANAGER class and two storage adapters for using <code>IndexedDB</code> or <code>Google FireStore</code>.</p>
+   <p>A storage manager works like a wrapper of the methods of an adapter.
+  The storage manager methods invoke corresponding methods of its adapter. The following code example shows how to use a storage manager for invoking
+  a data retrieval operation on a model class <code>Book</code>:</p>
+  <pre>const storageAdapter = {name:"IndexedDB", dbName:"Test"};
+const storageManager = new sTORAGEmANAGER( storageAdapter);
+storageManager.retrieveAll( Book).then( list); 
+</pre>
+  </details>
+  
  </main>
   <footer>
    <p>© 2023 G. Wagner (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC</a>), Brandenburg University of Technology, Germany</p>
