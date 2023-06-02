@@ -12,7 +12,7 @@ OEMjs allows defining
    to another one (such as Google FireStore or CloudFlare D1);
 4. **view models** for model-based user interface code generation.
 
-You can take a look at the OEMjs example apps at [the project's GitHub website](https://gwagner57.github.io/OEMjs/).
+You can take a look at the OEMjs example apps at [the project's website](https://gwagner57.github.io/OEMjs/).
 
 ## Use Case 1: Enumerations
 
