@@ -12,7 +12,7 @@ const dt = {
   defaultDecimalPlaces: 2,
   maxLevelOfComplexDatatypeNesting: 3,
   // define lists of datatype names
-  stringTypes: ["String","NonEmptyString","Identifier","Email","URL","PhoneNumber"],
+  stringTypes: ["String","NonEmptyString","Identifier","Email","URL","PhoneNumber","Text"],
   integerTypes: ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber","Year"],
   decimalTypes: ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"],
   otherPrimitiveTypes: ["Boolean","Date","DateTime"],
@@ -215,7 +215,9 @@ const dt = {
     }
     return string;
   },
-  // from https://stackoverflow.com/questions/5646279/get-object-class-from-string-name-in-javascript/53199720
+  /*** from https://stackoverflow.com/questions/5646279/get-object-class-from-string-name-in-javascript/53199720
+   *** works only for classes in the global namespace
+   */
   getClassByName( name){
     var Class=null;
     if (name.match(/^[a-zA-Z0-9_]+$/)) {
@@ -286,6 +288,8 @@ const dt = {
   dataTypes: {
     "String": {phrase:"a string",
         condition: value => typeof value === "string"},
+    "Text": {phrase:"a text",
+      condition: value => typeof value === "string"},
     "NonEmptyString": {phrase:"a non-empty string",
         condition: value => typeof value === "string" && value.trim() !== ""},
     "Email": {phrase:"an email address",
@@ -341,7 +345,8 @@ const dt = {
     "Boolean": {phrase:"a Boolean value (true/'yes' or false/'no')",
         condition: value => typeof value === "boolean",
         str2val: s => ["true","yes"].includes(s) ? true :
-            (["false","no"].includes(s) ? false : undefined)}
+            (["false","no"].includes(s) ? false : undefined),
+        val2str: value => value === true ? "yes" : "no"}
   },
   getDefaultValue( Type) {
     if (dt.isIntegerType( Type)) return 0;
@@ -406,23 +411,23 @@ const dt = {
    * @method
    * @author Gerd Wagner
    * @param {string} attr  The attribute for which a value is to be checked.
-   * @param {object} decl  The attribute's declaration.
+   * @param {object} attrDef  The attribute's declaration.
    * @param val  The value to be checked.
    * @return {object}  The constraint violation object.
    */
-  check( attr, decl, val) {
-    var range = decl.range,
+  check( attr, attrDef, val) {
+    var range = attrDef.range,
         constrVio=[], valuesToCheck=[];
-    const maxCard = decl.maxCard || 1,  // by default, an attribute is single-valued
+    const maxCard = attrDef.maxCard || 1,  // by default, an attribute is single-valued
         // by default, an attribute is mandatory
-        minCard = decl.minCard !== "undefined" ? decl.minCard : (decl.optional ? 0 : 1),
-        min = typeof decl.min === "function" ? decl.min() : decl.min,
-        max = typeof decl.max === "function" ? decl.max() : decl.max,
-        msg = decl.patternMessage || "",
-        pattern = decl.pattern;
+        minCard = attrDef.minCard !== "undefined" ? attrDef.minCard : (attrDef.optional ? 0 : 1),
+        min = typeof attrDef.min === "function" ? attrDef.min() : attrDef.min,
+        max = typeof attrDef.max === "function" ? attrDef.max() : attrDef.max,
+        msg = attrDef.patternMessage || "",
+        pattern = attrDef.pattern;
     // check Mandatory Value Constraint
     if (val === undefined || val === "") {
-      if (decl.optional) constrVio.push( new NoConstraintViolation());
+      if (attrDef.optional || "inverseOf" in attrDef) constrVio.push( new NoConstraintViolation());
       else constrVio.push( new MandatoryValueConstraintViolation(
             `A value for ${attr} is required!`));
     }
@@ -444,7 +449,7 @@ const dt = {
           valuesToCheck = val;
         }
       } else if (typeof val === "object" && typeof range === "string" && range in dt.classes) {
-        if (!decl.isOrdered) valuesToCheck = val;
+        if (!attrDef.isOrdered) valuesToCheck = val;
         else constrVio.push( new RangeConstraintViolation(
             `The ordered-collection-valued attribute ${attr} must not have a map value like ${val}`));
       } else {

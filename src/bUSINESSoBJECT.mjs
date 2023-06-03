@@ -1,4 +1,11 @@
- /*******************************************************************************
+import {dt, lIST, rECORD} from "./datatypes.mjs";
+import { NoConstraintViolation,
+  MandatoryValueConstraintViolation, UniquenessConstraintViolation,
+  ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
+  from "./constraint-violation-error-types.mjs";
+import eNUMERATION from "./eNUMERATION.mjs";
+
+/*******************************************************************************
  * bUSINESSoBJECT allows defining constructor-based business object classes and
  * class hierarchies based on a declarative description of the form:
  *
@@ -27,34 +34,31 @@
  * When a model class has no standard ID attribute declared with "isIdAttribute: true", 
  * it inherits an auto-integer "id" attribute as its standard ID attribute from bUSINESSoBJECT.
  *
+ * TODO: + add validation checks in "setup" (check if all attribute names in a displayAttribute
+ *         path expression exist)
+ *
  * @copyright Copyright 2015-2022 Gerd Wagner, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
  * @author Gerd Wagner
  ******************************************************************************/
- import {dt, lIST, rECORD} from "./datatypes.mjs";
- import { NoConstraintViolation,
-   MandatoryValueConstraintViolation, UniquenessConstraintViolation,
-   ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
-   from "./constraint-violation-error-types.mjs";
- import eNUMERATION from "./eNUMERATION.mjs";
 
- class bUSINESSoBJECT {
+class bUSINESSoBJECT {
   constructor( id) {
     const Class = this.constructor,
-          idAttr = Class.idAttribute ?? "id";
+          idAttr = Class.idAttribute;
     if (id) this[idAttr] = id;
-    else if (Class.idAttribute && !Class.properties[Class.idAttribute].autoId) {
-      throw new MandatoryValueConstraintViolation(
-          `A value for ${Class.idAttribute} is required!`)
-    } else {  // assign auto-ID
+    else if (Class.properties[idAttr].range === "AutoIdNumber") {
       if (typeof Class.getAutoId === "function") {
         this[idAttr] = Class.getAutoId();
       } else if (Class.idCounter !== undefined) {
         this[idAttr] = ++Class.idCounter;
       } else {
-        this[idAttr] = Class.idCounter = 1;
+        this[idAttr] = Class.idCounter = 1001;
       }
+    } else {
+      throw new MandatoryValueConstraintViolation(
+          `A value for ${Class.name}::${Class.idAttribute} is required!`)
     }
     if (!Class.isAbstract) {
       // add new object to the population of the class (represented as a map) 
@@ -108,9 +112,20 @@
           idAttr = Class.idAttribute,
           id = this[idAttr];
     var str = String( id);
-    if (idAttr !== "name" && "name" in this) str += ": "+ this.name;
-    else if (Class.displayAttribute) str += ": "+ this[Class.displayAttribute];
+    if (Class.displayAttribute) str += " : "+ this.getValueOfPathExpression( Class.displayAttribute);
+    else if (idAttr !== "name" && "name" in this) str += " : "+ this.name;
     return str;
+  }
+  getValueOfPathExpression( pathExprStr) {
+    const splitResult = pathExprStr.split(".");
+    let value;
+    switch (splitResult.length) {
+      case 1: value = this[splitResult[0]]; break;
+      case 2: value = this[splitResult[0]][splitResult[1]]; break;
+      case 3: value = this[splitResult[0]][splitResult[1]][splitResult[2]]; break;
+      default: console.error("More than 3 parts in path expression string: ", pathExprStr);
+    }
+    return value;
   }
   /***************************************************
    * A class-level de-serialization method
@@ -130,61 +145,63 @@
   }
   /***************************************************
    * To be invoked for each BO class definition
-   ***************************************************/
-   static setup() {
-     /*
-     * FOR LATER: support (1) union types, (2) assigning initial values to mandatory
-     * properties (if !pDef.optional), including the default values 0, "", [] and {}
-     */
-     const Class = this,
-           propDefs = Class.properties || {};  // property definitions
-     const propsWithInitialValFunc = [];
-     // initialize the Class.instances map
-     if (!Class.isAbstract) Class.instances = {};
-     // collect all names of BO classes in a map
-     dt.classes[Class.name] = Class;
-     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes),
-         ...Object.values( eNUMERATION)];
-     // pre-process all property definitions
-     Class.referenceProperties = [];
-     for (const p of Object.keys( propDefs)) {
-       const propDef = propDefs[p],
-             range = propDef.range;
-       // check if property definition includes a range declaration
-       if (!range) throw new Error(`No range defined for property ${p} of class ${Class.name}`);
-       else if (!(admissibleRanges.includes( range) ||
-                  range instanceof lIST || range instanceof rECORD))
-           throw new Error(`Nonadmissible range defined for property ${p} of class ${Class.name}`);
-       // establish standard ID attribute
-       if (propDef.isIdAttribute) Class.idAttribute = p;
-       // collect all reference properties
-       if (range in dt.classes) Class.referenceProperties.push( p);
-       // collect properties with initialValue functions
-       if (typeof propDef.initialValue === "function") propsWithInitialValFunc.push( p);
-       // construct implicit setters and getters
-       Object.defineProperty( Class.prototype, p, {
-         get() { return this["_"+p]; },
-         set( val) {
-           if (bUSINESSoBJECT.checkConstraints) {
-             const validationResults = dt.check( p, propDef, val);
-             if (validationResults[0] instanceof NoConstraintViolation) {
-               this["_"+p] = validationResults[0].checkedValue;
-             } else {
-               //TODO: support multiple errors
-               throw validationResults[0];
-             }
-           } else this["_"+p] = val;
-         },
-         enumerable: true
-       });
-     }
-     // call the functions for initial value expressions
-     for (const p of propsWithInitialValFunc) {
-       const f = propDefs[p].initialValue;
-       if (f.length === 0) this[p] = f();
-       else this[p] = f.call( this);
-     }
-   }
+  ***************************************************/
+  static setup() {
+    /*
+    * FOR LATER: support (1) union types, (2) assigning initial values to mandatory
+    * properties (if !pDef.optional), including the default values 0, "", [] and {}
+    */
+    const Class = this,
+          propDefs = Class.properties || {};  // property definitions
+    const propsWithInitialValFunc = [];
+    // initialize the Class.instances map
+    if (!Class.isAbstract) Class.instances = {};
+    const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes),
+       ...Object.values( eNUMERATION)];
+    // pre-process all property definitions
+    Class.referenceProperties = Object.keys( propDefs).filter( p =>
+        propDefs[p].range in dt.classes && !("inverseOf" in propDefs[p]));
+    Class.inverseReferenceProperties = Object.keys( propDefs).filter( p =>
+        propDefs[p].range in dt.classes && "inverseOf" in propDefs[p]);
+    //Class.referenceProperties = [];
+    for (const p of Object.keys( propDefs)) {
+      const propDef = propDefs[p],
+          range = propDef.range;
+      // check if property definition includes a valid range declaration
+      if (!range) throw new Error(`No range defined for property ${p} of class ${Class.name}`);
+      else if (!(admissibleRanges.includes( range) ||
+          range instanceof lIST || range instanceof rECORD))
+        throw new Error(`Non-admissible range defined for property ${p} of class ${Class.name}`);
+      // establish standard ID attribute
+      if (propDef.isIdAttribute) Class.idAttribute = p;
+      // collect all reference properties
+      //if (range in dt.classes) Class.referenceProperties.push( p);
+      // collect properties with initialValue functions
+      if (typeof propDef.initialValue === "function") propsWithInitialValFunc.push( p);
+      // construct implicit setters and getters
+      Object.defineProperty( Class.prototype, p, {
+        get() { return this["_"+p]; },
+        set( val) {
+          if (bUSINESSoBJECT.checkConstraints) {
+            const validationResults = dt.check( p, propDef, val);
+            if (validationResults[0] instanceof NoConstraintViolation) {
+              this["_"+p] = validationResults[0].checkedValue;
+            } else {
+              //TODO: support multiple errors
+              throw validationResults[0];
+            }
+          } else this["_"+p] = val;
+        },
+        enumerable: true
+      });
+    }
+    // call the functions for initial value expressions
+    for (const p of propsWithInitialValFunc) {
+      const f = propDefs[p].initialValue;
+      if (f.length === 0) this[p] = f();
+      else this[p] = f.call( this);
+    }
+  }
 }
 // A flag for disabling constraint checking
 bUSINESSoBJECT.checkConstraints = true;

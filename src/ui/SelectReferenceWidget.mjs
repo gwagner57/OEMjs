@@ -18,15 +18,11 @@ class SelectReferenceWidget extends HTMLSelectElement {
     }
   }
   refreshOptions() {
-    const busObjClass = this.BusinessObjectClass,
-          busObjects = busObjClass.instances;
+    const BusObjClass = this.BusinessObjectClass,
+          busObjects = BusObjClass.instances;
     const choiceItems = {};
     for (const oid of Object.keys( busObjects)) {
-      let optionText = oid;
-      if (busObjClass.idAttribute !== "name") {
-        optionText += " "+ busObjects[oid].name || busObjects[oid].title;
-      }
-      choiceItems[oid] = optionText;
+      choiceItems[oid] = busObjects[oid].toShortString();
     }
     dom.fillSelectWithOptions( this, choiceItems);
   }

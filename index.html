@@ -51,12 +51,14 @@
  </header>
  <main>
   <h1>The Object Event Modeling Low Code JavaScript App Framework OEMjs</h1>
-  <p>OEMjs allows defining</p>
+  <p>OEMjs supports</p>
   <ol>
    <li>enumerations;</li>
    <li>business object, event and activity classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);</li>
+   <li>unidirectional and bidirectional associations;</li>
    <li>storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as MySQL);</li>
-   <li>view models for model-based user interface code generation.</li>
+   <li>view models for declarative user interface definitions;</li>
+   <li>model-based generation of CRUD and event/activity-based user interfaces.</li>
   </ol>
   
   <details><summary>Example 1: <a href="apps/minimal/">Minimal CRUD App</a></summary>
@@ -167,6 +169,7 @@ storageManager.retrieveAll( Book).then( list);
   
  </main>
   <footer>
+   <hr/>
    <p>© 2023 G. Wagner (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC</a>), Brandenburg University of Technology, Germany</p>
  </footer>
 <script>

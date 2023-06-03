@@ -1,13 +1,70 @@
 /* ==========================================================================
-   Custom styles
+   Parametrized styles
    ========================================================================== */
+:root {
+  /* grid-template-areas */
+  --layout: "head" "main" "foot";
+  --row-template: auto minmax(100%, 1fr) auto;
+
+  --basecol-h: 210deg;
+  --basecol-s: 20%;
+  --basecol-l: 95%;     /* lightness */
+  --basecol-l-darkmode: 20%;   /* lightness for dark mode theme */
+
+  --accentcol-h: 200deg;
+  --accentcol-s: 100%;
+  --accentcol-l: 25%;    /* lightness */
+  --accentcol-l-darkmode: 80%;  /* lightness for dark mode theme */
+
+  --background-color: hsl(var(--basecol-h), var(--basecol-s), var(--basecol-l));
+
+  --font-color: hsl(var(--basecol-h), var(--basecol-s),
+  clamp(10%, calc(100% - (var(--basecol-l) - 47%) * 1000), 95%));
+
+  --accent-color: hsl(var(--accentcol-h), var(--accentcol-s), var(--accentcol-l));
+
+  --accent-contrast-color: hsl(var(--accentcol-h), var(--accentcol-s),
+  clamp(0%, calc(100% - (var(--accentcol-l) - 47%) * 1000), 100%));
+
+  color-scheme: light dark;  /* indicates that both modes are supported by the document */
+}
+:focus-visible { outline-color: var(--accent-color); }
+::marker { color: var(--accent-color); }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --basecol-l: var(--basecol-l-darkmode);
+    --accentcol-l: var(--accentcol-l-darkmode);
+  }
+}
+
 body {
-  padding: 8px;
+  display: grid;
+  grid-template-areas: var(--layout);
+  grid-template-rows: var(--row-template);
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 1rem;
+  background-color: var(--background-color);
+  color: var(--font-color);
+  accent-color: var(--accent-color);
 }
 noscript > p {
   font-size: 1.2em;
   color: red;
 }
+header {
+  grid-area: head;
+}
+main {
+  grid-area: main;
+}
+footer {
+  grid-area: foot;
+  margin-top: 5rem;
+  border-top: 1px solid currentColor;
+}
+
 footer {
   margin-top: 1em;
   font-size: smaller;
@@ -158,6 +215,9 @@ menu li button {
   resize: both;
 }
 /*********************************************/
+form {
+  position: relative;
+}
 form :invalid {
   box-shadow: none;  /* neutralizing FF */
   outline: dotted red;      
@@ -171,10 +231,10 @@ form > div:first-child  {
 form > div:not(:last-child)  {
   margin-bottom: 1em;
 }
-/* is this needed?
-form > div > label { position: relative;}
-*/
-form > div.I-O-field > label {
+form > div.select-multiple-items {
+  min-height: 8ch;
+}
+form > div > label {
   width: 40em;
   display: block;     /* by default, one labeled control per line*/
 }
@@ -204,9 +264,10 @@ form div.field-group > label > output {
 }
 form div.I-O-field > label > input[type="text"],
 form div.I-O-field > label > input[type="number"],
-form div.yes-no-field > label > input[type="checkbox"],
+form div.I-O-field > label > input[type="checkbox"],
+form div.I-O-field > label > output,
 form div.select > label > select,
-form div.I-O-field > label > output {
+form div > label > select-multiple-items {
   position: absolute;
   left: 12em;
 }
@@ -214,12 +275,6 @@ form div.I-O-field > label > output {
 form div.I-O-field > label > input[type="text"],
 form div.I-O-field > label > input[type="number"] {
   width: 7em;
-}
-*/
-/*
-form div.yes-no-field > label > input[type="checkbox"] {
-  position: absolute;
-  left: 2em;
 }
 */
 form div.action-group {

@@ -3,6 +3,7 @@
  * @class
  */
 import bUSINESSoBJECT from "../../../../src/bUSINESSoBJECT.mjs";
+import {dt} from "../../../../src/datatypes.mjs";
 
 class Publisher extends bUSINESSoBJECT {
   constructor ({name, address}) {
@@ -15,6 +16,7 @@ Publisher.properties = {
   "address": {range:"NonEmptyString", label:"Address", min: 5, max: 50}
 }
 Publisher.attributesToDisplayInLists = ["name","address"];
-Publisher.setup();
+// register class
+dt.classes["Publisher"] = Publisher;
 
 export default Publisher;

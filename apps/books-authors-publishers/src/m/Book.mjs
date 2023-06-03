@@ -3,6 +3,7 @@
  * @class
  */
 import bUSINESSoBJECT from "../../../../src/bUSINESSoBJECT.mjs";
+import {dt} from "../../../../src/datatypes.mjs";
 
 class Book extends bUSINESSoBJECT {
   constructor ({isbn, title, year, publisher, authors}) {
@@ -23,6 +24,8 @@ Book.properties = {
 }
 Book.displayAttribute = "title";  // used in toShortString()
 //Book.attributesToDisplayInLists = ["isbn","title","year"];  // used for restricting the RetrieveAll lists
-Book.setup();
+
+// register class
+dt.classes["Book"] = Book;
 
 export default Book;

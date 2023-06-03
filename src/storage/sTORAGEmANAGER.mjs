@@ -4,6 +4,8 @@
  * @copyright Copyright 2015-2022 Gerd Wagner, Chair of Internet Technology,
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
+ *
+ * TODO: - take care of proper Date conversions in IndexedDB obj2rec and rec2obj
  */
 import util from "../../lib/util.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
@@ -14,7 +16,7 @@ import {dt} from "../datatypes.mjs";
 import {NoConstraintViolation, ConstraintViolation} from "../constraint-violation-error-types.mjs";
 
 /**
- * Library class providing storage management methods for a number of predefined
+ * The sTORAGEmANAGER class provides/ storage management methods for a number of predefined
  * storage adapters
  *
  * @class
@@ -104,7 +106,7 @@ class sTORAGEmANAGER {
           newObj = new Class( r);  // check constraints
         } catch (e) {
           if (e instanceof ConstraintViolation) {
-            console.log( e.constructor.name +": "+ e.message);
+            console.error( e.constructor.name +": "+ e.message);
           } else console.log( e);
           // remove record from the records to add
           recordsToAdd.splice( i, 1);
@@ -132,7 +134,7 @@ class sTORAGEmANAGER {
     try {
       const rec = await this.adapter.retrieve( this.dbName, Class, id);
       if (!rec) {
-        console.error(`There is no ${Class.name} with ID value ${id} in the database!`);
+        console.error(`Retrieval of ${Class.name} ${id} failed!`);
       } else {
         // retrieve all associated records
         for (const refProp of Class.referenceProperties) {
@@ -143,7 +145,8 @@ class sTORAGEmANAGER {
           if (refPropDef.maxCard && refPropDef.maxCard > 1) idRefs = rec[refProp];
           else  idRefs = [rec[refProp]];
           for (const idRef of idRefs) {
-            AssociatedClass.instances[idRef] = await this.retrieve( AssociatedClass, idRef);
+            const associatedObject = await this.retrieve( AssociatedClass, idRef);
+            if (associatedObject) AssociatedClass.instances[idRef] = associatedObject;
           }
         }
         // create entity/object from record
@@ -167,30 +170,43 @@ class sTORAGEmANAGER {
    * @method
    * @param {object} Class  The business object class concerned
    */
-  async retrieveAll( Class) {
+  async retrieveAll( Class, alreadyRetrievedClasses=[]) {
     var entityTable = {};
-    const checkRefInt = dt.checkReferentialIntegrity;
+    const checkRefInt = dt.checkReferentialIntegrity;  // store the setting
     dt.checkReferentialIntegrity = false;  // disable referential integrity checking
     try {
       const entityRecords = await this.adapter.retrieveAll( this.dbName, Class);
+      alreadyRetrievedClasses.push( Class.name);
       //console.log("Entity records: ", JSON.stringify(entityRecords));
       if (this.createLog) console.log( entityRecords.length +" "+ Class.name +" records retrieved.");
+      // store entity records in Class.instances
+      for (const entityRec of entityRecords) {
+        const id = entityRec[Class.idAttribute];
+        Class.instances[id] = entityRec;
+      }
       // retrieve all records from all associated tables
       for (const refProp of Class.referenceProperties) {
         const AssociatedClass = dt.classes[Class.properties[refProp].range];
-        if (AssociatedClass !== Class) await this.retrieveAll( AssociatedClass);
-      }
-      // create entities from records
-      for (const entityRec of entityRecords) {
-        const id = entityRec[Class.idAttribute],
-              entity = this.adapter.rec2obj( entityRec, Class);
-        entityTable[id] = entity;
+        if (!alreadyRetrievedClasses.includes( AssociatedClass.name)) {
+          await this.retrieveAll( AssociatedClass, alreadyRetrievedClasses);
+        }
       }
     } catch (error) {
       console.log(`${error.constructor.name}: ${error.message}`);
+      dt.checkReferentialIntegrity = checkRefInt;  // restore previous setting
+      return;
+    }
+    try {
+      // create entities from records
+      for (const entityRec of Object.values( Class.instances)) {
+        const id = entityRec[Class.idAttribute],
+              obj = this.adapter.rec2obj( entityRec, Class);
+        if (obj) Class.instances[id] = obj;
+      }
+    } catch (error) {
+      console.error(`${error.constructor.name}: ${error.message}`);
     }
     dt.checkReferentialIntegrity = checkRefInt;  // restore previous setting
-    Class.instances = entityTable;
   }
   /**
    * Generic method for updating model objects
@@ -531,13 +547,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   rec2obj: function (rec, Class) {
   //------------------------------------------------
-    let obj = null;
-    try {
-      obj = new Class( rec);
-    } catch (e) {
-      console.error( `${e.constructor.name}: ${e.message}`);
-      return null;
-    }
+    const obj = new Class( rec);  // may throw exception caught in calling procedure
     // convert ID references to internal object references
     for (const refProp of Class.referenceProperties) {
       const propDef = Class.properties[refProp],

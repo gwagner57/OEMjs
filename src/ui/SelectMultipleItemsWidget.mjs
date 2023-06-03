@@ -1,9 +1,9 @@
 import {dt} from "../datatypes.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
+import util from "../../lib/util.mjs";
 
-// *************** Multi-Selection Widget ****************************************
 /**
- * A Multi-Selection widget contains
+ * A Select-Multiple-Items widget contains
  * 1) a list of selected items, where each item has a delete button,
  * 2) a div containing a select element and an add button allowing to add a selected item
  *    to the selected items list
@@ -13,8 +13,10 @@ import eNUMERATION from "../eNUMERATION.mjs";
  * @param {object} selectionRange  An item list, enumeration or entity table (map of objects)
  *                 for populating the selection list
  * @param {string} idAttr?  The standard identifier attribute of the entity table
- * @param {string} displayAttr? The attribute to be shown in the selection list
+ * @param {string} displayAttr? The attribute to be shown in (selection) lists,
+ *                 possibly in addition to the idAttr
  * @param {string} minCard? The minimum cardinality of the list of selected objects
+ * @param {object} view?  The view, to which this widget is bound
  */
 class SelectMultipleItemsWidget extends HTMLElement {
   static deleteButtonIconCharacter = "✕";
@@ -149,12 +151,12 @@ class SelectMultipleItemsWidget extends HTMLElement {
       `<style>
       :host {
         /* outline: solid grey 1px; */
-        display: block;
-        max-width: 15em;
-        max-height: 10em;  /* of the widget container */
-        /* margin-left: 12em; */
+        display: inline-block;
       }
       ul {
+        display: inline-block;
+        min-width: 7em;
+        margin: 0;
         border: 1px solid grey;
         padding: 6px;
         list-style: none;
@@ -177,8 +179,9 @@ class SelectMultipleItemsWidget extends HTMLElement {
         margin-left: 0.5em;
        /* vertical-align: middle; */
       }
-      select {
-        margin-right: 1em;
+      div {
+        display: inline-block;
+        margin-left: 1em;
       }
       </style>`;
     if (this.name) this.setAttribute("data-bind", this.name);
@@ -211,16 +214,11 @@ class SelectMultipleItemsWidget extends HTMLElement {
     for (const item of selectedItems) {
       let el=null, key, text;
       const listItemEl = document.createElement("li");
-      if (Array.isArray( this.selection)) {
-        if (typeof item === "object") {
-          key = item[this.idAttr];
-          text = item[this.displayAttr];
-        } else {
-          key = text = item;
-        }
-      } else {
+      if (typeof item === "object") {
         key = item[this.idAttr];
-        text = item[this.displayAttr];
+        text = item.toShortString();  // defined for bUSSINESSoBJECTs
+      } else {
+        key = text = item;
       }
       listItemEl.setAttribute("data-value", key);
       el = document.createElement("span");
@@ -252,7 +250,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
       if (Array.isArray( selRange)) {
         if (typeof item === "object") {
           key = item[this.idAttr];
-          text = item[this.displayAttr];
+          text = item.toShortString();  // defined for bUSSINESSoBJECTs
           alreadySelected = this.selection.includes( item);
         } else {
           key = text = item;
@@ -265,7 +263,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
         else text = item;
       } else {  // map of objects
         key = item[this.idAttr];
-        text = item[this.displayAttr];
+        text = item.toShortString();  // defined for bUSSINESSoBJECTs
         alreadySelected = key in this.selection;
       }
       // only add items that are not yet selected

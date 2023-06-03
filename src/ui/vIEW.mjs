@@ -7,6 +7,7 @@
  *
  * TODO: + Reset select-multiple-items widget after save for "c" and "U"
  * + Check ID constraint in "C"
+ * + Show AutoNumberID in output field in "C"
  */
 
 import {dt} from "../datatypes.mjs";
@@ -236,16 +237,19 @@ class vIEW {
     function createLabeledYesNoField( fld) {
       var fldEl = null;
       const lblEl = document.createElement("label");
-      if (fieldDef[fld].inputOutputMode === "O") {
+      if (fieldDef[fld].inputOutputMode === "O" || viewType === "D") {
         fldEl = document.createElement("output");
       } else {
         fldEl = document.createElement("input");
         fldEl.type = "checkbox";
+        fldEl.addEventListener("change", function () {
+          // update view field value
+          view.fldValues[fld] = fldEl.checked;
+        });
       }
       // store data binding assignment of UI element to view field
       dataBinding[fld] = fldEl;
       fldEl.name = fld;
-      fldEl.checked = modelObject[fld];
       lblEl.textContent = fieldDef[fld].label;
       lblEl.appendChild( fldEl);
       return lblEl;
@@ -378,7 +382,12 @@ class vIEW {
               }
             }
           } else if (range === "Boolean") {
-            containerEl.appendChild( createLabeledYesNoField( fld));
+            containerEl.className = "I-O-field";
+            if (viewType === "D") {
+              containerEl.appendChild( createLabeledField( fld));
+            } else {
+              containerEl.appendChild( createLabeledYesNoField( fld));
+            }
           } else if ((typeof range === "string" && range in dt.classes ||
                      range.constructor === bUSINESSoBJECT)) { // a bUSINESSoBJECT reference field
             const Class = typeof range === "string" ? dt.classes[range] : range,
@@ -588,6 +597,7 @@ class vIEW {
           classValues: "select"
       };
       el = document.createElement("div");  // div element
+      el.className = "select";
       el.appendChild( dom.createLabeledSelect( slots));
       formEl.appendChild( el);
       selectEl = formEl[slots.name];
@@ -662,6 +672,7 @@ class vIEW {
             labelText:"Select "+ mc.name +": "
         };
         const divEl = document.createElement("div");  // div element
+        divEl.className = "select";
         formEl.appendChild( divEl);
         el = dom.createLabeledSelect( slots);
         divEl.appendChild( el);
@@ -728,9 +739,13 @@ class vIEW {
     // assign view field
     if (Array.isArray(v)) this.fldValues[f] = [...v];  // clone
     else this.fldValues[f] = v;
-    // bottom-up data-binding: set the value of UI widgets (DOM elements)
+    // bottom-up data-binding: render the view field value in the UI element/widget
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
-      uiEl.value = dt.stringifyValue( v, fldDef.range);
+      if (uiEl.type === "checkbox") {
+        uiEl.checked = v;  // true/false
+      } else {
+        uiEl.value = dt.stringifyValue( v, fldDef.range);
+      }
     } else if (uiEl.tagName === "FIELDSET" &&
                uiEl.classList.contains("radio-button-group")) {
       elems = uiEl.querySelectorAll("input[type='radio']");
@@ -946,14 +961,21 @@ class vIEW {
     }
     vIEW.refreshUI( app, "AppStart");
   }
+  /**
+   * Switch to a new UI (and refresh its contents)
+   * @method
+   * @author Gerd Wagner
+   * @param {object} app              the app object
+   * @param {string} userInterfaceId  <Class>-<Operation> or "AppStart"
+   */
   static async refreshUI( app, userInterfaceId) {
-    var selectEl=null, formEl=null, uiPages = vIEW.uiPages;
+    var selectEl=null, formEl=null;
     const sepPos = userInterfaceId.indexOf('-'),
           className = userInterfaceId.substr( 0, sepPos),
           operationCode = userInterfaceId.substr( sepPos+1),
           modelClass = dt.classes[className];
     // store the UI elements in a cache variable
-    if (!uiPages) uiPages = document.querySelectorAll("section.UI");
+    const uiPages = document.querySelectorAll("section.UI");
     for (let i=0; i < uiPages.length; i++) {
       if (uiPages[i].id === userInterfaceId) {
         uiPages[i].style.display = "block";
@@ -989,15 +1011,18 @@ class vIEW {
         formEl.reset();
         selectEl = formEl["select"+ className];
         await app.storageManager.retrieveAll( modelClass);
-        for (const refProp of modelClass.referenceProperties) {
-          // refresh the options of the corresponding selection list
-          const view = app.crudViews[className][operationCode],
-                selRefEl = view.dataBinding[refProp];  // a select-reference element
-          if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
-        }
         dom.fillSelectWithOptionsFromEntityTable( selectEl,
             modelClass.instances,
             modelClass.idAttribute);
+        if (operationCode === "U") {
+          for (const refProp of modelClass.referenceProperties) {
+            // refresh the options of the corresponding selection list
+            const view = app.crudViews[className][operationCode],
+                selRefEl = view.dataBinding[refProp];  // a select-reference element
+            if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
+            else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh();
+          }
+        }
         break;
     }
   }
