@@ -107,7 +107,7 @@ class sTORAGEmANAGER {
         } catch (e) {
           if (e instanceof ConstraintViolation) {
             console.error( e.constructor.name +": "+ e.message);
-          } else console.log( e);
+          } else console.error( e);
           // remove record from the records to add
           recordsToAdd.splice( i, 1);
         }
@@ -117,7 +117,7 @@ class sTORAGEmANAGER {
       await this.adapter.add( this.dbName, Class, recordsToAdd);
       if (this.createLog) console.log(`${recordsToAdd.length} ${Class.name}(s) added.`);
     } catch (error) {
-      console.log(`${error.name}: ${error.message}`);
+      console.error(`${error.name}: ${error.message}`);
     }
   };
   /**
@@ -151,7 +151,7 @@ class sTORAGEmANAGER {
         }
         // create entity/object from record
         obj = this.adapter.rec2obj( rec, Class);
-        if (this.createLog) console.log(`${Class.name} with ${Class.idAttribute} ${id} retrieved.`);
+        if (this.createLog) console.log(`${Class.name} ${obj.toShortString()} retrieved.`);
       }
     } catch (error) {
       console.error(`${error.constructor.name}: ${error.message}`);
@@ -598,6 +598,8 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   deleteDatabase: async function (dbName) {
   //------------------------------------------------
+    const db = await openDB( dbName);
+    db.close();
     await deleteDB( dbName, {
       blocked() {
         console.log(`Database ${dbName} can only be deleted after open connections are being closed.`)

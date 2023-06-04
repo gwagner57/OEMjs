@@ -142,7 +142,8 @@ class vIEW {
         for (const prop of Object.keys(propDecl)) {
           if (propDecl[prop].label) {
             this.fields[prop] = propDecl[prop];
-            this.fields[prop]["inputOutputMode"] = "I/O";
+            if ("inverseOf" in propDecl[prop]) this.fields[prop].inputOutputMode = "O";
+            else this.fields[prop].inputOutputMode = "I/O";
           }
         }
         if (Object.keys(this.fields).length === 0) {
@@ -369,6 +370,8 @@ class vIEW {
         }
         for (const fld of fieldNames) { // fieldNames contains a single field or a field group
           const range = fieldDef[fld].range;
+          // omit inverse reference property fields in "Create" view
+          if (viewType === "C" && "inverseOf" in fieldDef[fld]) continue;
           if (range instanceof eNUMERATION) {  // enumeration field
             if (viewType === "D") {
               containerEl.className = "I-O-field";
@@ -393,11 +396,10 @@ class vIEW {
             const Class = typeof range === "string" ? dt.classes[range] : range,
                   labelEl = document.createElement("label");
             labelEl.textContent = fieldDef[fld].label;
-            if (!fieldDef[fld].maxCard || fieldDef[fld].maxCard===1) {
-              if (viewType === "D") {
-                containerEl.className = "I-O-field";
-                containerEl.appendChild( createLabeledField( fld));
-              } else {
+            if (viewType === "D" || fieldDef[fld].inputOutputMode === "O") {
+              containerEl.className = "I-O-field";
+              containerEl.appendChild( createLabeledField( fld));
+            } else if (!fieldDef[fld].maxCard || fieldDef[fld].maxCard===1) {
                 // A single-valued reference field (functional association)
                 widgetEl = new SelectReferenceWidget( fld, Class, view);
                 containerEl.className = "select";
@@ -405,24 +407,18 @@ class vIEW {
                 containerEl.appendChild( labelEl);
                 // store data binding assignment of UI element to view model field
                 dataBinding[fld] = widgetEl;
-              }
             } else {  // A multi-valued reference field (non-functional association)
-              if (viewType === "D") {
-                containerEl.className = "I-O-field";
-                containerEl.appendChild( createLabeledField( fld));
-              } else {
-                let displayAttr="";
-                if (Class.displayAttribute) displayAttr = Class.displayAttribute;
-                else if ("name" in Class.properties) displayAttr = "name";
-                widgetEl = new SelectMultipleItemsWidget({name: fld,
-                  selection: view.fldValues[fld], selectionRange: Class.instances,
-                  idAttr: Class.idAttribute, displayAttr, minCard: fieldDef[fld].minCard, view});
-                containerEl.className = "select-multiple-items";
-                labelEl.appendChild( widgetEl);
-                containerEl.appendChild( labelEl);
-                // store data binding assignment of UI element to view model field
-                dataBinding[fld] = widgetEl;
-              }
+              let displayAttr="";
+              if (Class.displayAttribute) displayAttr = Class.displayAttribute;
+              else if ("name" in Class.properties) displayAttr = "name";
+              widgetEl = new SelectMultipleItemsWidget({name: fld,
+                selection: view.fldValues[fld], selectionRange: Class.instances,
+                idAttr: Class.idAttribute, displayAttr, minCard: fieldDef[fld].minCard, view});
+              containerEl.className = "select-multiple-items";
+              labelEl.appendChild( widgetEl);
+              containerEl.appendChild( labelEl);
+              // store data binding assignment of UI element to view model field
+              dataBinding[fld] = widgetEl;
             }
           } else {  // string/numeric property field
             containerEl.className = "I-O-field";

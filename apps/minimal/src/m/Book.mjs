@@ -4,6 +4,7 @@
  */
 import eNUMERATION from "../../../../src/eNUMERATION.mjs";
 import bUSINESSoBJECT from "../../../../src/bUSINESSoBJECT.mjs";
+import {dt} from "../../../../src/datatypes.mjs";
 
 const BookCategoryEL = new eNUMERATION("BookCategoryEL", ["novel","biography","textbook","other"]);
 
@@ -26,6 +27,8 @@ Book.properties = {
 }
 Book.displayAttribute = "title";  // used in toShortString()
 //Book.attributesToDisplayInLists = ["isbn","title","year"];
-Book.setup();
+
+// collect BO classes in a map
+dt.classes["Book"] = Book;
 
 export { BookCategoryEL, Book};
