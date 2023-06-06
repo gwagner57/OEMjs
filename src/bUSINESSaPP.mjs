@@ -7,14 +7,28 @@ class bUSINESSaPP {
     this.storageManager = storageManager;
     this.validateOnInput = validateOnInput;
     this.crudViews = {};
+    this.bidirectionalAssociations = {};
   }
   setup() {
     // set up all business object classes and their CRUD views
     for (const Class of Object.values( dt.classes)) {
       Class.setup();
+      Class.lastRetrievalTime = 0;
       this.crudViews[Class.name] = {};
       for (const crudCode of ["R","C","U","D"]) {
         this.crudViews[Class.name][crudCode] = new vIEW({modelClass: Class, viewType: crudCode});
+      }
+    }
+    for (const Class of Object.values( dt.classes)) {
+      // construct bidirectionalAssociations from property definitions
+      if (Class.inverseReferenceProperties.length > 0) {
+        for (const invRefProp of Class.inverseReferenceProperties) {
+          const invRefPropDef = Class.properties[invRefProp],
+                SourceClassName = invRefPropDef.range;
+          this.bidirectionalAssociations[SourceClassName] ??= {};
+          this.bidirectionalAssociations[SourceClassName][invRefPropDef.inverseOf] =
+              {targetClassName: Class.name, inverseReferenceProperty: invRefProp};
+        }
       }
     }
   }

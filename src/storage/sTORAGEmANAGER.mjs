@@ -5,7 +5,9 @@
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
  *
- * TODO: - take care of proper Date conversions in IndexedDB obj2rec and rec2obj
+ * TODO: + take care of proper Date conversions in IndexedDB obj2rec and rec2obj
+ * + set a "lastRetrievalTime" for each record/object in Class.instances to be used for avoiding secondary storage reads
+ * + add the (re-)construction of inverse ref props in RetrieveAll in a loop over all inverse ref props of the current class
  */
 import util from "../../lib/util.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
@@ -22,7 +24,7 @@ import {NoConstraintViolation, ConstraintViolation} from "../constraint-violatio
  * @class
  */
 class sTORAGEmANAGER {
-  constructor({adapterName, dbName, createLog, validateBeforeSave}) {
+  constructor({adapterName, dbName, createLog=true, validateBeforeSave=true, cacheExpirationTimeInSeconds=300}) {
     if (!(["LocalStorage","IndexedDB"].includes( adapterName))) {
       throw new Error("Invalid storage adapter name!");
     } else if (!dbName) {
@@ -32,6 +34,8 @@ class sTORAGEmANAGER {
       this.dbName = dbName;
       this.createLog = createLog;
       this.validateBeforeSave = validateBeforeSave;
+      // the maps Class.instances form a cache of objects retrieved from secondary storage
+      this.cacheExpirationTime = cacheExpirationTimeInSeconds * 1000;  // in milliseconds
       this.adapter = sTORAGEmANAGER.adapters[adapterName];
       // if "LocalStorage", create a main memory DB
       if (this.adapterName === "LocalStorage") {
@@ -136,22 +140,31 @@ class sTORAGEmANAGER {
       if (!rec) {
         console.error(`Retrieval of ${Class.name} ${id} failed!`);
       } else {
+        const currentTime = (new Date()).getTime();
+        // create entity/object from record
+        obj = this.adapter.rec2obj( rec, Class);
+        obj.lastRetrievalTime = currentTime;
+        if (this.createLog) console.log(`${Class.name} ${obj.toShortString()} retrieved.`);
         // retrieve all associated records
         for (const refProp of Class.referenceProperties) {
           const refPropDef = Class.properties[refProp],
                 AssociatedClass = dt.classes[refPropDef.range];
           let idRefs=[];
-          if (AssociatedClass === Class) continue;
+          if (AssociatedClass === Class ||
+              (currentTime - AssociatedClass.lastRetrievalTime < this.cacheExpirationTime)) continue;
           if (refPropDef.maxCard && refPropDef.maxCard > 1) idRefs = rec[refProp];
           else  idRefs = [rec[refProp]];
           for (const idRef of idRefs) {
-            const associatedObject = await this.retrieve( AssociatedClass, idRef);
-            if (associatedObject) AssociatedClass.instances[idRef] = associatedObject;
+            const lastRetrievalTime = AssociatedClass.instances[idRef]?.lastRetrievalTime ?? 0;
+            if (currentTime - lastRetrievalTime > this.cacheExpirationTime) {
+              const associatedObject = await this.retrieve( AssociatedClass, idRef);
+              if (associatedObject) {
+                associatedObject.lastRetrievalTime = (new Date()).getTime();
+                AssociatedClass.instances[idRef] = associatedObject;
+              }
+            }
           }
         }
-        // create entity/object from record
-        obj = this.adapter.rec2obj( rec, Class);
-        if (this.createLog) console.log(`${Class.name} ${obj.toShortString()} retrieved.`);
       }
     } catch (error) {
       console.error(`${error.constructor.name}: ${error.message}`);
@@ -177,8 +190,10 @@ class sTORAGEmANAGER {
     try {
       const entityRecords = await this.adapter.retrieveAll( this.dbName, Class);
       alreadyRetrievedClasses.push( Class.name);
+      Class.lastRetrievalTime = (new Date()).getTime();
       //console.log("Entity records: ", JSON.stringify(entityRecords));
       if (this.createLog) console.log( entityRecords.length +" "+ Class.name +" records retrieved.");
+      const currentTime = (new Date()).getTime();
       // store entity records in Class.instances
       for (const entityRec of entityRecords) {
         const id = entityRec[Class.idAttribute];
@@ -187,8 +202,10 @@ class sTORAGEmANAGER {
       // retrieve all records from all associated tables
       for (const refProp of Class.referenceProperties) {
         const AssociatedClass = dt.classes[Class.properties[refProp].range];
-        if (!alreadyRetrievedClasses.includes( AssociatedClass.name)) {
+        if (!alreadyRetrievedClasses.includes( AssociatedClass.name) &&
+            currentTime - AssociatedClass.lastRetrievalTime > this.cacheExpirationTime) {
           await this.retrieveAll( AssociatedClass, alreadyRetrievedClasses);
+          AssociatedClass.lastRetrievalTime = (new Date()).getTime();
         }
       }
     } catch (error) {
@@ -227,36 +244,38 @@ class sTORAGEmANAGER {
         const oldVal = recordBeforeUpdate[prop],
               propDef = Class.properties[prop];
         let newVal = updRec[prop];
-        if (prop !== Class.idAttribute) {
-          if (propDef.maxCard === undefined || propDef.maxCard === 1) {  // single-valued
-            if (newVal !== oldVal) {
-              const validationResults = dt.check( prop, propDef, newVal);
-              if (!(validationResults[0] instanceof NoConstraintViolation)) {
-                //TODO: support multiple errors
-                const constraintViolation = validationResults[0];
-                console.error( constraintViolation.constructor.name +": "+ constraintViolation.message);
-                noConstraintViolated = false;
-              } else {
-                updatedProperties.push( prop);
-              }
-            } else {  // no update required
-              delete updRec[prop];
+        if (prop === Class.idAttribute || "inverseOf" in propDef) {
+          delete updRec[prop];
+          continue;
+        }
+        if (propDef.maxCard === undefined || propDef.maxCard === 1) {  // single-valued
+          if (dt.primitiveReferenceTypes.includes( propDef.range) && !newVal.isEqualTo( oldVal) ||
+              !dt.primitiveReferenceTypes.includes( propDef.range) && newVal !== oldVal) {
+            const validationResults = dt.check( prop, propDef, newVal);
+            if (!(validationResults[0] instanceof NoConstraintViolation)) {
+              //TODO: support multiple errors
+              const constraintViolation = validationResults[0];
+              console.error( constraintViolation.constructor.name +": "+ constraintViolation.message);
+              noConstraintViolated = false;
+            } else {
+              updatedProperties.push( prop);
             }
-          } else {  // multi-valued
-            if (oldVal.length !== newVal.length ||
-                oldVal.some( (vi,i) => vi !== newVal[i])) {
-              const validationResults = dt.check( prop, propDef, newVal);
-              if (!(validationResults[0] instanceof NoConstraintViolation)) {
-                //TODO: support multiple errors
-                const constraintViolation = validationResults[0];
-                console.error( constraintViolation.constructor.name +": "+ constraintViolation.message);
-                noConstraintViolated = false;
-              } else {  // NoConstraintViolation
-                updatedProperties.push( prop);
-              }
-            } else {  // no update required
-              delete updRec[prop];
+          } else {  // no update required
+            delete updRec[prop];
+          }
+        } else {  // multi-valued
+          if (oldVal.length !== newVal.length ||
+              oldVal.some( (vi,i) => vi !== newVal[i])) {
+            const validationResults = dt.check( prop, propDef, newVal);
+            if (!(validationResults[0] instanceof NoConstraintViolation)) {
+              //TODO: support multiple errors
+              const constraintViolation = validationResults[0];
+              console.error( constraintViolation.constructor.name +": "+ constraintViolation.message);
+              noConstraintViolated = false;
+            } else {  // NoConstraintViolation
+              updatedProperties.push( prop);
             }
+          } else {  // no update required
           }
         }
       }
@@ -270,7 +289,8 @@ class sTORAGEmANAGER {
                 Class.instances[id][p] = slots[p];
               }
             }
-            console.log(`Properties ${updatedProperties.toString()} of ${Class.name} ${id} updated.`);
+            const singPlurSuffix = updatedProperties.length > 1 ? "ies":"y";
+            console.log(`Propert${singPlurSuffix} ${updatedProperties.toString()} of ${Class.name} ${id} updated.`);
           } catch (error) {
             console.log(`${error.name}: ${error.message}`);
           }
@@ -492,18 +512,19 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   obj2rec: function (slots, Class) {
   //------------------------------------------------
     let rec={}, valuesToConvert=[], convertedValues=[];
+    if ("lastRetrievalTime" in slots) delete slots.lastRetrievalTime;
     for (let p of Object.keys( slots)) {
       // remove underscore prefix from internal property name
       if (p.charAt(0) === "_") p = p.slice(1);
       const val = slots[p],
-            propDecl = Class.properties[p],
-            range = propDecl.range;
+            propDef = Class.properties[p],
+            range = propDef.range;
       // create a list of values to convert
-      if (propDecl.maxCard && propDecl.maxCard > 1) {
+      if (propDef.maxCard && propDef.maxCard > 1) {
         if (range in dt.classes) { // object reference(s)
           if (Array.isArray( val)) {
             valuesToConvert = [...val];  // clone;
-          } else {  // val is a map from ID refs to obj refs
+          } else if (val && typeof val === "object") {  // val is a map from ID refs to obj refs
             valuesToConvert = Object.values( val);
           }
         } else if (Array.isArray( val)) {
@@ -517,14 +538,6 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       } else if (range in dt.classes) { // object reference(s)
         // get ID attribute of referenced class
         const idAttr = dt.classes[range].idAttribute;
-        /*
-        for (const v of valuesToConvert) {
-          let convVal;
-          if (typeof v === "object") convVal = v["_"+idAttr];
-          else convVal = v;
-          convertedValues.push( convVal)
-        }
-        */
         convertedValues = valuesToConvert.map( v => typeof v === "object" ? v["_"+idAttr] : v);
         //console.log("valuesToConvert: ", JSON.stringify( valuesToConvert));
         //console.log("convertedValues: ", JSON.stringify( convertedValues));
@@ -536,7 +549,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         console.log(`The range ${range} is not yet considered in obj2rec.`);
         convertedValues = valuesToConvert;
       }
-      if (!propDecl.maxCard || propDecl.maxCard <= 1) {
+      if (!propDef.maxCard || propDef.maxCard <= 1) {
         rec[p] = convertedValues[0];
       } else {
         rec[p] = convertedValues;
@@ -598,8 +611,10 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   deleteDatabase: async function (dbName) {
   //------------------------------------------------
+    /*
     const db = await openDB( dbName);
     db.close();
+    */
     await deleteDB( dbName, {
       blocked() {
         console.log(`Database ${dbName} can only be deleted after open connections are being closed.`)

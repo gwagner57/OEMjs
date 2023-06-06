@@ -263,6 +263,7 @@ form div.field-group > label > output {
   margin-right: 0.1em;
 }
 form div.I-O-field > label > input[type="text"],
+form div.I-O-field > label > input[type="date"],
 form div.I-O-field > label > input[type="number"],
 form div.I-O-field > label > input[type="checkbox"],
 form div.I-O-field > label > output,

@@ -6,6 +6,15 @@ import { NoConstraintViolation,
   ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
   from "./constraint-violation-error-types.mjs";
 
+// define the equality operation for certain types of JS objects
+Date.prototype.isEqualTo = function (date2) {
+  return this.getTime() === date2.getTime()
+};
+Array.prototype.isEqualTo = function (a2) {
+  return (this.length === a2.length) &&
+      this.every( (el,i) => el===a2[i]);
+};
+
 const dt = {
   classes: {},
   checkReferentialIntegrity: false,  // flag for disabling referential integrity checking
@@ -16,6 +25,7 @@ const dt = {
   integerTypes: ["Integer","PositiveInteger","NonNegativeInteger","AutoIdNumber","Year"],
   decimalTypes: ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"],
   otherPrimitiveTypes: ["Boolean","Date","DateTime"],
+  primitiveReferenceTypes: ["Date","DateTime"],  // values are special JS objects
   simpleStructuredDataTypes: ["JSON-Array","JSON-Object"],  // JSON arrays and objects
   patterns: {
     ID: /^([a-zA-Z0-9][a-zA-Z0-9_\-]+[a-zA-Z0-9])$/,
@@ -335,7 +345,7 @@ const dt = {
     "OpenUnitInterval": {phrase:"a number in the open unit interval (0,1)",
         condition: value => typeof value === "number" && value>0 && value<1},
     "Date": {phrase:"an ISO date string (or a JS Date value)",
-        condition: value => value instanceof Date,
+        condition: value => value instanceof Date || dt.isDateString(value),
         str2val: s => new Date(s),
         val2str: d => d.toISOString().substring(0,10)},
     "DateTime": {phrase:"an ISO date-time string (or a JS Date value)",

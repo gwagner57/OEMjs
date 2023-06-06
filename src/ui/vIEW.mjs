@@ -162,12 +162,12 @@ class vIEW {
     this.dataBinding = {};
   }
   /**
-   * Render the DOM structure of a view
-   * this = view object
-   * @method 
-   * @author Gerd Wagner
-   */
-  render({modelObject, showAllFields}={}) {
+  * Render the DOM structure of a view
+  * this = view object
+  * @method
+  * @author Gerd Wagner
+  */
+  render() {
     var uiContainerEl=null, formEl=null,
         columns=[], slots = {},
         el=null, selectEl=null, rowEl=null,
@@ -185,13 +185,12 @@ class vIEW {
           maxNmrOfChoiceButtons = this.maxNmrOfEnumLitForChoiceButtonRendering;
     /* ==================================================================== */
     /**
-     * Create a labeled input field. When validation is not performed on input
-     * it is performed on blur in the case of "Create" for catching mandatory
-     * value constraint violations, and on change in the case of "Update". 
-     * depends on: fields, modelClass, viewMode, view
+     * Create a labeled text or date input field. When validation is not performed
+     * on input it is performed on blur in the case of "Create" for catching mandatory
+     * value constraint violations, and on change in the case of "Update".
      * @method 
      */
-    function createLabeledField( fld) {
+    function createLabeledTextOrDateField( fld) {
       var fldEl = null;
       const lblEl = document.createElement("label");
 
@@ -210,18 +209,27 @@ class vIEW {
       if (fieldDef[fld].inputOutputMode === "O" ||
           (viewType === "U" && fieldDef[fld]?.isIdAttribute) || viewType === "D") {
         fldEl = document.createElement("output");
-        fldEl.style.width = `${fieldDef[fld].fieldSize || 7}em`;
+        fldEl.style.width = `${fieldDef[fld].fieldSize || 8}em`;
       } else {
         fldEl = document.createElement("input");
-        fldEl.type = "text";
-        fldEl.size = fieldDef[fld].fieldSize || 7;
-        if (validateOnInput) {
-          fldEl.addEventListener("input", validateFieldValue);
-        } else if (viewType === "C") {
-          // add event listener for loosing focus
-          fldEl.addEventListener("blur", validateFieldValue);
-        } else {  // !validateOnInput && viewType === "U"
-          fldEl.addEventListener("change", validateFieldValue);
+        if (fieldDef[fld].range === "Date" && fieldDef[fld].widget === "browser-date-picker") {
+          fldEl.type = "date";
+          if (!fieldDef[fld].optional) fldEl.required = "required";
+          fldEl.addEventListener("change", function () {
+            // update view model field
+            view.fldValues[fld] = new Date( fldEl.value);
+          });
+        } else {
+          fldEl.type = "text";
+          fldEl.size = fieldDef[fld].fieldSize || 8;
+          if (validateOnInput) {
+            fldEl.addEventListener("input", validateFieldValue);
+          } else if (viewType === "C") {
+            // add event listener for loosing focus
+            fldEl.addEventListener("blur", validateFieldValue);
+          } else {  // !validateOnInput && viewType === "U"
+            fldEl.addEventListener("change", validateFieldValue);
+          }
         }
       }
       // store data binding assignment of UI element to view model field
@@ -375,7 +383,7 @@ class vIEW {
           if (range instanceof eNUMERATION) {  // enumeration field
             if (viewType === "D") {
               containerEl.className = "I-O-field";
-              containerEl.appendChild( createLabeledField( fld));
+              containerEl.appendChild( createLabeledTextOrDateField( fld));
             } else {
               if (range.MAX <= maxNmrOfChoiceButtons) {
                 containerEl = createChoiceButtonGroup( fld);
@@ -387,7 +395,7 @@ class vIEW {
           } else if (range === "Boolean") {
             containerEl.className = "I-O-field";
             if (viewType === "D") {
-              containerEl.appendChild( createLabeledField( fld));
+              containerEl.appendChild( createLabeledTextOrDateField( fld));
             } else {
               containerEl.appendChild( createLabeledYesNoField( fld));
             }
@@ -398,7 +406,7 @@ class vIEW {
             labelEl.textContent = fieldDef[fld].label;
             if (viewType === "D" || fieldDef[fld].inputOutputMode === "O") {
               containerEl.className = "I-O-field";
-              containerEl.appendChild( createLabeledField( fld));
+              containerEl.appendChild( createLabeledTextOrDateField( fld));
             } else if (!fieldDef[fld].maxCard || fieldDef[fld].maxCard===1) {
                 // A single-valued reference field (functional association)
                 widgetEl = new SelectReferenceWidget( fld, Class, view);
@@ -422,7 +430,7 @@ class vIEW {
             }
           } else {  // string/numeric property field
             containerEl.className = "I-O-field";
-            containerEl.appendChild( createLabeledField( fld));
+            containerEl.appendChild( createLabeledTextOrDateField( fld));
           }
         }
         formEl.appendChild( containerEl);
@@ -432,21 +440,6 @@ class vIEW {
       }
     }
     /* ==================================================================== */
-    /*
-    if (modelObject) this.modelObject = modelObject;
-    this.showAllFields = showAllFields;
-    // initialize view field values
-    for (const f of Object.keys( this.fields)) {
-      const val = modelObject ? modelObject[f] : undefined;
-      if (modelObject && val !== undefined) {
-        if (!Array.isArray(val)) {
-          this.fldValues[f] = dt.stringifyValue( val, fieldDef[f].range);
-        } else this.fldValues[f] = val.slice();  // create a copy of the array
-      } else if (fieldDef[f]?.maxCard && fieldDef[f]?.maxCard > 1) {
-        this.fldValues[f] = [];
-      } else this.fldValues[f] = "";
-    }
-    */
     uiContainerEl = document.querySelector(`section#${mc.name}-${this.viewType}`);
     if (!uiContainerEl) {
       const entityTypeName = mc.name.toLowerCase();
@@ -598,7 +591,7 @@ class vIEW {
       formEl.appendChild( el);
       selectEl = formEl[slots.name];
       // when an entity is selected, populate the form with its data
-      selectEl.addEventListener("change", function () {
+      selectEl.addEventListener("change", async function () {
         const formFields = formEl.elements;
         var id = selectEl.value;
         // reset form fields
@@ -609,6 +602,11 @@ class vIEW {
         }
         if (id) {  // parse id if integer value
           if (dt.isIntegerType( stdIdRange)) id = parseInt( id);
+          const obj = await vIEW.app.storageManager.retrieve( mc, id);
+          if (obj) {
+            obj.lastRetrievalTime = (new Date()).getTime();
+            mc.instances[id] = obj;
+          }
           // map UI event to a user action defined by the view
           view.userActions["setViewModelObject"](id);
         }
@@ -627,12 +625,13 @@ class vIEW {
             id = formEl[idProp].value;
         for (const f of Object.keys( fieldDef)) {
           if (fieldDef[f].inputOutputMode === "I/O" && f !== idProp) {
-            if (fieldDef[f].optional && view.fldValues[f] || !fieldDef[f].optional) {
-              if (Array.isArray( view.fldValues[f])) {
-                slots[f] = [...view.fldValues[f]];  // clone
-              } else if (typeof view.fldValues[f] === "object") {
-                slots[f] = {...view.fldValues[f]};  // clone
-              } else slots[f] = view.fldValues[f];
+            const value = view.fldValues[f];
+            if (fieldDef[f].optional && value !== undefined || !fieldDef[f].optional) {
+              if (Array.isArray( value)) {
+                slots[f] = [...value];  // clone
+              } else if (typeof value === "object" && !(value instanceof Date)) {
+                slots[f] = {...value};  // clone
+              } else slots[f] = value;
               // check constraints for non-select fields
               if (!(fieldDef[f].range instanceof eNUMERATION) &&
                   !(fieldDef[f].range in dt.classes)) {
@@ -970,6 +969,8 @@ class vIEW {
           className = userInterfaceId.substr( 0, sepPos),
           operationCode = userInterfaceId.substr( sepPos+1),
           modelClass = dt.classes[className];
+    // save handle to app object
+    vIEW.app = app;
     // store the UI elements in a cache variable
     const uiPages = document.querySelectorAll("section.UI");
     for (let i=0; i < uiPages.length; i++) {
@@ -979,12 +980,15 @@ class vIEW {
         uiPages[i].style.display = "none";
       }
     }
+    const currentTime = (new Date()).getTime();
     switch (operationCode) {
       case "M":
         break;
       case "R":
-        // retrieve all objects and store them in modelClass.instances
-        await app.storageManager.retrieveAll( modelClass);
+        if (currentTime - modelClass.lastRetrievalTime > app.storageManager.cacheExpirationTime) {
+          // retrieve all objects and store them in modelClass.instances
+          await app.storageManager.retrieveAll( modelClass);
+        }
         vIEW.fillTable( className);
         break;
       case "C":
@@ -996,7 +1000,9 @@ class vIEW {
           // refresh the options of the corresponding selection list
           const AssociatedClass = dt.classes[view.fields[refProp].range],
                 selRefEl = view.dataBinding[refProp];  // a select-reference(s) widget
-          await app.storageManager.retrieveAll( AssociatedClass);
+          if (currentTime - AssociatedClass.lastRetrievalTime > app.storageManager.cacheExpirationTime) {
+            await app.storageManager.retrieveAll( AssociatedClass);
+          }
           if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
           else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh();
         }
@@ -1006,7 +1012,9 @@ class vIEW {
         formEl = document.querySelector(`section#${className}-${operationCode} > form`);
         formEl.reset();
         selectEl = formEl["select"+ className];
-        await app.storageManager.retrieveAll( modelClass);
+        if (currentTime - modelClass.lastRetrievalTime > app.storageManager.cacheExpirationTime) {
+          await app.storageManager.retrieveAll( modelClass);
+        }
         dom.fillSelectWithOptionsFromEntityTable( selectEl,
             modelClass.instances,
             modelClass.idAttribute);
@@ -1081,6 +1089,6 @@ class vIEW {
     }
   }
 }
-vIEW.crudVerbs = {'R':'Retrieve/List', 'C':'Create', 'U':'Update', 'D':'Delete'};
+vIEW.crudVerbs = {'R':'Retrieve/list all', 'C':'Create', 'U':'Update', 'D':'Delete'};
 
 export default vIEW;
