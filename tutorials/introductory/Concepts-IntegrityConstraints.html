@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html class="role-ebook-page" lang="en" xml:lang="en"
+      xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>Integrity Constraints</title>
+  </head>
+
+  <body><p><dfn>Integrity constraints</dfn> (or simply <em>constraints</em>)
+  are logical conditions on the data of an app. They may take many different
+  forms. The most important type of constraints, <strong><em>property
+  constraints</em></strong>, define conditions on the admissible property
+  values of an object. They are defined for an object type (or class) such
+  that they apply to all objects of that type. We concentrate on the most
+  important cases of property constraints:</p><dl>
+      <dt><strong>String Length Constraints</strong></dt>
+
+      <dd><p>require that the length of a string value for an attribute is
+      less than a certain maximum number, or greater than a minimum
+      number.</p></dd>
+
+      <dt><strong>Mandatory Value Constraints</strong></dt>
+
+      <dd><p>require that a property must have a value. For instance, a person
+      must have a name, so the name attribute must not be empty.</p></dd>
+
+      <dt><strong>Range Constraints</strong></dt>
+
+      <dd><p>require that an attribute must have a value from the value space
+      of the type that has been defined as its range. For instance, an integer
+      attribute must not have the value "aaa".</p></dd>
+
+      <dt><strong>Interval Constraints</strong></dt>
+
+      <dd><p>require that the value of a numeric attribute must be in a
+      specific interval.</p></dd>
+
+      <dt><strong>Pattern Constraints</strong></dt>
+
+      <dd><p>require that a string attribute's value must match a certain
+      pattern defined by a regular expression.</p></dd>
+
+      <dt><strong>Cardinality Constraints</strong></dt>
+
+      <dd><p>apply to multi-valued properties, only, and require that the
+      cardinality of a multi-valued property's value set is not less than a
+      given minimum cardinality or not greater than a given maximum
+      cardinality.</p></dd>
+
+      <dt><strong>Uniqueness Constraints (also called 'Key
+      Constraints')</strong></dt>
+
+      <dd><p>require that a property's value is unique among all instances of
+      the given object type.</p></dd>
+
+      <dt><strong>Referential Integrity Constraints</strong></dt>
+
+      <dd><p>require that the values of a reference property refer to an
+      existing object in the range of the reference property.</p></dd>
+
+      <dt><strong>Frozen Value Constraints</strong></dt>
+
+      <dd><p>require that the value of a property must not be changed after it
+      has been assigned initially.</p></dd>
+    </dl><p>The visual language of UML class diagrams supports defining
+  integrity constraints either in a special way for special cases (like with
+  predefined keywords), or, in the general case, with the help of
+  <em>invariants</em>, which are conditions expressed either in plain English
+  or in the <em><a href="#aside-ocl"
+  title="Object Constraint Language   (OCL)">Object Constraint Language
+  (OCL)</a></em> and shown in a special type of rectangle attached to the
+  model element concerned. We use UML class diagrams for modeling constraints
+  in <em>design models</em> that are independent of a specific programming
+  language or technology platform.</p><aside id="aside-ocl"><h3>OCL</h3><p>The
+  <em>Object Constraint Language</em> (OCL) was defined in 1997 as a formal
+  logic language for expressing integrity constraints in UML version 1.1.
+  Later, it was extended for allowing to define also (1) derivation
+  expressions for defining derived properties, and (2) preconditions and
+  postconditions for operations, in a class model.</p></aside><p>UML class
+  diagrams provide special support for expressing multiplicity (or
+  cardinality) constraints. This type of constraint allows to specify a lower
+  multiplicity (minimum cardinality) or an upper multiplicity (maximum
+  cardinality), or both, for a property or an association end. In UML, this
+  takes the form of a multiplicity expression <code>l..u</code> where the
+  lower multiplicity <code>l</code> is a non-negative integer and the upper
+  multiplicity <code>u</code> is either a positive integer not smaller than
+  <code>l</code> or the special value <code>*</code> standing for
+  <em>unbounded</em>. For showing property multiplicity (or cardinality)
+  constrains in a class diagram, multiplicity expressions are enclosed in
+  brackets and appended to the property name, as shown in the
+  <code>Person</code> class rectangle below.</p><p>In the following sections,
+  we discuss the different types of property constraints listed above in more
+  detail. We also show how to express some of them in computational languages
+  such as <em>UML</em> class diagrams, <em>SQL</em> table creation statements,
+  <em>JavaScript</em> model class definitions, or the annotation-based
+  languages <em>Java Bean Validation</em> annotations and <em>ASP.NET Data
+  Annotations</em>.</p><p>Any systematic approach to constraint validation
+  also requires to define a set of error (or 'exception') classes, including
+  one for each of the standard property constraints listed
+  above.</p><section><h3>String Length Constraints</h3><p>The length of a
+  string value for a property such as the title of a book may have to be
+  constrained, typically rather by a maximum length, but possibly also by a
+  minimum length. In an SQL table definition, a maximum string length can be
+  specified in parenthesis appended to the SQL datatype <code>CHAR</code> or
+  <code>VARCHAR</code>, as in <code>VARCHAR(50)</code>.</p><p>UML does not
+  define any special way of expressing string length constraints in class
+  diagrams. Of course, we always have the option to use an <em>invariant</em>
+  for expressing any kind of constraint, but it seems preferable to use a
+  simpler form of expressing these property constraints. One option is to
+  append a maximum length, or both a minimum and a maximum length, in
+  parenthesis to the datatype name, like so </p><figure> <img
+  alt="Class Book with String Length Constraints"
+  src="../fig/Book_withStringLengthConstraint_1.svg"
+  width="180" /></figure><p>Another option is to use min/max constraint
+  keywords in the property modifier list:</p><figure> <img
+  alt="Class Book with String Length Constraints"
+  src="../fig/Book_withStringLengthConstraint_2.svg" width="240" />
+  </figure></section><section><h3>Mandatory Value Constraints</h3><p>A
+  <em>mandatory value constraint</em> requires that a property must have a
+  value. This can be expressed in a UML class diagram with the help of a
+  multiplicity constraint expression where the lower multiplicity is 1. For a
+  single-valued property, this would result in the multiplicity expression
+  <code>1..1</code>, or the simplified expression <code>1</code>, appended to
+  the property name in brackets. For example, the following class diagram
+  defines a mandatory value constraint for the property <code>name</code>:
+  </p><figure> <img alt="Class diagram with Mandatory Value Constraints"
+  src="../fig/Person_ExampleModel.svg" width="180" /></figure><p>Whenever a
+  class rectangle does not show a multiplicity expression for a property, the
+  property is mandatory (and single-valued), that is, the multiplicity
+  expression <code>1</code> is the default for properties.</p><p>In an SQL
+  table creation statement, a mandatory value constraint is expressed in a
+  table column definition by appending the key phrase <code>NOT NULL</code> to
+  the column definition as in the following example:</p><pre
+  class="role-listing-sql-tab2">CREATE TABLE persons(
+  name  VARCHAR(30) <strong>NOT NULL</strong>,
+  age   INTEGER
+)</pre><p>According to this table definition, any row of the
+  <code>persons</code> table must have a value in the column
+  <code>name</code>, but not necessarily in the column
+  <code>age</code>.</p><p>In JavaScript, we can code a mandatory value
+  constraint by a class-level check function that tests if the provided
+  argument evaluates to a value, as illustrated in the following
+  example:</p><pre class="role-listing-javascript-tab2">Person.checkName = function (n) {
+  if (<strong>n ===</strong> undefined) {
+    return "A name must be provided!"; // constraint violation error message
+  } else return "";  // no constraint violation
+};</pre><p>With Java Bean Validation, a mandatory property like
+  <code>name</code> is annotated with <code>NotNull</code> in the following
+  way:</p><pre class="role-listing-java-tab2">@Entity
+public class Person {
+  <strong>@NotNull</strong>
+  private String name;
+  private int age;
+}</pre><p>The equivalent ASP.NET Data Annotation is <code>Required</code> as
+  shown in</p><pre class="role-listing-php-tab2">public class Person {
+  [<strong>Required</strong>]
+  public string name { get; set; }
+  public int age { get; set; }
+}</pre></section><section><h3>Range Constraints</h3><p>A range constraint
+  requires that a property must have a value from the value space of the type
+  that has been defined as its range. This is implicitly expressed by defining
+  a type for a property as its range. For instance, the attribute
+  <code>age</code> defined for the object type <code>Person</code> in the
+  class diagram above has the range <code>Integer</code>, so it must not have
+  a value like "aaa", which does not denote an integer. However, it may have
+  values like -13 or 321, which also do not make sense as the age of a person.
+  In a similar way, since its range is <code>String</code>, the attribute
+  <code>name</code> may have the value "" (the empty string), which is a valid
+  string that does not make sense as a name.</p><p>We can avoid allowing
+  negative integers like -13 as age values, and the empty string as a name, by
+  assigning more specific datatypes as range to these attributes, such as
+  <code>NonNegativeInteger</code> to <code>age</code>, and
+  <code>NonEmptyString</code> to <code>name</code>. Notice that such more
+  specific datatypes are neither predefined in SQL nor in common programming
+  languages, so we have to implement them either in the form of user-defined
+  types, as supported in SQL-99 database management systems such as
+  PostgreSQL, or by using suitable additional constraints such as <em>interval
+  constraints</em>, which are discussed in the next section. In a UML class
+  diagram, we can simply define <code>NonNegativeInteger</code> and
+  <code>NonEmptyString</code> as custom datatypes and then use them in the
+  definition of a property, as illustrated in the following diagram:
+  </p><figure> <img alt="Class Diagram with Range Constraints"
+  src="../fig/Person_ExampleModelWithCustomPropertyRange.svg" width="250" />
+  </figure><p>In JavaScript, we can code a range constraint by a check
+  function, as illustrated in the following example:</p><pre
+  class="role-listing-javascript-tab2">Person.checkName = function (n) {
+  if (typeof(n) !== "string" || n.trim() === "") {
+    return "Name must be a non-empty string!";
+  } else return "";
+};</pre><p>This check function detects and reports a constraint violation if
+  the given value for the <code>name</code> property is not of type "string"
+  or is an empty string.</p><p>In a Java EE web app, for declaring empty
+  strings as non-admissible user input we must set the context parameter
+  <code>javax.faces.INTERPRET_EMPTY_STRING_SUBMITTED_VALUES_AS_NULL </code> to
+  <code>true</code> in the web deployment descriptor file
+  <code>web.xml</code>.</p><p>In ASP.NET, empty strings are non-admissible by
+  default.</p></section><section><h3>Interval Constraints</h3><p>An interval
+  constraint requires that an attribute's value must be in a specific
+  interval, which is specified by a minimum value or a maximum value, or both.
+  Such a constraint can be defined for any attribute having an ordered type,
+  but normally we define them only for numeric datatypes or calendar
+  datatypes. For instance, we may want to define an interval constraint
+  requiring that the <code>age</code> attribute value must be in the interval
+  [25,70]. In a class diagram, we can define such a constraint by using the
+  property modifiers <code>min</code> and <code>max</code>, as shown for the
+  <code>age</code> attribute of the <code>Driver</code> class in the following
+  diagram.</p><figure> <img alt="Class Diagram with Interval Constraints"
+  src="../fig/Driver_ExampleModelWithIntervalConstraint.svg"
+  width="250" /></figure><p>In an SQL table creation statement, an interval
+  constraint is expressed in a table column definition by appending a suitable
+  <code>CHECK</code> clause to the column definition as in the following
+  example: </p><pre class="role-listing-sql2003-tab2">CREATE TABLE drivers(
+  name  VARCHAR NOT NULL,
+  age   INTEGER <strong>CHECK</strong> (age &gt;= 25 AND age &lt;= 70)
+)</pre><p>In JavaScript, we can code an interval constraint in the following
+  way:</p><pre class="role-listing-javascript-tab2">Driver.checkAge = function (a) {
+  if (<strong>a &lt;</strong> 25 || <strong>a &gt;</strong> 70) {
+    return "Age must be between 25 and 70!";
+  } else return "";
+};</pre><p>In Java Bean Validation, we express this interval constraint by
+  adding the annotations <code>Min()</code> and <code>Max()</code> to the
+  property <code>age</code> in the following way:</p><pre
+  class="role-listing-java-tab2">@Entity
+public class Driver {
+  @NotNull
+  private String name;
+  <strong>@Min</strong>(25) <strong>@Max</strong>(70)
+  private int age;
+}</pre><p>The equivalent ASP.NET Data Annotation is <code>Range(25,70)</code>
+  as shown in</p><pre class="role-listing-php-tab2">public class Driver{
+  [Required]
+  public string name { get; set; }
+  [<strong>Range</strong>(25,70)]
+  public int age { get; set; }
+}</pre></section><section><h3>Pattern Constraints</h3><p>A pattern constraint
+  requires that a string attribute's value must match a certain pattern,
+  typically defined by a <em>regular expression</em>. For instance, for the
+  object type <code>Book</code> we define an <code>isbn</code> attribute with
+  the datatype <code>String</code> as its range and add a pattern constraint
+  requiring that the <code>isbn</code> attribute value must be a 10-digit
+  string or a 9-digit string followed by "X" to the <code>Book</code> class
+  rectangle shown in the following diagram.</p><figure> <img
+  alt="Class Book with Pattern Constraints"
+  src="../fig/Book_ExampleModelWithPatternConstraint.svg" width="340" />
+  </figure><p>In an SQL table creation statement, a pattern constraint is
+  expressed in a table column definition by appending a suitable
+  <code>CHECK</code> clause to the column definition as in the following
+  example: </p><pre class="role-listing-sql2003-tab2">CREATE TABLE books(
+  isbn   VARCHAR(10) NOT NULL <strong>CHECK</strong> (isbn ~ '^\d{9}(\d|X)$'),
+  title  VARCHAR(50) NOT NULL
+)</pre><p>The <code>~</code> (tilde) symbol denotes the regular expression
+  matching predicate and the regular expression <code>^\d{9}(\d|X)$</code>
+  follows the syntax of the POSIX standard (see, e.g. the <a
+  href="http://www.postgresql.org/docs/9.0/static/functions-matching.html"
+  target="_top" title="PostgreSQL documentation">PostgreSQL
+  documentation</a>).</p><p>In JavaScript, we can code a pattern constraint by
+  using the built-in regular expression function <code>test</code>, as
+  illustrated in the following example:</p><pre
+  class="role-listing-javascript-tab2">Person.checkIsbn = function (id) {
+  if (!/\b\d{9}(\d|X)\b/.<strong>test</strong>( id)) {
+    return "The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!";
+  } else return "";
+};</pre><p>In Java EE Bean Validation, this pattern constraint for
+  <code>isbn</code> is expressed with the annotation <code>Pattern</code> in
+  the following way:</p><pre class="role-listing-java-tab2">@Entity
+public class Book {
+@NotNull
+  <strong>@Pattern</strong>(regexp="^\\(\d{9}(\d|X))$")
+  private String isbn;
+  @NotNull
+  private String title;
+}</pre><p>The equivalent ASP.NET Data Annotation is
+  <code>RegularExpression</code> as shown in</p><pre
+  class="role-listing-php-tab2">public class Book{
+  [Required]
+  [<strong>RegularExpression</strong>(@"^(\d{9}(\d|X))$")]
+  public string isbn { get; set; }
+  public string title { get; set; }
+}</pre></section><section><h3>Cardinality Constraints</h3><p>A cardinality
+  constraint requires that the cardinality of a multi-valued property's value
+  set is not less than a given <strong><em>minimum cardinality</em></strong>
+  or not greater than a given <strong><em>maximum cardinality</em></strong>.
+  In UML, cardinality constraints are called <strong><em>multiplicity
+  constraints</em></strong>, and minimum and maximum cardinalities are
+  expressed with the lower bound and the upper bound of the multiplicity
+  expression, as shown in the following diagram, which contains two examples
+  of properties with cardinality constraints.</p><figure> <img
+  alt="Class Book with Cardinality Constraints"
+  src="../fig/CardinalityConstraintsExamples.svg" width="340" />
+  </figure><p>The attribute definition <code>nickNames[0..3]</code> in the
+  class <code>Person</code> specifies a minimum cardinality of 0 and a maximum
+  cardinality of 3, with the meaning that a person may have no nickname or at
+  most 3 nicknames. The reference property definition
+  <code>members[3..5]</code> in the class <code>Team</code> specifies a
+  minimum cardinality of 3 and a maximum cardinality of 5, with the meaning
+  that a team must have at least 3 and at most 5 members.</p><p>It's not
+  obvious how cardinality constraints could be checked in an SQL database, as
+  there is no explicit concept of cardinality constraints in SQL, and the
+  generic form of constraint expressions in SQL, assertions, are not supported
+  by available DBMSs. However, it seems that the best way to implement a
+  minimum (or maximum) cardinality constraint is an on-delete (or on-insert)
+  trigger that tests the number of rows with the same reference as the deleted
+  (or inserted) row.</p><p>In JavaScript, we can code a cardinality constraint
+  validation for a multi-valued property by testing the size of the property's
+  value set, as illustrated in the following example:</p><pre
+  class="role-listing-javascript-tab2">Person.checkNickNames = function (nickNames) {
+  if (<strong>nickNames.length</strong> &gt; 3) {
+    return "There must be no more than 3 nicknames!";
+  } else return "";
+};</pre><p>With Java Bean Validation annotations, we can specify</p><pre
+  class="role-listing-java-tab2">
+<strong>@Size</strong>( max=3)
+List&lt;String&gt; <strong>nickNames</strong>
+<strong>@Size</strong>( min=3, max=5)
+List&lt;Person&gt; <strong>members</strong></pre></section><section><h3>Uniqueness
+  Constraints</h3><p>A <em>uniqueness constraint</em> (or <em>key
+  constraint</em>) requires that a property's value (or the value list of a
+  list of properties in the case of a composite key constraint) is unique
+  among all instances of the given object type. For instance, in a UML class
+  diagram with the object type <code>Book</code> we can define the
+  <code>isbn</code> attribute to be <em><em>unique</em></em>, or, in other
+  words, a <em><em>key</em></em>, by appending the (user-defined) property
+  modifier keyword <code>key</code> in curly braces to the attribute's
+  definition in the <code>Book</code> class rectangle shown in the following
+  diagram.</p><figure> <img alt="Class Book with Uniqueness Constraints"
+  src="../fig/Book_ExampleModelWithUniquenessConstraint.svg" width="180" />
+  </figure><p>In an SQL table creation statement, a uniqueness constraint is
+  expressed by appending the keyword <code>UNIQUE</code> to the column
+  definition as in the following example:</p><pre
+  class="role-listing-sql2003-tab2">CREATE TABLE books(
+  isbn   VARCHAR(10) NOT NULL <strong>UNIQUE</strong>,
+  title  VARCHAR(50) NOT NULL
+)</pre><p>In JavaScript, we can code this uniqueness constraint by a check
+  function that tests if there is already a book with the given
+  <code>isbn</code> value in the <code>books</code> table of the app's
+  database.</p></section><section><h3>Standard Identifiers (Primary
+  Keys)</h3><p>A unique attribute (or a composite key) can be declared to be
+  the standard identifier for objects of a given type, if it is mandatory (or
+  if all attributes of the composite key are mandatory). We can indicate this
+  in a UML class diagram with the help of the property modifier
+  <code>id</code> appended to the declaration of the attribute
+  <code>isbn</code> as shown in the following diagram.</p><figure> <img
+  alt="Class Book with Standard Identifiers (Primary Keys)"
+  src="../fig/Book_ExampleModelWithStandardIdentifier.svg"
+  width="180" /></figure><p>Notice that such a standard ID declaration implies
+  both a mandatory value and a uniqueness constraint on the attribute
+  concerned.</p><p>Often, practitioners do not recommended using a composite
+  key as a standard ID, since composite identifiers are more difficult to
+  handle and not always supported by tools. Whenever an object type does not
+  have a key attribute, but only a composite key, it may therefore be
+  preferable to add an artificial standard ID attribute (also called
+  <em>surrogate ID</em>) to the object type. However, each additional
+  surrogate ID has a price: it creates some cognitive and computational
+  overhead. Consequently, in the case of a simple composite key, it may be
+  preferable not to add a surrogate ID, but use the composite key as the
+  standard ID.</p><p>There is also an argument against using any real
+  attribute, such as the <code>isbn</code> attribute, for a standard ID. The
+  argument points to the risk that the values even of natural ID attributes
+  like <code>isbn</code> may have to be changed during the life time of a
+  business object, and any such change would require an unmanageable effort to
+  change also all corresponding ID references. However, the business semantics
+  of natural ID attributes implies that they are frozen. Thus, the need of a
+  value change can only occur in the case of a data input error. But such a
+  case is normally detected early in the life time of the object concerned,
+  and at this stage the change of all corresponding ID references is still
+  manageable.</p><p>Standard IDs are called <em>primary keys</em> in
+  relational databases. We can declare an attribute to be the primary key in
+  an SQL table creation statement by appending the phrase <code>PRIMARY
+  KEY</code> to the column definition as in the following example: </p><pre
+  class="role-listing-sql2003-tab2">CREATE TABLE books(
+  isbn   VARCHAR(10) <strong>PRIMARY KEY</strong>,
+  title  VARCHAR(50) NOT NULL
+)</pre><p>In object-oriented programming languages, like JavaScript and Java,
+  we cannot code a standard ID declaration, because this would have to be part
+  of the metadata of a class definition, and there is no support for such
+  metadata. However, we should still check the implied mandatory value and
+  uniqueness constraints.</p></section><section><h3>Referential Integrity
+  Constraints</h3><p>A referential integrity constraint requires that the
+  values of a reference property refer to an object that exists in the
+  population of the property's range class. Since we do not deal with
+  reference properties in this chapter, we postpone the discussion of
+  referential integrity constraints to <a
+  href="https://webengineering.netlify.app/js-firebase/unidir-associations-app/">Part
+  4</a> of our tutorial.</p></section><section><h3>Frozen and Read-Only Value
+  Constraints</h3><p>A frozen value constraint defined for a property requires
+  that the value of this property must not be changed after it has been
+  assigned. This includes the special case of <strong><em>read-only value
+  constraints</em></strong> on mandatory properties that are initialized at
+  object creation time.</p><p>Typical examples of properties with a frozen
+  value constraint are standard identifier attributes and event properties. In
+  the case of events, the semantic principle that the past cannot be changed
+  prohibits that the property values of events can be changed. In the case of
+  a standard identifier attribute we may want to prevent users from changing
+  the ID of an object since this requires that all references to this object
+  using the old ID value are changed as well, which may be difficult to
+  achieve (even though SQL provides special support for such ID changes by
+  means of its <code>ON UPDATE CASCADE</code> clause for the change management
+  of foreign keys).</p><p>The following diagram shows how to define a frozen
+  value constraint for the <code>isbn</code> attribute:</p><figure> <img
+  alt="Class Book with Frozen and Read-Only Value Constraints"
+  src="../fig/Book_ExampleModelWithFrozenValConstr.svg"
+  width="200" /></figure><p>In Java, a <em>read-only</em> value constraint can
+  be enforced by declaring the property to be <code>final</code>. In
+  JavaScript, a <em>read-only</em> property slot can be implemented as in the
+  following example:</p><pre class="role-listing-javascript-tab2">Object.defineProperty( obj, "teamSize", {value: 5, <strong>writable: false</strong>, enumerable: true})</pre><p>where
+  the property slot <code>obj.teamSize</code> is made unwritable. An entire
+  object <code>obj</code> can be frozen with <code>Object.freeze(
+  obj)</code>.</p><p>We can implement a frozen value constraint for a property
+  in the property's setter method like so:</p><pre
+  class="role-listing-javascript-tab2">Book.prototype.setIsbn = function (i) {
+  if (this.isbn === undefined) this.isbn = i;
+  else console.log("Attempt to re-assign a frozen property!");
+}</pre></section><section><h3>Beyond property constraints</h3><p>So far, we
+  have only discussed how to define and check <em>property constraints</em>.
+  However, in certain cases there may be also integrity constraints that do
+  not just depend on the value of a particular property, but rather on </p><ol>
+      <li><p>the values of several properties of a particular object
+      (object-level constraints),</p></li>
+
+      <li><p>the value of a property before and its value after a change
+      attempt (dynamic constraints),</p></li>
+
+      <li><p>the set of all instances of a particular object type (type-level
+      constraints),</p></li>
+
+      <li><p>the set of all instances of several object types.</p></li>
+    </ol><p>In a class model, property constraints can be expressed within the
+  property declaration line in a class rectangle (typically with keywords,
+  such as <code>id</code>, <code>max</code>, etc.). For expressing more
+  complex constraints, such as object-level or type-level constraints, we can
+  attach an <em>invariant</em> declaration box to the class rectangle(s)
+  concerned and express the constraint either in (unambiguous) English or in
+  the <em><a href="#aside-ocl" title="Object Constraint Language (OCL)">Object
+  Constraint Language (OCL)</a></em>. A simple example of an object-level
+  constraint expressed as an OCL invariant is shown in <a
+  href="#fig1-1"></a>.</p><figure id="fig1-1"><figcaption>An example of an
+  object-level constraint</figcaption> <img
+  alt="Example of an Object-Level Constraint"
+  src="../fig/AuthorConstraints.svg" width="200" /> </figure><p>A general
+  approach for implementing <em>object-level constraint validation</em>
+  consists of taking the following steps:</p><ol>
+      <li><p>Choose a fixed name for an object-level constraint validation
+      function, such as <code>validate</code>.</p></li>
+
+      <li><p>For any class that needs object-level constraint validation,
+      define a <code>validate</code> function returning either a
+      <code>ConstraintViolation</code> or a <code>NoConstraintViolation</code>
+      object.</p></li>
+
+      <li><p>Call this function, if it exists, for the given model
+      class,</p><ol>
+          <li><p>in the UI/view, on form submission;</p></li>
+
+          <li><p>in the model class, before save, both in the
+          <code>create</code> and in the <code>update</code> method.</p></li>
+        </ol></li>
+    </ol></section></body>
+</html>

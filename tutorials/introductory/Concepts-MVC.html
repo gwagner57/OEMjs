@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html class="role-ebook-page" lang="en" xml:lang="en"
+      xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>Constraint Validation in MVC Applications</title>
+  </head>
+
+  <body><p>Integrity constraints should be defined in the model classes of an
+  MVC app since they are part of the business semantics of a model class
+  (representing a business object type). However, a more difficult question is
+  where to perform data validation? In the database? In the model classes? In
+  the controller? Or in the user interface ("view")? Or in all of
+  them?</p><p>A relational database management system (DBMS) performs data
+  validation whenever there is an attempt to change data in the database,
+  provided that all relevant integrity constraints have been defined in the
+  database. This is essential since we want to avoid, under all circumstances,
+  that invalid data enters the database. However, it requires that we somehow
+  duplicate the code of each integrity constraint, because we want to have it
+  also in the model class to which the constraint belongs.</p><p>Also, if the
+  DBMS would be the only application component that validates the data, this
+  would create a latency, and hence usability, problem in distributed
+  applications because the user would not get immediate feedback on invalid
+  input data. Consequently, data validation needs to start in the user
+  interface (UI).</p><p>However, it is not sufficient to perform data
+  validation in the UI. We also need to do it in the model classes, and in the
+  database, for making sure that no flawed data enters the application's
+  persistent data store. This creates the problem of how to maintain the
+  constraint definitions in one place (the model), but use them in two or
+  three other places (at least in the model classes and in the UI code, and
+  possibly also in the database).We call this the <strong><em>multiple
+  validation problem</em></strong>. This problem can be solved in different
+  ways. For instance:</p><ol>
+      <li><p>Define the constraints in a declarative language (such as
+      <em>Java Bean Validation Annotations</em> or <em>ASP.NET Data
+      Annotations</em>) and generate the back-end/model and front-end/UI
+      validation code both in a back-end application programming language such
+      as Java or C#, and in JavaScript.</p></li>
+
+      <li><p>Keep your validation functions in the (PHP, Java, C# etc.) model
+      classes on the back-end, and invoke them from the JavaScript UI code via
+      XHR. This approach can only be used for specific validations, since it
+      implies the penalty of an additional HTTP communication latency for each
+      validation invoked in this way.</p></li>
+
+      <li><p>Use JavaScript as your back-end application programming language
+      (such as with NodeJS), then you can code your validation functions in
+      your JavaScript model classes on the back-end and execute them both
+      before committing changes on the back-end and on user input and form
+      submission in the UI on the front-end side.</p></li>
+    </ol><p>The simplest, and most responsive, solution is the third one,
+  using only JavaScript both for the back-end and front-end components of a
+  web app.</p></body>
+</html>

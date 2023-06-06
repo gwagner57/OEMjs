@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html class="role-ebook-page" lang="en" xml:lang="en"
+      xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>Introduction</title>
+  </head>
+
+  <body><p>For detecting non-admissible and inconsistent data and for
+  preventing such data to be added to an application's database, we need to
+  define suitable <strong><em>integrity constraints </em></strong> that can be
+  used by the application's <strong><em>data validation</em></strong>
+  mechanisms for catching these cases of flawed data. Integrity constraints
+  are logical conditions that must be satisfied by the data entered by a user
+  and stored in the application's database.</p><p>For instance, if an
+  application is managing data about persons including their birth dates and
+  their death dates, then we must make sure that for any person record with a
+  death date, this date is not before that person's birth date.</p><p>Since
+  <em>integrity maintenance</em> is fundamental in database management, the
+  <em>data definition language</em> part of the <em>relational database
+  language SQL</em> supports the definition of integrity constraints in
+  various forms. On the other hand, however, there is hardly any support for
+  integrity constraints and data validation in common programming languages
+  such as PHP, Java, C# or JavaScript. It is therefore important to take a
+  systematic approach to constraint validation in web application engineering,
+  like choosing an application development framework that provides sufficient
+  support for it.</p><p>Unfortunately, many web application development
+  frameworks do not provide sufficient support for defining integrity
+  constraints and performing data validation. Integrity constraints should be
+  defined in one (central) place in an app, and then be used for configuring
+  the user interface and for validating data in different parts of the app,
+  such as in the user interface and in the database. In terms of usability,
+  the goals should be:</p><ol>
+      <li><p>To prevent the user from entering invalid data in the user
+      interface (UI) by limiting the input options, if possible.</p></li>
+
+      <li><p>To detect and reject invalid user input as early as possible by
+      performing constraint validation in the UI for those UI widgets where
+      invalid user input cannot be prevented by limiting the input
+      options.</p></li>
+
+      <li><p>To prevent that invalid data pollutes the app's main memory state
+      and persistent database state by performing constraint validation also
+      in the model layer and in the database.</p></li>
+    </ol><p>HTML5 provides support for validating user input in an
+  HTML-forms-based user interface (UI). Here, the goal is to provide immediate
+  feedback to the user whenever invalid data has been entered into a form
+  field. This UI mechanism of <em><strong>responsive validation</strong></em>
+  is an important feature of modern web applications. In traditional web
+  applications, the back-end component validates the data and returns the
+  validation results in the form of a set of error messages to the front-end.
+  Only then, often several seconds later, and in the hard-to-digest form of a
+  bulk message, does the user get the validation feedback.</p></body>
+</html>

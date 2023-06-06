@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html class="role-ebook-page" lang="en" xml:lang="en"
+      xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>Responsive Validation</title>
+  </head>
+
+  <body><p>This problem is well-known from classical web applications where
+  the front-end component submits the user input data via HTML form submission
+  to a back-end component running on a remote web server. Only this back-end
+  component validates the data and returns the validation results in the form
+  of a set of error messages to the front-end. Only then, often several
+  seconds later, and in the hard-to-digest form of a bulk message, does the
+  user get the validation feedback. This approach is no longer considered
+  acceptable today. Rather, in a <em>responsive validation</em> approach, the
+  user should get immediate validation feedback on each single data input.
+  Technically, this can be achieved with the help of event handlers for the
+  user interface events <code>input</code> or
+  <code>change</code>.</p><p>Responsive validation requires a data validation
+  mechanism in the user interface (UI), such as the <a
+  href="http://www.html5rocks.com/en/tutorials/forms/constraintvalidation/"
+  target="_top" title="HTML5 form validation API">HTML5 form validation
+  API</a>, which essentially provides new types of <code>input</code> fields
+  (such as <code>number</code> or <code>date</code>), a set of new attributes
+  for form control elements and new JS methods for the purpose of supporting
+  responsive validation performed by the browser. Since using the new
+  validation attributes (like <code>required</code>, <code>min</code>,
+  <code>max</code> and <code>pattern</code>) implies defining constraints in
+  the UI, they are not really useful in a general approach where constraints
+  are only checked, but not defined, in the UI.</p><p>Consequently, we only
+  use two methods of the HTML5 form validation API for validating constraints
+  in the HTML-forms-based user interface of our app. The first of them,
+  <code>setCustomValidity</code>, allows to mark a form field as either valid
+  or invalid by assigning either an empty string or a non-empty (constraint
+  violation) message string.</p><p>The second method,
+  <code>checkValidity</code>, is invoked on a form before user input data is
+  committed or saved (for instance with a form submission). It tests, if all
+  fields have a valid value. For having the browser automatically displaying
+  any constraint violation messages, we need to have a <code>submit</code>
+  event, even if we don't really submit the form, but just use a
+  <code>save</code> button.</p><p>See also this <a
+  href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Form_validation"
+  target="_top" title="Mozilla tutorial on Constraint Validation">Mozilla
+  tutorial</a> for more about the HTML5 form validation API.</p></body>
+</html>
