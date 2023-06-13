@@ -3,12 +3,12 @@
  * @author Gerd Wagner
  */
 // import Business Object classes
-import Author from "../m/Author.mjs";
-import Publisher from "../m/Publisher.mjs";
-import Book from "../m/Book.mjs";
+import Author from "./Author.mjs";
+import Publisher from "./Publisher.mjs";
+import Book from "./Book.mjs";
 // import framework code files
-import sTORAGEmANAGER from "../../../../src/storage/sTORAGEmANAGER.mjs";
-import bUSINESSaPP from "../../../../src/bUSINESSaPP.mjs";
+import sTORAGEmANAGER from "../../../src/storage/sTORAGEmANAGER.mjs";
+import bUSINESSaPP from "../../../src/bUSINESSaPP.mjs";
 
 const app = new bUSINESSaPP({title:"OEMjs Association App",
   storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"AssApp",

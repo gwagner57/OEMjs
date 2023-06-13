@@ -2,8 +2,8 @@
  * Object type Book 
  * @class
  */
-import bUSINESSoBJECT from "../../../../src/bUSINESSoBJECT.mjs";
-import {dt} from "../../../../src/datatypes.mjs";
+import bUSINESSoBJECT from "../../../src/bUSINESSoBJECT.mjs";
+import {dt} from "../../../src/datatypes.mjs";
 
 class Book extends bUSINESSoBJECT {
   constructor ({isbn, title, year, publisher, authors}) {
