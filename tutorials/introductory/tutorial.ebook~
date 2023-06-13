@@ -11,21 +11,24 @@
   <headcommon>
     <html:meta content="width=device-width, initial-scale=1" name="viewport"/>
 
-    <html:link href="../../ebook.css" rel="stylesheet" type="text/css"/>
+    <html:meta content="This introductory tutorial presents the Object Event Modeling JavaScript framework OEMjs, which allows low-code web app development based on business object, business event and business activity classes defined with property ranges and other property constraints. OEMjs supports building MVC apps with constraint validation and flexible data storage management quickly, without boilerplate code."
+               name="description"/>
+
+    <html:link href="../ebook.css" rel="stylesheet" type="text/css"/>
 
     <!-- Facebook Open Graph annotations -->
 
-    <html:meta content="OES" name="og:site_name"/>
+    <html:meta content="OEMjs" name="og:site_name"/>
 
-    <html:meta content="Tutorial: Discrete Event Simulation with OESjs-Core0"
+    <html:meta content="Tutorial: Low Code Web App Development with OEMjs"
                name="og:title"/>
 
     <html:meta content="en" name="og:locale"/>
 
-    <html:meta content="This article shows how to create and run a simulation model with the JavaScript-based simulation framework OESjs available on Sim4edu.com. OESjs implements the Object Event Simulation (OES) paradigm, representing a general Discrete Event Simulation approach based on object-oriented modeling and event scheduling."
+    <html:meta content="This introductory tutorial presents the Object Event Modeling JavaScript framework OEMjs, which allows low-code web app development based on business object, business event and business activity classes defined with property ranges and other property constraints. OEMjs supports building MVC apps with constraint validation and flexible data storage management quickly, without boilerplate code."
                name="og:description"/>
 
-    <html:meta content="https://gwagner57.github.io/oes/js/Core0/tutorial.html"
+    <html:meta content="https://gwagner57.github.io/OEMjs/tutorials/introductory/"
                name="og:url"/>
 
     <html:meta content="https://sim4edu.com/img/sim4edu.png" name="og:image"/>
@@ -36,7 +39,7 @@
   </headcommon>
 
   <head>
-    <title>Discrete Event Simulation with OESjs-Core0</title>
+    <title>Low Code Web App Development with OEMjs</title>
 
     <html:style><!-- styles for the title page -->
 div.role-book-title-div {
@@ -99,27 +102,31 @@ ul.links li:hover {
     <lot/>
   </frontmatter>
 
-  <chapter href="../../ChIntroOEM/index.html">
-    <section href="../../ChIntroOEM/CM.html" samepage="true"/>
+  <chapter>
+    <head>
+      <title>A Quick Tour to Your First OEMjs App</title>
+    </head>
 
-    <section href="../../ChIntroOEM/DesM.html" samepage="true"/>
+    <section href="Intro-Constraint-Validation.html"/>
   </chapter>
 
-  <chapter href="ChIntroOES/index.html">
-    <section href="ChIntroOES/SimTime.html" samepage="true"/>
+  <appendix>
+    <head>
+      <title>Constraint Validation Concepts</title>
+    </head>
 
-    <section href="ChIntroOES/SimModels.html" samepage="true"/>
+    <section href="Concepts-IntegrityConstraints.html"/>
 
-    <section href="ChIntroOES/SimScenarios.html" samepage="true"/>
+    <section href="Concepts-ResponsiveValidation.html"/>
 
-    <section href="ChIntroOES/SimStatistics.html" samepage="true"/>
+    <section href="Concepts-MVC.html"/>
 
-    <section href="ChIntroOES/SimExperiments.html" samepage="true"/>
+    <section href="Concepts-DesignModelConstraints.html"/>
 
-    <section href="ChIntroOES/SimLog.html"/>
-  </chapter>
+    <section href="Concepts-Summary.html"/>
+  </appendix>
 
-  <appendix href="architecture.html"/>
+  <appendix href="WebApp-Architecture.html"/>
 
   <backmatter>
     <index/>

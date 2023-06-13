@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+ <meta charset="UTF-8" />
+ <title>Select-Multiple-Items-Widget</title>
+ <meta name="description" content="An user interface widget implemented with an HTML Custom Element."/>
+ <meta name="viewport" content="width=device-width, initial-scale=1"/>
+ <link href="../css/normalize.css" rel="stylesheet" />
+ <link href="../css/index.css" rel="stylesheet" />
+</head>
+<body>
+<!------------------------------------------------------------------>
+ <h1>Test the Select-Multiple-Items-Widget</h1>
+ <p>This data-based widget allows selecting one or more items, represented by its <code>selection</code> property, 
+  from a list of candidate items, which is represented by its <code>selectionRange</code> property. The
+  <em>selection range</em>, which may be a list of simple values or a map of entity objects (an "entity table"),
+  is rendered as an HTML <code>select</code> element. The <em>selection</em> is rendered as an HTML <code>ul</code>
+  element.</p>
+ <form id="test">
+  <h2>Value Lists</h2>
+  <div>
+   <label id="container1">Select simple (string/numeric) values from a list:</label>
+  </div>
+  <h2>Enumerations</h2>
+  <div>
+   <label id="container2">Select simple enum literals:</label>
+  </div>
+  <div>
+   <label id="container3">Select code list enum literals:</label>
+  </div>
+  <h2>Associated Objects</h2>
+  <div>
+   <label id="container4">Select authors:</label>
+  </div>
+ </form>
+
+ <button onclick="console.log( JSON.stringify(document.getElementById('container4').firstElementChild.selection))">Show the value
+  of the selection field in the console</button>
+
+<script type="module">
+ import SelectMultipleItemsWidget from "../src/ui/SelectMultipleItemsWidget.mjs";
+ import eNUMERATION from "../src/eNUMERATION.mjs";
+ import Author from "../apps/boooks-authors-publishers/src/m/Author.mjs";
+
+ const WeatherStateEL = new eNUMERATION ("WeatherStateEL",
+         ["sunny", "partly cloudy", "cloudy", "cloudy with rain", "rainy"]);
+ const CountriesEL = new eNUMERATION ("CountriesEL",
+         {"D":"Deutschland", "F":"France", "GB":"Great Britain"});
+
+ Author.instances["1"] = new Author({authorId: 1, name:"Daniel Dennett"});
+ Author.instances["2"] = new Author({authorId: 2, name:"Douglas Hofstadter"});
+ Author.instances["3"] = new Author({authorId: 3, name:"Immanuel Kant"});
+
+ const selEl1 = new SelectMultipleItemsWidget({selectionRange:["a","b","c","d","e","f"],
+     selection:["b","f"]});
+ document.getElementById("container1").appendChild( selEl1);
+
+ const selEl2 = new SelectMultipleItemsWidget({selectionRange: WeatherStateEL});
+ document.getElementById("container2").appendChild( selEl2);
+ const selEl3 = new SelectMultipleItemsWidget({selectionRange: CountriesEL});
+ document.getElementById("container3").appendChild( selEl3);
+
+ const selEl4 = new SelectMultipleItemsWidget({selectionRange: Author.instances,
+     idAttr:"authorId", displayAttr:"name"});
+ document.getElementById("container4").appendChild( selEl4);
+</script>
+</body>
+</html>

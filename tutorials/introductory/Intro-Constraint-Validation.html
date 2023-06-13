@@ -42,7 +42,7 @@
 
       <li><p>To prevent that invalid data pollutes the app's main memory state
       and persistent database state by performing constraint validation also
-      in the model layer and in the database.</p></li>
+      in the model layer and in the data storage layer.</p></li>
     </ol><p>HTML5 provides support for validating user input in an
   HTML-forms-based user interface (UI). Here, the goal is to provide immediate
   feedback to the user whenever invalid data has been entered into a form
@@ -57,8 +57,8 @@
   take many different forms. The most important type of constraints,
   <strong><em>property constraints</em></strong>, define conditions on the
   admissible property values of an object. They are defined for an object type
-  (or class) such that they apply to all objects of that type. We concentrate
-  on the most important cases of property constraints:</p><dl>
+  (or class) such that they apply to all objects of that type. Some of the
+  most important cases of property constraints are:</p><dl>
       <dt><strong>String Length Constraints</strong></dt>
 
       <dd><p>require that the length of a string value for an attribute is
@@ -98,15 +98,19 @@
 
       <dd><p>require that a property's value is unique among all instances of
       the given object type.</p></dd>
-
-      <dt><strong>Referential Integrity Constraints</strong></dt>
-
-      <dd><p>require that the values of a reference property refer to an
-      existing object in the range of the reference property.</p></dd>
-
-      <dt><strong>Frozen Value Constraints</strong></dt>
-
-      <dd><p>require that the value of a property must not be changed after it
-      has been assigned initially.</p></dd>
-    </dl></body>
+    </dl><pre class="role-listing-1">class <b>Book</b> extends bUSINESSoBJECT {
+  constructor (...) {
+    ...
+  }
+}
+Book.<b>properties</b> = {
+  "isbn": {range:"String", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
+    patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
+  "title": {range:"NonEmptyString", label:"Title", min: 2, max: 50, fieldSize: 25},
+  "year": {range:"Integer", label:"Year", min: 1459, max: () =&gt; (new Date()).getFullYear()+1},
+  "edition": {range:"PositiveInteger", label:"Edition", optional: true},
+  "purchaseDate": {range:"Date", label:"Purchase date", widget:"browser-date-picker"},
+  "recordCreatedOn": {range:"DateTime", label:"Record created on", fieldSize: 25},
+  "isReserved": {range: "Boolean", label:"Is reserved"}
+}</pre></body>
 </html>
