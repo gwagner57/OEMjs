@@ -128,8 +128,6 @@ ul.links li:hover {
     <section href="Concepts-Summary.html"/>
   </appendix>
 
-  <appendix href="WebApp-Architecture.html"/>
-
   <backmatter>
     <index/>
   </backmatter>

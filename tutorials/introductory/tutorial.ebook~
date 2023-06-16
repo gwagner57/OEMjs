@@ -107,6 +107,8 @@ ul.links li:hover {
       <title>A Quick Tour to Your First OEMjs App</title>
     </head>
 
+    <section href="First-Steps.html"/>
+
     <section href="Intro-Constraint-Validation.html"/>
   </chapter>
 

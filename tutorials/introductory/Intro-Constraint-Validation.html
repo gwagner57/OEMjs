@@ -59,58 +59,75 @@
   admissible property values of an object. They are defined for an object type
   (or class) such that they apply to all objects of that type. Some of the
   most important cases of property constraints are:</p><dl>
-      <dt><strong>String Length Constraints</strong></dt>
-
-      <dd><p>require that the length of a string value for an attribute is
-      less than a certain maximum number, or greater than a minimum
-      number.</p></dd>
-
-      <dt><strong>Mandatory Value Constraints</strong></dt>
-
-      <dd><p>require that a property must have a value. For instance, a person
-      must have a name, so the name attribute must not be empty.</p></dd>
-
       <dt><strong>Range Constraints</strong></dt>
 
       <dd><p>require that an attribute must have a value from the value space
-      of the type that has been defined as its range. For instance, an integer
-      attribute must not have the value "aaa".</p></dd>
+      of the type that has been defined as its range. For instance, in the
+      following definition of the property "title", its range is defined as
+      "NonEmptyString", which means that its values must be non-empty
+      strings:</p><pre>Book.<b>properties</b> = {  
+  "title": {<b>range</b>:"NonEmptyString", label:"Title"},
+}</pre></dd>
+
+      <dt><strong>String Length Constraints</strong></dt>
+
+      <dd><p>require that the length of a string value for an attribute is
+      less than a certain maximum number, or greater than a minimum number.
+      String length constraints are defined with the fields <code>min</code>
+      and <code>max</code> in a property definition:</p><pre>Book.<b>properties</b> = {  
+  "title": {range:"NonEmptyString", label:"Title", <b>min</b>: 2, <b>max</b>: 50},
+}</pre></dd>
+
+      <dt><strong>Mandatory Value Constraints</strong></dt>
+
+      <dd><p>require that a property must have a value. For instance, a book
+      must have a title, so the "title" attribute is defined to be mandatory
+      In OEMjs, all properties are mandatory by default. A property is only
+      non-mandatory, if it is defined to be optional, as in the following
+      example:</p><pre>Book.<b>properties</b> = {  
+  "edition": {range:"PositiveInteger", label:"Edition", <b>optional</b>: true},
+}</pre></dd>
 
       <dt><strong>Interval Constraints</strong></dt>
 
       <dd><p>require that the value of a numeric attribute must be in a
-      specific interval.</p></dd>
+      specific interval, which defined with the fields <code>min</code> and
+      <code>max</code>:</p><pre>Book.<b>properties</b> = {  
+  "year": {range:"Integer", label:"Year", <b>min</b>: 1459, <b>
+           max</b>: () =&gt; (new Date()).getFullYear()+1},
+}</pre><p>Notice that in this example, the value of the <code>max</code> field
+      is a function that computes the next year.</p></dd>
 
       <dt><strong>Pattern Constraints</strong></dt>
 
       <dd><p>require that a string attribute's value must match a certain
-      pattern defined by a regular expression.</p></dd>
+      pattern defined by a regular expression. The pattern is defined with the
+      field <code>pattern</code>, and the error message to be displayed in the
+      case of a pattern violation is defined with the field
+      <code>patternMessage</code>:</p><pre>Book.<b>properties</b> = {
+  "isbn": {range:"String", label:"ISBN", <b>pattern</b>:/\b\d{9}(\d|X)\b/,
+    <b>patternMessage</b>:"The ISBN must be a 9-digit string followed by 'X'!"},
+}</pre></dd>
 
       <dt><strong>Cardinality Constraints</strong></dt>
 
       <dd><p>apply to multi-valued properties, only, and require that the
       cardinality of a multi-valued property's value set is not less than a
       given minimum cardinality or not greater than a given maximum
-      cardinality.</p></dd>
+      cardinality.</p><pre>Person.<b>properties</b> = {  
+  "phoneNumbers": {range:"NonEmptyString", label:"Phone numbers", 
+                   <b>minCard</b>: 1, <b>maxCard</b>: Infinity},
+}</pre><p>Using the special value <code>Infinity</code> as the value of the
+      <code>maxCard</code> field means that the size of the property's value
+      set is unbounded.</p></dd>
 
-      <dt><strong>Uniqueness Constraints (also called 'Key
+      <dt><strong>Standard ID Constraints (also called 'Primary Key
       Constraints')</strong></dt>
 
-      <dd><p>require that a property's value is unique among all instances of
-      the given object type.</p></dd>
-    </dl><pre class="role-listing-1">class <b>Book</b> extends bUSINESSoBJECT {
-  constructor (...) {
-    ...
-  }
-}
-Book.<b>properties</b> = {
-  "isbn": {range:"String", isIdAttribute: true, label:"ISBN", pattern:/\b\d{9}(\d|X)\b/,
-    patternMessage:"The ISBN must be a 10-digit string or a 9-digit string followed by 'X'!"},
-  "title": {range:"NonEmptyString", label:"Title", min: 2, max: 50, fieldSize: 25},
-  "year": {range:"Integer", label:"Year", min: 1459, max: () =&gt; (new Date()).getFullYear()+1},
-  "edition": {range:"PositiveInteger", label:"Edition", optional: true},
-  "purchaseDate": {range:"Date", label:"Purchase date", widget:"browser-date-picker"},
-  "recordCreatedOn": {range:"DateTime", label:"Record created on", fieldSize: 25},
-  "isReserved": {range: "Boolean", label:"Is reserved"}
-}</pre></body>
+      <dd><p>require that a property's value is mandatory and unique among all
+      instances of the given object type. They are defined with the help of
+      the field <code>isIdAttribute</code>:</p><pre>Book.<b>properties</b> = {
+  "isbn": {range:"String", <b>isIdAttribute</b>: true, label:"ISBN"},
+}</pre></dd>
+    </dl></body>
 </html>

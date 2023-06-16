@@ -4,18 +4,13 @@
   <head>
     <meta charset="UTF-8" />
 
-    <title>Adding Constraints to a Design Model</title>
+    <title>Adding Constraints to a Class Design Model</title>
   </head>
 
-  <body><section><p>We again consider the book data management problem that
-  was considered in <a
-  href="https://webengineering.netlify.app/js-firebase/minimal-app/">Part
-  1</a> of this tutorial. But now we also consider the <strong><em>data
-  integrity rules</em></strong> (or 'business rules') that govern the
-  management of book data. These integrity rules, or <em>constraints</em>, can
-  be expressed in a UML class diagram as shown in <a href="#fig1-2"></a>
-  below.</p><figure id="fig1-2"> <figcaption>A design model defining the
-  object type <code>Book</code> with two invariants</figcaption> <img
+  <body><section><p>The <strong><em>data integrity rules</em></strong> (or
+  'business rules') that govern the management of data can be expressed in the
+  form of <em>invariants</em> in a UML class model as shown in the following
+  diagram.</p><figure id="fig1-2"> <img
   alt="A design model defining the object type Book with two invariants"
   class="responsive" src="../fig/Book_SimpleAppDesM.svg" /></figure><p>In this
   model, the following constraints have been expressed:</p><ol>

@@ -16,28 +16,25 @@
       since they are part of their business semantics.</p></li>
 
       <li><p>Constraints should be checked in various places of an MVC app: in
-      the UI/view code, in model classes, and possibly in the
-      database.</p></li>
+      the UI/view code, in model classes, and in the database.</p></li>
 
       <li><p>Software applications that include CRUD data management need to
-      perform two kinds of bi-directional object-to-string type
-      conversions:</p><ol>
-          <li><p>Between the model and the UI: converting model object
-          property values to UI widget values, and, the other way around,
-          converting input widget values to property values. Typically,
-          widgets are form fields that have string values.</p></li>
+      perform two kinds of bi-directional type conversions:</p><ol>
+          <li><p>Between the model and the UI: converting object property
+          values to UI widget values, and, the other way around, converting
+          input widget values to property values. Typically, widgets are form
+          fields that have string values.</p></li>
 
-          <li><p>Between the model and the datastore: converting model objects
-          to storage data sets (called serialization), and, the other way
-          around, converting storage data sets to model objects (called
-          de-serialization). This involves converting property values to
-          storage data values, and, the other way around, converting storage
-          data values to property values. Typically, datastores are either
-          JavaScript's local storage or IndexedDB, or SQL databases, and
-          objects have to be mapped to some form of table rows. In the case of
-          an SQL database, this is called "Object-Relational Mapping" (ORM),
-          and in the case of Firebase the objects are mapped through JSON
-          objects.</p></li>
+          <li><p>Between the model and the data store: converting model
+          objects to storage records (often called serialization), and, the
+          other way around, converting storage records to model objects
+          (called de-serialization). This involves converting property values
+          to storage data values, and, the other way around, converting
+          storage data values to property values. Typically, data stores are
+          either JavaScript's built-in IndexedDB, cloud databases or
+          self-hosted databases, and objects have to be mapped to some form of
+          table rows. In the case of an SQL database, this is called
+          "Object-Relational Mapping" (ORM).</p></li>
         </ol></li>
 
       <li><p>Do not perform any string-to-property-value conversion in the UI
