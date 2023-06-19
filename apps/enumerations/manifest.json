@@ -1,0 +1,8 @@
+{
+  "name": "OEMjs Unidirectional Association App",
+  "short_name": "Unidir Association App",
+  "icons": [{"src":"apple-touch-icon.png", "type":"image/png", "sizes":"180x180"}],
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "display": "fullscreen"
+}

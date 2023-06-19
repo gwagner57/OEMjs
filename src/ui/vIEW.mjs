@@ -322,7 +322,7 @@ class vIEW {
       return containerEl;
     }
     /**
-     * Create a selection list
+     * Create a single selection list for enum fields
      * @method 
      */
     function createSelectionList( fld) {
@@ -341,19 +341,17 @@ class vIEW {
         choiceItems = range.labels;
       } else if (Array.isArray(range)) {  // range is an ad-hoc enumeration
         choiceItems = range;
-      } else {  // range is an entity type
-        choiceItems = Object.keys( range.instances);
       }
-      dom.fillSelectWithOptions( selEl, choiceItems);
+      selEl.add( dom.createOption({text:" --- ", value:""}));
+      choiceItems.forEach( function (txt,i) {
+        selEl.add( dom.createOption({text: txt, value: i+1}));
+      });
+      //dom.fillSelectWithOptions( selEl, choiceItems);
       selEl.addEventListener("change", function () {
         // update view model field value
         if (selEl.value !== "") {
           if (dt.isIntegerType( range)) {
             view.fldValues[fld] = parseInt( selEl.value);
-            // increment by 1 for enumerations
-            if (range instanceof eNUMERATION) view.fldValues[fld]++;
-          } else if (props[fld].range === "Date") {
-            view.fldValues[fld] = selEl.valueAsDate;  // new Date( selEl.value)
           } else {
             view.fldValues[fld] = selEl.value;
           }
@@ -387,6 +385,17 @@ class vIEW {
             } else {
               if (range.MAX <= maxNmrOfChoiceButtons) {
                 containerEl = createChoiceButtonGroup( fld);
+              } else if (fieldDef[fld].maxCard > 1) {
+                const labelEl = document.createElement("label");
+                labelEl.textContent = fieldDef[fld].label;
+                widgetEl = new SelectMultipleItemsWidget({name: fld,
+                  selection: view.fldValues[fld], selectionRange: range,
+                  minCard: fieldDef[fld].minCard, view});
+                containerEl.className = "select-multiple-items";
+                labelEl.appendChild( widgetEl);
+                containerEl.appendChild( labelEl);
+                // store data binding assignment of UI element to view model field
+                dataBinding[fld] = widgetEl;
               } else {
                 containerEl.className = "select";
                 containerEl.appendChild( createSelectionList( fld));
@@ -416,9 +425,7 @@ class vIEW {
                 // store data binding assignment of UI element to view model field
                 dataBinding[fld] = widgetEl;
             } else {  // A multi-valued reference field (non-functional association)
-              let displayAttr="";
-              if (Class.displayAttribute) displayAttr = Class.displayAttribute;
-              else if ("name" in Class.properties) displayAttr = "name";
+              const displayAttr = Class.displayAttribute;
               widgetEl = new SelectMultipleItemsWidget({name: fld,
                 selection: view.fldValues[fld], selectionRange: Class.instances,
                 idAttr: Class.idAttribute, displayAttr, minCard: fieldDef[fld].minCard, view});
@@ -758,9 +765,10 @@ class vIEW {
     } else if (uiEl.tagName === "SELECT" && uiEl.multiple !== "multiple") {
       let val;
       if (typeof v === "object") val = v[v.constructor.idAttribute];  // a business object
+      //else if (fldDef.range instanceof eNUMERATION) val = v-1;
       else val = v;
       for (const option of uiEl.options) {
-        if (option.value === val) uiEl.selectedIndex = option.index;
+        if (option.value === String(val)) uiEl.selectedIndex = option.index;
       }
       if (uiEl.className === "select-reference") uiEl.updateViewField();
     } else if (uiEl.tagName === "SELECT-MULTIPLE-ITEMS") {

@@ -154,6 +154,9 @@ class bUSINESSoBJECT {
     const Class = this,
           propDefs = Class.properties || {};  // property definitions
     const propsWithInitialValFunc = [];
+    if (!Class.displayAttribute) {
+      if ("name" in Class.properties) Class.displayAttribute = "name";
+    }
     // initialize the Class.instances map
     if (!Class.isAbstract) Class.instances = {};
     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes),

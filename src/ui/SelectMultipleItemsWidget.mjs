@@ -47,7 +47,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
     this.selectedItemsListEl = null;
     this.selectEl = null;
     // create shadow DOM root object and assign it to this.shadowRoot
-    this.attachShadow({ mode: 'open' });
+    this.attachShadow({mode:"open"});
     // bind event handlers to "this" widget object
     this.handleSelectedItemsListButtonClickEvents =
         this.handleSelectedItemsListButtonClickEvents.bind( this);
@@ -214,9 +214,12 @@ class SelectMultipleItemsWidget extends HTMLElement {
     for (const item of selectedItems) {
       let el=null, key, text;
       const listItemEl = document.createElement("li");
-      if (typeof item === "object") {
-        key = item[this.idAttr];
+      if (typeof item === "object") {  // a bUSSINESSoBJECT
+        key = item[this.idAttr];  // the ID of the object
         text = item.toShortString();  // defined for bUSSINESSoBJECTs
+      } else if (this.selectionRange instanceof eNUMERATION) {
+        text = this.selectionRange.labels[item-1];
+        key = item;
       } else {
         key = text = item;
       }
@@ -239,12 +242,13 @@ class SelectMultipleItemsWidget extends HTMLElement {
     el.text = " --- ";
     this.selectEl.add( el);
     // create option elements for range selection list
-    if (Array.isArray( selRange)) selectionItems = selRange;
-    else if (selRange instanceof eNUMERATION) {
-      selectionItems = selRange.enumLitNames;
-    } else {  // map of objects
+    if (Array.isArray( selRange)) {
+      selectionItems = selRange;
+    } else if (selRange instanceof eNUMERATION) {
+      selectionItems = selRange.labels;
+    } else if (typeof selRange === "object") {  // map of objects
       selectionItems = Object.values( selRange);
-    }
+    } else throw Error(`Invalid selection range: ${selRange}`);
     for (let i=0; i < selectionItems.length; i++) {
       const item = selectionItems[i];
       if (Array.isArray( selRange)) {
@@ -257,10 +261,9 @@ class SelectMultipleItemsWidget extends HTMLElement {
           alreadySelected = this.selection.includes( key);
         }
       } else if (selRange instanceof eNUMERATION) {
-        key = i;
+        key = i+1;  // enum index
         alreadySelected = this.selection.includes( key);
-        if ("codeList" in selRange) text = `${selRange.codeList[item]} (${item})`;
-        else text = item;
+        text = item;
       } else {  // map of objects
         key = item[this.idAttr];
         text = item.toShortString();  // defined for bUSSINESSoBJECTs

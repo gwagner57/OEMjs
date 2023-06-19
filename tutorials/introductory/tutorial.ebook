@@ -110,6 +110,8 @@ ul.links li:hover {
     <section href="First-Steps.html"/>
 
     <section href="Intro-Constraint-Validation.html"/>
+
+    <section href="Generated-UI.html"/>
   </chapter>
 
   <appendix>
@@ -124,8 +126,6 @@ ul.links li:hover {
     <section href="Concepts-MVC.html"/>
 
     <section href="Concepts-DesignModelConstraints.html"/>
-
-    <section href="Concepts-Summary.html"/>
   </appendix>
 
   <backmatter>

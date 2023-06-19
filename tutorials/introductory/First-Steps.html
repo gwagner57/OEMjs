@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html class="role-ebook-page" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>First Steps</title>
+  </head>
+
+  <body><p>For setting up an OEMjs app, you have to write</p><ol>
+      <li>a class module file for each of the business object types of your
+      app;</li>
+
+      <li>an <kbd>app.mjs</kbd> module file for creating an <code>app</code>
+      object that includes a definition of test data;</li>
+
+      <li>an <kbd>index.html</kbd> file for being able to run your app in a
+      browser.</li>
+    </ol><p>For all three types of files, you may use a copy from one of the
+  example apps as your model or starting point.</p><h3>The class module file
+  <kbd>Book.mjs</kbd></h3><p>The "Book Data Management" app has one class
+  module <kbd>Book.mjs</kbd> for defining the business object class
+  <i>Book</i>:</p><pre class="role-listing-1">import bUSINESSoBJECT from "../../../src/bUSINESSoBJECT.mjs";
+import {dt} from "../../../src/datatypes.mjs";
+
+class <b>Book</b> extends bUSINESSoBJECT {
+  constructor ({isbn, title, year, edition, purchaseDate, 
+      recordCreatedOn=new Date(), isReserved=false}) {
+    <b>super</b>( <b>isbn</b>);
+    this.title = title;
+    this.year = year;
+    if (edition) this.edition = edition;
+    this.purchaseDate = purchaseDate;
+    this.recordCreatedOn = recordCreatedOn;
+    this.isReserved = isReserved;
+  }
+}
+Book.<b>properties</b> = {
+  "isbn": {range:"String", label:"ISBN", ...},
+  "title": {range:"NonEmptyString", label:"Title", ...},
+  "year": {range:"Integer", label:"Year", ...},
+  "edition": {range:"PositiveInteger", label:"Edition", ...},
+  "purchaseDate": {range:"Date", label:"Purchase date", ...},
+  "recordCreatedOn": {range:"DateTime", label:"Record created on", ...},
+  "isReserved": {range: "Boolean", label:"Is reserved"}
+}
+Book.<b>displayAttribute</b> = "title";
+// collect business object classes in a map
+dt.classes["Book"] = Book;
+
+export default Book;</pre><p>For any other business object class, the same
+  code sections are needed. In particular, you need to define your business
+  object classes by extending the pre-defined OEMjs class
+  <code>bUSINESSoBJECT</code>, which defines an ID attribute, implying that in
+  the constructor of the subclass you need to invoke <code>super</code> with
+  the ID constructor parameter of the subclass. In the example code above,
+  since the ID attribute of the Book class is "isbn", we have the invocation
+  <code>super(isbn)</code>.</p><p>Notice that the properties of a class are
+  not only defined in the constructor function (where they are assigned), but
+  also in the property definitions map <code>Book.properties</code> which
+  includes a definition record for each property, defining a <em>range</em>
+  and a <em>label</em> for them. The property definitions are not fully shown
+  above, indicated by "...", which stands for the missing property constraint
+  definitions. A complete discussion of property constraints is provided in
+  the next section.</p><p>Suitable range constraints can be defined by using
+  one of the supported range keywords listed below.</p><ul>
+      <li>"String", "NonEmptyString", "Identifier", "Email", "URL",
+      "PhoneNumber"</li>
+
+      <li>"Integer", "PositiveInteger", "NonNegativeInteger",
+      "AutoNumber"</li>
+
+      <li>"Decimal", "Number", "Percent", "ClosedUnitInterval",
+      "OpenUnitInterval"</li>
+
+      <li>"Boolean"</li>
+
+      <li>"Date", "DateTime"</li>
+    </ul><h3>The <kbd>app.mjs</kbd> module file</h3><p>For the simple "Book
+  Data Management" app in the folder <kbd>apps/minimal/</kbd>, the
+  <kbd>js/app.mjs</kbd> module has the following content:</p><pre
+  class="role-listing-1">// import the app's business object classes
+import Book from "./Book.mjs";
+// import the required framework classes
+import sTORAGEmANAGER from "../../../src/storage/sTORAGEmANAGER.mjs";
+import bUSINESSaPP from "../../../src/bUSINESSaPP.mjs";
+// create the app object
+const <b>app</b> = new bUSINESSaPP({title:"Minimal OEMjs App",
+    storageManager: new sTORAGEmANAGER({<b>adapterName</b>:"IndexedDB", 
+        dbName:"MinApp", createLog: true, validateBeforeSave: true})
+});<br />// set up the app<b>
+app</b>.<b>setup</b>();
+// define test data<b>
+</b>Book.<b>testData</b> = [
+  {isbn:"0553345842", title:"The Mind's I", year: 1982, ...},
+  {isbn:"1463794762", title:"The Critique of Pure Reason", ...},
+  {isbn:"1928565379", title:"The Critique of Practical Reason", ...},
+  {isbn:"0465030793", title:"I Am A Strange Loop", ...}
+];
+// export the app object
+export default app;</pre><p>For any other app, the same code sections are
+  needed in <kbd>app.mjs</kbd>. Notice that in the creation of the business
+  app object in lines 7-9, a storage manager is specified with an
+  <i>adapterName</i> parameter set to "IndexedDB", which refers to the
+  browser's built-in local storage technology. The <i>IndexedDB</i> storage
+  option is always available and does not require any special setup. In
+  addition to "IndexedDB", OEMjs will also support remote storage
+  technologies, especially cloud storage technologies such as Google's
+  FireStore or Cloudflare's D1.</p><h3>The <kbd>index.html</kbd>
+  file</h3><p>Any web application is started by loading a web page that loads
+  its code and provides its user interface. It is common to use the name
+  "index.html" for this app start page.</p><pre class="role-listing-1">&lt;!DOCTYPE html&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"/&gt;
+  ...
+  &lt;script type="module"&gt;
+    import vIEW from "../../src/ui/vIEW.mjs";
+    import app from "./js/app.mjs";
+    window.addEventListener("load", vIEW.setupUI( app) );
+  &lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  ...
+&lt;/body&gt;
+&lt;/html&gt;</pre><p>The HTML <code>head</code> element contains a
+  <code>script</code> element, in which first the framework library
+  <kbd>vIEW.mjs</kbd> and then the <kbd>app.mjs</kbd> module described above
+  is loaded, followed by adding an event listener that calls the user
+  interface setup procedure <code>vIEW.setupUI</code>.after the HTML document
+  has been loaded.</p></body>
+</html>
