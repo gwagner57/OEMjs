@@ -112,8 +112,9 @@ class bUSINESSoBJECT {
           idAttr = Class.idAttribute,
           id = this[idAttr];
     var str = String( id);
-    if (Class.displayAttribute) str += " : "+ this.getValueOfPathExpression( Class.displayAttribute);
-    else if (idAttr !== "name" && "name" in this) str += " : "+ this.name;
+    if (idAttr !== "name" || Class.displayAttribute !== "name") {
+      str += " : "+ this.getValueOfPathExpression( Class.displayAttribute);
+    }
     return str;
   }
   getValueOfPathExpression( pathExprStr) {
@@ -166,10 +167,9 @@ class bUSINESSoBJECT {
         propDefs[p].range in dt.classes && !("inverseOf" in propDefs[p]));
     Class.inverseReferenceProperties = Object.keys( propDefs).filter( p =>
         propDefs[p].range in dt.classes && "inverseOf" in propDefs[p]);
-    //Class.referenceProperties = [];
     for (const p of Object.keys( propDefs)) {
       const propDef = propDefs[p],
-          range = propDef.range;
+            range = propDef.range;
       // check if property definition includes a valid range declaration
       if (!range) throw new Error(`No range defined for property ${p} of class ${Class.name}`);
       else if (!(admissibleRanges.includes( range) ||
@@ -177,8 +177,6 @@ class bUSINESSoBJECT {
         throw new Error(`Non-admissible range defined for property ${p} of class ${Class.name}`);
       // establish standard ID attribute
       if (propDef.isIdAttribute) Class.idAttribute = p;
-      // collect all reference properties
-      //if (range in dt.classes) Class.referenceProperties.push( p);
       // collect properties with initialValue functions
       if (typeof propDef.initialValue === "function") propsWithInitialValFunc.push( p);
       // construct implicit setters and getters

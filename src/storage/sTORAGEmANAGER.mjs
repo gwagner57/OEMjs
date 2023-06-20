@@ -200,7 +200,7 @@ class sTORAGEmANAGER {
         Class.instances[id] = entityRec;
       }
       // retrieve all records from all associated tables
-      for (const refProp of Class.referenceProperties) {
+      for (const refProp of Class.referenceProperties.concat( Class.inverseReferenceProperties)) {
         const AssociatedClass = dt.classes[Class.properties[refProp].range];
         if (!alreadyRetrievedClasses.includes( AssociatedClass.name) &&
             currentTime - AssociatedClass.lastRetrievalTime > this.cacheExpirationTime) {
@@ -217,8 +217,32 @@ class sTORAGEmANAGER {
       // create entities from records
       for (const entityRec of Object.values( Class.instances)) {
         const id = entityRec[Class.idAttribute],
-              obj = this.adapter.rec2obj( entityRec, Class);
-        if (obj) Class.instances[id] = obj;
+              entity = this.adapter.rec2obj( entityRec, Class);
+        if (entity) Class.instances[id] = entity;
+      }
+      // in a second pass, create virtual views of inverse reference properties
+      for (const entity of Object.values( Class.instances)) {
+        for (const invRefProp of Class.inverseReferenceProperties) {
+          const invRefPropDef = Class.properties[invRefProp],
+                InvAssociatedClass = dt.classes[invRefPropDef.range],
+                refProp = invRefPropDef.inverseOf,
+                refPropDef = InvAssociatedClass.properties[refProp];
+          let assocEntityIDs;
+          if (invRefPropDef.maxCard && invRefPropDef.maxCard > 1) entity[invRefProp] = {};
+          for (const obj of Object.values( InvAssociatedClass.instances)) {
+            const id = obj[InvAssociatedClass.idAttribute];
+            if (!refPropDef.maxCard || refPropDef.maxCard === 1) {
+              assocEntityIDs = [obj[refProp][Class.idAttribute]];
+            } else {
+              assocEntityIDs = Object.keys( obj[refProp]);
+            }
+            if (assocEntityIDs.includes( entity[Class.idAttribute])) {
+              if (!invRefPropDef.maxCard || invRefPropDef.maxCard === 1) entity[invRefPropDef] = obj;
+              else entity[invRefProp][id] = obj;  // create map entry
+            }
+          }
+
+        }
       }
     } catch (error) {
       console.error(`${error.constructor.name}: ${error.message}`);

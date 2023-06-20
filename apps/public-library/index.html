@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>OEMjs Public Library App</title>
+  <meta name="description" content="An app with three business object classes and two associations made with OEMjs."/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <meta name="theme-color" content="#ffffff"/>
+  <link rel="icon" href="favicon.svg"/>
+  <link rel="mask-icon" href="mask-icon.svg" color="#000000"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <link rel="manifest" href="manifest.json"/>
+
+  <link rel="stylesheet" href="../../css/normalize.css"/>
+  <link rel="stylesheet" href="../../css/vIEW.css"/>
+
+  <script type="module">
+    import vIEW from "../../src/ui/vIEW.mjs";
+    import app from "./js/app.mjs";
+    window.addEventListener("load", vIEW.setupUI( app) );
+  </script>
+</head>
+<body>
+<header>
+  <div class="title">
+    <h1>Public Library <a href="https://web-engineering.info" style="margin-left:2em">
+      <img alt="" title="Icon made by Lorc under CC BY 3.0. Available on https://game-icons.net"
+           src="favicon.svg" width="50"/></a></h1>
+    <h2>A low code web app with activity-based user interfaces</h2>
+  </div>
+</header>
+<main>
+</main>
+<footer>
+  <p>This app has been created with <a href="https://gwagner57.github.io/OEMjs/">OEMjs</a>, an Open Source JS library
+    for low-code app development.</p>
+</footer>
+</body>
+</html>

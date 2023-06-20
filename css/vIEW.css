@@ -134,7 +134,7 @@ table.RecTbl > thead > tr:first-child  {
 }
 
 menu {
-  width: 15em;
+  width: 18em;
   text-align: center;
   border: 1px solid black;
   padding: 8px;
@@ -146,7 +146,7 @@ menu li {
   margin: 2px auto;
 }
 menu li button {
-  width: 15em;
+  width: 18em;
 }
 /*** Modal Window and Draggable Modal Window ***/
 #overlay {
