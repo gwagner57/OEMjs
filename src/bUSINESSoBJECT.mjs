@@ -1,4 +1,4 @@
-import {dt, lIST, rECORD} from "./datatypes.mjs";
+import {dt, lISTtYPE, rECORDtYPE} from "./datatypes.mjs";
 import { NoConstraintViolation,
   MandatoryValueConstraintViolation, UniquenessConstraintViolation,
   ReferentialIntegrityConstraintViolation, FrozenValueConstraintViolation }
@@ -161,7 +161,7 @@ class bUSINESSoBJECT {
     // initialize the Class.instances map
     if (!Class.isAbstract) Class.instances = {};
     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes),
-       ...Object.values( eNUMERATION)];
+                              ...Object.values( eNUMERATION)];
     // pre-process all property definitions
     Class.referenceProperties = Object.keys( propDefs).filter( p =>
         propDefs[p].range in dt.classes && !("inverseOf" in propDefs[p]));
@@ -173,7 +173,7 @@ class bUSINESSoBJECT {
       // check if property definition includes a valid range declaration
       if (!range) throw new Error(`No range defined for property ${p} of class ${Class.name}`);
       else if (!(admissibleRanges.includes( range) ||
-          range instanceof lIST || range instanceof rECORD))
+          range instanceof lISTtYPE || range instanceof rECORDtYPE))
         throw new Error(`Non-admissible range defined for property ${p} of class ${Class.name}`);
       // establish standard ID attribute
       if (propDef.isIdAttribute) Class.idAttribute = p;

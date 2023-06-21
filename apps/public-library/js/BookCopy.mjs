@@ -1,13 +1,13 @@
-/**
- * Object type Book 
- * @class
- */
 import bUSINESSoBJECT from "../../../src/bUSINESSoBJECT.mjs";
 import eNUMERATION from "../../../src/eNUMERATION.mjs";
 import {dt} from "../../../src/datatypes.mjs";
 
 const BookCopyStatusEL = new eNUMERATION("BookCopyStatusEL", ["available","lended"]);
 
+/**
+ * Object type BookCopy
+ * @class
+ */
 class BookCopy extends bUSINESSoBJECT {
   constructor ({id, book, status}) {
     super( id);

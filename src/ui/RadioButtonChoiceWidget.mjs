@@ -1,5 +1,5 @@
 import dom from "../../lib/dom.mjs"
-import { dt, rECORD, lIST } from "../datatypes.mjs";
+import { dt, rECORDtYPE, lISTtYPE } from "../datatypes.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import { MandatoryValueConstraintViolation } from "../constraint-violation-error-types.mjs";
 

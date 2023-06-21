@@ -1,5 +1,3 @@
-import bUSINESSoBJECT from "./bUSINESSoBJECT";
-
 /**
  * An event may be instantaneous or it may have a non-zero duration.
  */

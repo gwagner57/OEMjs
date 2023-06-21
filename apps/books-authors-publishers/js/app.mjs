@@ -1,5 +1,5 @@
 /**
- * @fileOverview  Auxiliary data management procedures
+ * @fileOverview  Import classes and framework code modules, create the app object and define test data
  * @author Gerd Wagner
  */
 // import Business Object classes
@@ -11,8 +11,8 @@ import sTORAGEmANAGER from "../../../src/storage/sTORAGEmANAGER.mjs";
 import bUSINESSaPP from "../../../src/bUSINESSaPP.mjs";
 
 const app = new bUSINESSaPP({title:"OEMjs Association App",
-  storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"AssApp",
-    createLog: true, validateBeforeSave: true})
+            storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"AssApp",
+                createLog: true, validateBeforeSave: true})
 });
 app.setup();
 

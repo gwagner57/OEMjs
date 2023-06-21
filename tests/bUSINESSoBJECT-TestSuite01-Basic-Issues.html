@@ -36,7 +36,7 @@
 
   <script type="module">
     import dom from "../lib/dom.mjs";
-    import { lIST, rECORD } from "../src/datatypes.mjs";
+    import { lISTtYPE, rECORDtYPE } from "../src/datatypes.mjs";
     import eNUMERATION from "../src/eNUMERATION.mjs";
     import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
     import { test, showSuccessMessage } from "./test.js";
@@ -129,7 +129,7 @@
       }
       //*** Test 6 ***********************************************************
       document.body.appendChild(dom.createElement("h2", { content: "Test 6: collection datatype lIST" }));
-      const PhoneNumbers = new lIST(new rECORD({ type: "String", number: "Integer" }));
+      const PhoneNumbers = new lISTtYPE(new rECORDtYPE({ type: "String", number: "Integer" }));
       class Person extends bUSINESSoBJECT {
         constructor({ name, phoneNumbers }) {
           super(name);
@@ -165,7 +165,7 @@
       //*** Test 8 ***********************************************************
       document.body.appendChild(dom.createElement("h2", { content: "Test 8: collection datatype lIST nesting" }));
       try {
-        const NestedAddress = new lIST(new lIST(new lIST(new lIST(new rECORD({ id: "Integer", optional: "Boolean" })))));
+        const NestedAddress = new lISTtYPE(new lISTtYPE(new lISTtYPE(new lISTtYPE(new rECORDtYPE({ id: "Integer", optional: "Boolean" })))));
         class Address extends bUSINESSoBJECT {
           constructor({ name, address }) {
             super(name);

@@ -1,5 +1,5 @@
 /**
- * @fileOverview  Auxiliary data management procedures
+ * @fileOverview  Import classes and framework code modules, create the app object and define test data
  * @author Gerd Wagner
  */
 // import the app's business object classes
@@ -9,8 +9,8 @@ import sTORAGEmANAGER from "../../../src/storage/sTORAGEmANAGER.mjs";
 import bUSINESSaPP from "../../../src/bUSINESSaPP.mjs";
 // create the app object
 const app = new bUSINESSaPP({title:"Book Data Management",
-    storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"MinApp",
-    createLog: true, validateBeforeSave: true})
+            storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"MinApp",
+                createLog: true, validateBeforeSave: true})
 });
 // set up the app
 app.setup();

@@ -13,9 +13,10 @@ import bUSINESSeVENT from "./bUSINESSeVENT.mjs"
  *  time period can be recorded and can be included in certain app statistics.
  */
 class bUSINESSaCTIVITY extends bUSINESSeVENT {
-  constructor({id, occTime, startTime, duration}) {
+  constructor({id, occTime, startTime = (new Date()).getTime(), duration}) {
     super({id, occTime, startTime, duration});
   }
 }
+bUSINESSaCTIVITY.classes = {};
 
 export default bUSINESSaCTIVITY;

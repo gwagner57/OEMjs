@@ -1,19 +1,21 @@
 /**
- * @fileOverview  Auxiliary data management procedures
+ * @fileOverview  Import classes and framework code modules, create the app object and define test data
  * @author Gerd Wagner
  */
-// import Business Object classes
+// import the app's model classes (object types and activity types)
 import Person from "./Person.mjs";
 import Publisher from "./Publisher.mjs";
 import Book from "./Book.mjs";
 import {BookCopy, BookCopyStatusEL} from "./BookCopy.mjs";
+import BookLending from "./BookLending.mjs";
+
 // import framework code files
 import sTORAGEmANAGER from "../../../src/storage/sTORAGEmANAGER.mjs";
 import bUSINESSaPP from "../../../src/bUSINESSaPP.mjs";
 
 const app = new bUSINESSaPP({title:"OEMjs Public Library App",
-    storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"PublicLibrary",
-      createLog: true, validateBeforeSave: true})
+            storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"PublicLibrary",
+                createLog: true, validateBeforeSave: true})
 });
 app.setup();
 

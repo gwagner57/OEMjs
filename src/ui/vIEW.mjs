@@ -13,6 +13,7 @@
 import {dt} from "../datatypes.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
+import bUSINESSaCTIVITY from "../bUSINESSaCTIVITY.mjs";
 import dom from "../../lib/dom.mjs";
 import util from "../../lib/util.mjs";
 import SelectReferenceWidget from "./SelectReferenceWidget.mjs";
@@ -346,7 +347,6 @@ class vIEW {
       choiceItems.forEach( function (txt,i) {
         selEl.add( dom.createOption({text: txt, value: i+1}));
       });
-      //dom.fillSelectWithOptions( selEl, choiceItems);
       selEl.addEventListener("change", function () {
         // update view model field value
         if (selEl.value !== "") {
@@ -794,14 +794,14 @@ class vIEW {
   }
 
   static setupUI( app) {
-    function setupStartUI() {
-      var uiContainerEl = document.querySelector("#AppStart"),
-          mainEl = document.querySelector("html>body>main"),
-          footerEl = document.querySelector("html>body>footer"),
-          menuEl = document.querySelector("menu.start-menu");
+    var mainEl = document.querySelector("html>body>main"),
+        footerEl = document.querySelector("html>body>footer");
+    function setupActivitiesOverviewUI() {
+      var uiContainerEl = document.querySelector("#ActOverview"),
+          menuEl = uiContainerEl?.querySelector("menu");
       if (!uiContainerEl) {
-        uiContainerEl = dom.createElement("section", {classValues:"UI", id:"AppStart",
-            content:"<p>This app supports the following operations:</p>"});
+        uiContainerEl = dom.createElement("section", {classValues:"UI", id:"ActOverview",
+            content:"<p>This app supports the following activities:</p>"});
         if (mainEl) {
           mainEl.appendChild( uiContainerEl);
         } else if (footerEl) {
@@ -811,7 +811,60 @@ class vIEW {
         }
       }
       if (!menuEl) {
-        menuEl = dom.createElement("menu", {classValues:"start-menu"});
+        menuEl = document.createElement("menu");
+        uiContainerEl.appendChild( menuEl);
+      }
+      for (const className of Object.keys( bUSINESSaCTIVITY.classes)) {
+        if (!menuEl.querySelector("li#"+ className)) {
+          const liEl = dom.createElement("li", {id: className});
+          menuEl.appendChild( liEl);
+          const btnEl = dom.createElement("button", {
+            content: bUSINESSaCTIVITY.classes[className].activityPhrase
+          });
+          liEl.appendChild( btnEl);
+        }
+      }
+      if (!menuEl.querySelector("li#manageData")) {
+        const liEl = dom.createElement("li", {id:"manageData"});
+        liEl.style.marginTop = "1em";
+        menuEl.appendChild( liEl);
+        const btnEl = dom.createElement("button", {content:"Manage data"});
+        liEl.appendChild( btnEl);
+      }
+      menuEl.addEventListener( "click", function (e) {
+        var selectedMenuItemEl=null;
+        if (e.target.tagName === "LI") {
+          selectedMenuItemEl = e.target;
+        } else if (e.target.parentElement.tagName === "LI") {
+          selectedMenuItemEl = e.target.parentElement;
+        } else return;
+        const menuOption = selectedMenuItemEl.id;
+        switch (menuOption) {
+          case "manageData":
+            vIEW.refreshUI("DataManOverview");
+            break;
+          default:  // a model class has been selected
+            const className = selectedMenuItemEl.id;
+            vIEW.refreshUI( className +"-M");
+        }
+      });
+    }
+    function setupDataManagementOverviewUI() {
+      var uiContainerEl = document.querySelector("#DataManOverview"),
+          menuEl = uiContainerEl?.querySelector("menu");
+      if (!uiContainerEl) {
+        uiContainerEl = dom.createElement("section", {classValues:"UI", id:"DataManOverview",
+            content:"<p>This app supports the following data management operations:</p>"});
+        if (mainEl) {
+          mainEl.appendChild( uiContainerEl);
+        } else if (footerEl) {
+          document.body.insertBefore( uiContainerEl, footerEl);
+        } else {
+          document.body.appendChild( uiContainerEl);
+        }
+      }
+      if (!menuEl) {
+        menuEl = document.createElement("menu");
         uiContainerEl.appendChild( menuEl);
       }
       for (const className of Object.keys( dt.classes)) {
@@ -827,6 +880,7 @@ class vIEW {
       if (app.createTestData) {
         if (!menuEl.querySelector("li#createTestData")) {
           const liEl = dom.createElement("li", {id:"createTestData"});
+          liEl.style.marginTop = "1em";
           menuEl.appendChild( liEl);
           const btnEl = dom.createElement("button", {
             content:"Create test data"
@@ -865,14 +919,18 @@ class vIEW {
             break;
           default:  // a model class has been selected
             const className = selectedMenuItemEl.id;
-            vIEW.refreshUI( app, className +"-M");
+            vIEW.refreshUI( className +"-M");
         }
       });
+      if (Object.keys( bUSINESSaCTIVITY.classes).length > 0) {
+        uiContainerEl.appendChild( dom.createBackButton({
+          label:"Back to activities menu",
+          handler: function () {vIEW.refreshUI("ActOverview");}
+        }));
+      }
     }
     function setupManageDataUI( className) {
       var manageUiEl = document.querySelector("section.UI#"+ className +"-M"),
-          mainEl = document.querySelector("html>body>main"),
-          footerEl = document.querySelector("html>body>footer"),
           menuEl=null, liEl=null;
       if (!manageUiEl) {
         manageUiEl = dom.createElement("section", { classValues:"UI",
@@ -912,14 +970,16 @@ class vIEW {
         const sepPos = selectedMenuItemEl.id.indexOf('-');
         const className = selectedMenuItemEl.id.substr( 0, sepPos);
         const crudCode = selectedMenuItemEl.id.substr( sepPos+1);
-        vIEW.refreshUI( app, className +"-"+ crudCode);
+        vIEW.refreshUI( className +"-"+ crudCode);
       });
       manageUiEl.appendChild( dom.createBackButton({
           label:"Back to main menu",
-          handler: function () { vIEW.refreshUI( app, "AppStart");}
+          handler: function () { vIEW.refreshUI( "DataManOverview");}
       }));
     }
-    setupStartUI();
+
+    vIEW.app = app;  // save handle to app object
+    setupDataManagementOverviewUI();
     for (const className of Object.keys( dt.classes)) {
       const modelClass = dt.classes[className];
       // set up the CRUD menu UI page
@@ -929,14 +989,14 @@ class vIEW {
         switch (crudCode) {
         case "R":  //================ RETRIEVE ==========================
           view.userActions = {
-            "back": function () { vIEW.refreshUI( app, className +"-M");}
+            "back": function () { vIEW.refreshUI( className +"-M");}
           };
           break;
         case "C":  //================ CREATE ============================
           view.userActions = {
             "createRecord": function (record) {
                app.storageManager.add( modelClass, record);},
-            "back": function () { vIEW.refreshUI( app, className +"-M");}
+            "back": function () { vIEW.refreshUI( className +"-M");}
           };
           break;
         case "U":  //================ UPDATE ============================
@@ -945,7 +1005,7 @@ class vIEW {
                app.crudViews[className]["U"].setModelObject( id);},
             "updateRecord": function (id, slots) {
                app.storageManager.update( modelClass, id, slots);},
-            "back": function () { vIEW.refreshUI( app, className +"-M");}
+            "back": function () { vIEW.refreshUI( className +"-M");}
           };
           break;
         case "D":  //================ DELETE ============================
@@ -954,7 +1014,7 @@ class vIEW {
                app.crudViews[className]["D"].setModelObject( id);},
             "deleteRecord": function (id) {
                app.storageManager.destroy( modelClass, id);},
-            "back": function () { vIEW.refreshUI( app, className +"-M");}
+            "back": function () { vIEW.refreshUI( className +"-M");}
           };
           break;
         }
@@ -962,23 +1022,26 @@ class vIEW {
         view.render();
       }
     }
-    vIEW.refreshUI( app, "AppStart");
+    if (Object.keys( bUSINESSaCTIVITY.classes).length > 0) {
+      setupActivitiesOverviewUI();
+      vIEW.refreshUI("ActOverview");
+    } else {
+      vIEW.refreshUI("DataManOverview");
+    }
   }
   /**
    * Switch to a new UI (and refresh its contents)
    * @method
    * @author Gerd Wagner
    * @param {object} app              the app object
-   * @param {string} userInterfaceId  <Class>-<Operation> or "AppStart"
+   * @param {string} userInterfaceId  <Class>-<Operation> or "ActOverview"|"DataManOverview"
    */
-  static async refreshUI( app, userInterfaceId) {
+  static async refreshUI( userInterfaceId) {
     var selectEl=null, formEl=null;
     const sepPos = userInterfaceId.indexOf('-'),
           className = userInterfaceId.substr( 0, sepPos),
           operationCode = userInterfaceId.substr( sepPos+1),
           modelClass = dt.classes[className];
-    // save handle to app object
-    vIEW.app = app;
     // store the UI elements in a cache variable
     const uiPages = document.querySelectorAll("section.UI");
     for (let i=0; i < uiPages.length; i++) {
@@ -993,9 +1056,9 @@ class vIEW {
       case "M":
         break;
       case "R":
-        if (currentTime - modelClass.lastRetrievalTime > app.storageManager.cacheExpirationTime) {
+        if (currentTime - modelClass.lastRetrievalTime > vIEW.app.storageManager.cacheExpirationTime) {
           // retrieve all objects and store them in modelClass.instances
-          await app.storageManager.retrieveAll( modelClass);
+          await vIEW.app.storageManager.retrieveAll( modelClass);
         }
         vIEW.fillTable( className);
         break;
@@ -1003,13 +1066,13 @@ class vIEW {
         formEl = document.querySelector(`section#${className}-${operationCode} > form`);
         formEl.reset();
         for (const refProp of modelClass.referenceProperties) {
-          const view = app.crudViews[className][operationCode];
+          const view = vIEW.app.crudViews[className][operationCode];
           if (!(refProp in view.fields)) continue;
           // refresh the options of the corresponding selection list
           const AssociatedClass = dt.classes[view.fields[refProp].range],
                 selRefEl = view.dataBinding[refProp];  // a select-reference(s) widget
-          if (currentTime - AssociatedClass.lastRetrievalTime > app.storageManager.cacheExpirationTime) {
-            await app.storageManager.retrieveAll( AssociatedClass);
+          if (currentTime - AssociatedClass.lastRetrievalTime > vIEW.app.storageManager.cacheExpirationTime) {
+            await vIEW.app.storageManager.retrieveAll( AssociatedClass);
           }
           if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
           else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh();
@@ -1020,8 +1083,8 @@ class vIEW {
         formEl = document.querySelector(`section#${className}-${operationCode} > form`);
         formEl.reset();
         selectEl = formEl["select"+ className];
-        if (currentTime - modelClass.lastRetrievalTime > app.storageManager.cacheExpirationTime) {
-          await app.storageManager.retrieveAll( modelClass);
+        if (currentTime - modelClass.lastRetrievalTime > vIEW.app.storageManager.cacheExpirationTime) {
+          await vIEW.app.storageManager.retrieveAll( modelClass);
         }
         dom.fillSelectWithOptionsFromEntityTable( selectEl,
             modelClass.instances,
@@ -1029,7 +1092,7 @@ class vIEW {
         if (operationCode === "U") {
           for (const refProp of modelClass.referenceProperties) {
             // refresh the options of the corresponding selection list
-            const view = app.crudViews[className][operationCode],
+            const view = vIEW.app.crudViews[className][operationCode],
                 selRefEl = view.dataBinding[refProp];  // a select-reference element
             if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
             else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh();

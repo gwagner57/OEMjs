@@ -518,15 +518,15 @@ const dt = {
                 `The value ${v} is not an admissible enumeration integer for ${attr}`));
           }
         }
-      } else if (range instanceof lIST) {
+      } else if (range instanceof lISTtYPE) {
         for (const v of val) {
           if (typeof range.itemType === "string" && !isOfType( v, range.itemType) ||
-              !(range.itemType instanceof lIST || range.itemType instanceof rECORD)) {
+              !(range.itemType instanceof lISTtYPE || range.itemType instanceof rECORDtYPE)) {
             constrVio.push( new RangeConstraintViolation(
                 `The ${attr} value ${v} is not of type ${range.itemType}`));
           }           
           // Check rECORD properties of lIST
-          if (range.itemType instanceof rECORD) {
+          if (range.itemType instanceof rECORDtYPE) {
             let fieldType = range.itemType.fieldTypes;
             Object.entries(v).forEach(([key,value])=> {
               let fieldDef = fieldType[key];
@@ -536,9 +536,9 @@ const dt = {
                 }
               }
             });
-          } else if (range.itemType instanceof lIST) {
-            if (range.itemType.itemType instanceof lIST) {
-              if (range.itemType.itemType.itemType instanceof lIST){
+          } else if (range.itemType instanceof lISTtYPE) {
+            if (range.itemType.itemType instanceof lISTtYPE) {
+              if (range.itemType.itemType.itemType instanceof lISTtYPE){
                 // Reached max level of nested complex data types
                 constrVio.push(new RangeConstraintViolation(`Max level of complex data types reached!`));
               }
@@ -732,10 +732,10 @@ dt.primitiveDatatypes = [...dt.stringTypes, ...dt.numericTypes, ...dt.otherPrimi
 dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.simpleStructuredDataTypes];
 
 /*
- * Collection types are defined as instances of lIST or rECORD specifying
+ * Collection types are defined as instances of lISTtYPE or rECORDtYPE specifying
  * their item type. They can be nested.
  * Example:
- const PhoneNumbers = new lIST( new rECORD({type:"String", number:"Integer"}))
+ const PhoneNumbers = new lISTtYPE( new rECORDtYPE({type:"String", number:"Integer"}))
  Person.properties = {
   "name": {range:"String", isIdAttribute: true, label:"Name"},
   "phoneNumbers": {range: PhoneNumbers, label:"Phone numbers"}
@@ -744,25 +744,25 @@ dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.simpleStructuredDataTyp
         name: "Gerd",
         phoneNumbers: [{type:"home", number:834567},
                        {type:"mobile", number:132934565},
-                       {type:"business", number:8889912]
+                       {type:"business", number:8889912}]
       });
  */
-class lIST {
+class lISTtYPE {
   constructor (itemType) {
     if (!dt.supportedDatatypes.includes( itemType) &&
-        !(itemType instanceof lIST || itemType instanceof rECORD)) {
-      const fldTypeName = typeof fldT === "string" ? fldT : fldT.name;
+        !(itemType instanceof lISTtYPE || itemType instanceof rECORDtYPE)) {
+      const fldTypeName = typeof itemType === "string" ? itemType : itemType.name;
       throw new Error(`${fldTypeName} is not a supported datatype!`);
     }
     this.itemType = itemType;
   }
 }
-class rECORD {
+class rECORDtYPE {
   constructor (fieldNameTypePairs) {
     for (const [fldN, fldT] of Object.entries( fieldNameTypePairs)) {
       if (fldN === "fieldTypes") throw new Error("Field name must not be 'fieldTypes'!");
       if (!dt.supportedDatatypes.includes( fldT) &&
-          !(fldT instanceof lIST || fldT instanceof rECORD)) {
+          !(fldT instanceof lISTtYPE || fldT instanceof rECORDtYPE)) {
         const fldTypeName = typeof fldT === "string" ? fldT : fldT.name;
         throw new Error(`${fldTypeName} is not a supported datatype!`);
       }
@@ -771,4 +771,4 @@ class rECORD {
   }
 }
 
-export {dt, lIST, rECORD};
+export {dt, lISTtYPE, rECORDtYPE};
