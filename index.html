@@ -53,19 +53,19 @@
   <h1>Low Code App Development with OEMjs</h1>
   <p>The Object Event Modeling JavaScript Framework OEMjs supports</p>
   <ol>
-   <li>enumerations;</li>
+   <li>enumerations (since JS does not support them);</li>
    <li>business object, event and activity classes (and class hierarchies) with semantic meta-data (e.g., for declarative constraint validation);</li>
    <li>unidirectional and bidirectional associations;</li>
-   <li>storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as MySQL);</li>
+   <li>storage adapters that facilitate switching from one storage technology (such as IndexedDB) to another one (such as Google's Cloud Firestore);</li>
    <li>view models for declarative user interface definitions;</li>
-   <li>model-based generation of CRUD and event/activity-based user interfaces.</li>
+   <li>model-based generation of CRUD user interfaces and activity-based user interfaces.</li>
   </ol>
   
-  <details><summary>Example 1: <a href="apps/minimal/">Minimal CRUD App</a> <a href="tutorials/introductory/">Tutorial</a></summary>
+  <details><summary>Example 1: <a href="apps/minimal/">Minimal CRUD App</a> + <a href="tutorials/introductory/">Tutorial</a></summary>
   <p>The purpose of this app is to manage book data. It consists of two JS module files, <kbd>app.mjs</kbd> and <kbd>Book.mjs</kbd>, with together 70 lines of code, only.</p>
   </details>
   
-  <details><summary>Example 2: <a href="apps/enumerations/">Enumeration App</a> <a href="tutorials/enumerations/">Tutorial</a></summary>
+  <details><summary>Example 2: <a href="apps/enumerations/">Enumeration App</a> + <a href="tutorials/enumerations/">Tutorial</a></summary>
   <p>The purpose of this app is to show the use of enumeration attributes. It consists of two JS module files, <kbd>app.mjs</kbd> and <kbd>Book.mjs</kbd>, with together 70 lines of code, only.</p>
   </details>
   
@@ -74,6 +74,10 @@
    <kbd>app.mjs</kbd>, <kbd>Book.mjs</kbd>, <kbd>Author.mjs</kbd> and <kbd>Publisher.mjs</kbd>, with together 105 lines
    of code, only. The app manages a many-to-many unidrectional association between books and authors, and a many-to-one
    unidrectional association between books and publishers.</p>
+  </details>
+  
+  <details><summary>Example 4: <a href="apps/public-library/">Public Library App</a> with Activity-Based UIs</summary>
+  <p>This app shows the use of business activities in addition to business objects, which is at the heart of Object Event Modeling (OEM).</p>
   </details>
   
   <h2>Use Case 1: Enumerations</h2>
