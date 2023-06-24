@@ -49,6 +49,20 @@ class sTORAGEmANAGER {
     }
   }
   /**
+   * Generic method for testing if a database exists and has contents
+   * @method
+   * @param {Array} classes  The business object classes to be persisted
+   */
+  async hasDatabaseContents() {
+    var result = false;
+    try {
+      result = await this.adapter.hasDatabaseContents( this.dbName);
+    } catch (error) {
+      console.log( error.name +": "+ error.message);
+    }
+    return result;
+  }
+  /**
    * Generic method for creating an empty database (with a set of empty tables)
    * @method
    * @param {Array} classes  The business object classes to be persisted
@@ -56,7 +70,7 @@ class sTORAGEmANAGER {
   async createEmptyDb( classes) {
     try {
       await this.adapter.createEmptyDb( this.dbName, classes);
-      if (this.createLog) console.log(`Database ${this.dbName} with empty tables created`);
+      if (this.createLog) console.log(`Database ${this.dbName} with empty tables ${classes.map(c=>c.name)} created`);
     } catch (error) {
       console.log( error.name +": "+ error.message);
     }
@@ -121,7 +135,9 @@ class sTORAGEmANAGER {
       await this.adapter.add( this.dbName, Class, recordsToAdd);
       if (this.createLog) console.log(`${recordsToAdd.length} ${Class.name}(s) added.`);
     } catch (error) {
-      console.error(`${error.name}: ${error.message}`);
+      if (error.name === "NotFoundError") {
+        console.error(`Object store ${Class.name} not found!`);
+      } else console.error(`${error.name}: ${error.message}`);
     }
   };
   /**
@@ -619,6 +635,14 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     return obj;
   },
   //------------------------------------------------
+  hasDatabaseContents: async function (dbName) {
+  //------------------------------------------------
+    const db = await openDB( dbName),
+          result = db.objectStoreNames.length > 0;
+    db.close();
+    return result;
+  },
+  //------------------------------------------------
   createEmptyDb: async function (dbName, modelClasses) {
   //------------------------------------------------
     return await openDB( dbName, 1, {
@@ -626,7 +650,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         for (const mc of modelClasses) {
           const tn = mc.tableName || util.class2TableName( mc.name);
           if (!db.objectStoreNames.contains( tn)) {
-            db.createObjectStore( tn, {keyPath: mc.idAttribute || "id"});
+            db.createObjectStore( tn, {keyPath: mc.idAttribute});
           }
         }
       }

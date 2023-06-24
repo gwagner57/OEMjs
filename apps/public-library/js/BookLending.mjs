@@ -18,6 +18,8 @@ class BookLending extends bUSINESSaCTIVITY {
         bc.status = BookCopyStatusEL.LENDED;
         app.storageManager.update( BookCopy, bc.id, {status: bc.status});
       }
+      app.storageManager.add( Commitment,
+          {activity:"BookReturn", returner: this.borrower, bookCopies: this.bookCopies, });
     } catch (e) {
       console.error( e);
     }

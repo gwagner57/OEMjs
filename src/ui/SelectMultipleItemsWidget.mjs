@@ -252,7 +252,8 @@ class SelectMultipleItemsWidget extends HTMLElement {
     } else throw Error(`Invalid selection range: ${selRange}`);
     for (let i=0; i < selectionItems.length; i++) {
       const item = selectionItems[i];
-      if (!selRangeFilter( item)) continue;  // skip if filter condition does not hold
+      // if there is a filter condition, skip if filter condition does not hold
+      if (typeof selRangeFilter === "function" && !selRangeFilter( item)) continue;
       if (Array.isArray( selRange)) {
         if (typeof item === "object") {
           key = item[this.idAttr];

@@ -18,7 +18,6 @@ const app = new bUSINESSaPP({title:"OEMjs Public Library App",
             storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"PublicLibrary",
                 createLog: true, validateBeforeSave: true})
 });
-app.setup();
 
 Publisher.testData = [{name:"Bantam Books", address:"New York, USA"},
     {name:"Basic Books", address:"New York, USA"}];
@@ -39,5 +38,7 @@ BookCopy.testData = [
   {id:5, book:"1463794762", status: BookCopyStatusEL.AVAILABLE},
   {id:6, book:"1928565379", status: BookCopyStatusEL.AVAILABLE},
 ];
+
+app.setup();
 
 export default app;

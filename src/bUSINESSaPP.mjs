@@ -11,7 +11,7 @@ class bUSINESSaPP {
     this.crudViews = {};
     this.activityViews = {};
   }
-  setup() {
+  async setup() {
     // set up all business object classes and their CRUD views
     for (const Class of Object.values( dt.classes)) {
       Class.setup();
@@ -37,6 +37,11 @@ class bUSINESSaPP {
     for (const Class of Object.values( bUSINESSaCTIVITY.classes)) {
       Class.setup();
       this.activityViews[Class.name] = new vIEW({modelClass: Class});
+    }
+    if (!(await this.storageManager.hasDatabaseContents())) {
+      //await this.createTestData();
+      const busObjClasses = Object.values( dt.classes);
+      await this.storageManager.createEmptyDb( busObjClasses);
     }
   }
   async createTestData() {
