@@ -8,6 +8,7 @@ import Publisher from "./Publisher.mjs";
 import Book from "./Book.mjs";
 import {BookCopy, BookCopyStatusEL} from "./BookCopy.mjs";
 import BookLending from "./BookLending.mjs";
+import BookReturn from "./BookReturn.mjs";
 
 // import framework code files
 import sTORAGEmANAGER from "../../../src/storage/sTORAGEmANAGER.mjs";

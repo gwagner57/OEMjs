@@ -418,7 +418,7 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
       console.log( keys.length + " " + Class.name + " records loaded.");
       for (i=0; i < keys.length; i++) {
         key = keys[i];
-        Class.instances[key] = Class.createObjectFromRecord( table[key]);
+        Class.instances[key] = new Class( table[key]);
       }
     }
   },

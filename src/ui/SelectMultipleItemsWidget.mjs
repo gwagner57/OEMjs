@@ -1,6 +1,4 @@
-import {dt} from "../datatypes.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
-import util from "../../lib/util.mjs";
 
 /**
  * A Select-Multiple-Items widget contains
@@ -20,7 +18,8 @@ import util from "../../lib/util.mjs";
  */
 class SelectMultipleItemsWidget extends HTMLElement {
   static deleteButtonIconCharacter = "✕";
-  constructor({name, selectionRange, selection, idAttr, displayAttr, minCard=0, view}) {
+  constructor({name, selectionRange, selection,
+                idAttr, displayAttr, minCard=0, selectionRangeFilter, view}) {
     super();
     // assign attributes
     this.name = name;
@@ -43,6 +42,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
     }
     this.minCard = minCard;
     if (view) this.view = view;
+    if (selectionRangeFilter) this.selectionRangeFilter = selectionRangeFilter;
     // define properties for storing important element references
     this.selectedItemsListEl = null;
     this.selectEl = null;
@@ -233,7 +233,8 @@ class SelectMultipleItemsWidget extends HTMLElement {
   }
   fillSelectionListWithOptions() {
     var selectionItems=[], key, text, alreadySelected=false, el=null;
-    const selRange = this.selectionRange;
+    const selRange = this.selectionRange,
+          selRangeFilter = this.selectionRangeFilter;
     // delete old contents
     this.selectEl.innerHTML = "";
     // create "no selection yet" entry
@@ -251,6 +252,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
     } else throw Error(`Invalid selection range: ${selRange}`);
     for (let i=0; i < selectionItems.length; i++) {
       const item = selectionItems[i];
+      if (!selRangeFilter( item)) continue;  // skip if filter condition does not hold
       if (Array.isArray( selRange)) {
         if (typeof item === "object") {
           key = item[this.idAttr];

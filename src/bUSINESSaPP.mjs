@@ -1,13 +1,15 @@
 import {dt} from "./datatypes.mjs";
 import vIEW from "./ui/vIEW.mjs";
+import bUSINESSaCTIVITY from "./bUSINESSaCTIVITY.mjs";
 
 class bUSINESSaPP {
   constructor({title, storageManager, validateOnInput=false}) {
     this.title = title;
     this.storageManager = storageManager;
     this.validateOnInput = validateOnInput;
-    this.crudViews = {};
     this.bidirectionalAssociations = {};
+    this.crudViews = {};
+    this.activityViews = {};
   }
   setup() {
     // set up all business object classes and their CRUD views
@@ -30,6 +32,11 @@ class bUSINESSaPP {
               {targetClassName: Class.name, inverseReferenceProperty: invRefProp};
         }
       }
+    }
+    // set up all business activity classes and their views
+    for (const Class of Object.values( bUSINESSaCTIVITY.classes)) {
+      Class.setup();
+      this.activityViews[Class.name] = new vIEW({modelClass: Class});
     }
   }
   async createTestData() {

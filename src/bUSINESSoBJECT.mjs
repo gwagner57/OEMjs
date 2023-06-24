@@ -129,22 +129,6 @@ class bUSINESSoBJECT {
     return value;
   }
   /***************************************************
-   * A class-level de-serialization method
-   ***************************************************/
-  static createObjectFromRecord( record) {
-    var obj={};
-    //TODO: does this work?
-    const Class = this.constructor;
-    try {
-      obj = new Class( record);
-    } catch (e) {
-      console.log( e.constructor.name + " while deserializing a "+
-          Class.name +" record: " + e.message);
-      obj = null;
-    }
-    return obj;
-  }
-  /***************************************************
    * To be invoked for each BO class definition
   ***************************************************/
   static setup() {
@@ -201,6 +185,10 @@ class bUSINESSoBJECT {
       const f = propDefs[p].initialValue;
       if (f.length === 0) this[p] = f();
       else this[p] = f.call( this);
+    }
+    if (!Class.idAttribute) {
+      if ("id" in propDefs) Class.idAttribute = "id";
+      else throw new Error(`No standard ID attribute defined for class ${Class.name}`);
     }
   }
 }

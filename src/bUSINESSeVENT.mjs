@@ -14,6 +14,14 @@ class bUSINESSeVENT {
         this.occTime = startTime + duration;
       }
     }
+    const Class = this.constructor,
+          idAttr = Class.idAttribute;
+    // if the standard ID attribute is not "id", assign it also
+    if (id && idAttr !== "id") this[idAttr] = id;
+    // store instances for non-abstract classes
+    if (!Class.isAbstract) {
+      Class.instances[this[idAttr]] = this;
+    }
   }
   // overwrite/improve the standard toString method
   toString() {
