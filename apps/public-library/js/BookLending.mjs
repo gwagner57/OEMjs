@@ -1,5 +1,6 @@
 import bUSINESSaCTIVITY from "../../../src/bUSINESSaCTIVITY.mjs";
 import {BookCopy, BookCopyStatusEL} from "./BookCopy.mjs";
+import BookReturnReminder from "./BookReturnReminder.mjs";
 import app from "./app.mjs";
 
 /**
@@ -7,8 +8,9 @@ import app from "./app.mjs";
  * @class
  */
 class BookLending extends bUSINESSaCTIVITY {
-  constructor ({borrower, bookCopies}) {
+  constructor ({date, borrower, bookCopies}) {
     super();
+    this.date = date;  // derived
     this.borrower = borrower;
     this.bookCopies = bookCopies;
   }
@@ -18,14 +20,19 @@ class BookLending extends bUSINESSaCTIVITY {
         bc.status = BookCopyStatusEL.LENDED;
         app.storageManager.update( BookCopy, bc.id, {status: bc.status});
       }
-      app.storageManager.add( Commitment,
-          {activity:"BookReturn", returner: this.borrower, bookCopies: this.bookCopies, });
+      const brr = new BookReturnReminder({
+          dueDate: new Date( this.date.getTime() + app.lendingPeriod * 24 * 60 * 60 * 1000),  // days to milliseconds
+          borrower: this.borrower,
+          bookCopies: this.bookCopies});
+      app.storageManager.add( BookReturnReminder, app.storageManager.adapter.obj2rec( brr, BookReturnReminder));
     } catch (e) {
       console.error( e);
     }
   }
 }
 BookLending.properties = {
+  "date": {range:"Date", label:"Date",
+      derivationExpression: () => new Date((new Date()).toDateString())},  // truncate time
   "borrower": {range:"Person", label:"Borrower"},
   "bookCopies": {range:"BookCopy", label:"Lended book copies", minCard: 1, maxCard: Infinity,
                  selectionRangeFilter: bc => bc.status === BookCopyStatusEL.AVAILABLE}

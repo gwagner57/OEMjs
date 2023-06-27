@@ -38,30 +38,32 @@ class bUSINESSaPP {
       Class.setup();
       this.activityViews[Class.name] = new vIEW({modelClass: Class});
     }
+    const busObjClasses = Object.values( dt.classes);
+    await this.storageManager.openDbOrCreateEmptyDb( busObjClasses);
     if (!(await this.storageManager.hasDatabaseContents())) {
-      //await this.createTestData();
-      const busObjClasses = Object.values( dt.classes);
-      await this.storageManager.createEmptyDb( busObjClasses);
+      console.log("Database is empty.");
+      await this.createTestData();
     }
   }
   async createTestData() {
     try {
       const busObjClasses = Object.values( dt.classes);
-      await this.storageManager.createEmptyDb( busObjClasses);
       for (const Class of busObjClasses) {
-        await this.storageManager.add( Class, Class.testData);
+        if ("testData" in Class) await this.storageManager.add( Class, Class.testData);
       }
     } catch (e) {
-      console.log( `${e.constructor.name}: ${e.message}`);
+      console.error(`${e.constructor.name}: ${e.message}`);
     }
   }
   async clearDatabase() {
     if (confirm( "Do you really want to delete the entire database?")) {
       try {
         await this.storageManager.deleteDatabase();
-        console.log("All data cleared.");
+        // rebuild empty database
+        const busObjClasses = Object.values( dt.classes);
+        await this.storageManager.openDbOrCreateEmptyDb( busObjClasses);
       } catch (e) {
-        console.log( `${e.constructor.name}: ${e.message}`);
+        console.error(`${e.constructor.name}: ${e.message}`);
       }
     }
   }

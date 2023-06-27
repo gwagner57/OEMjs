@@ -76,7 +76,7 @@
  filter( c => !c.isAbstract && !c.isComplexDatatype);
  try {
    storeMan.deleteDatabase();  // or storeMan.clearDB()
-   storeMan.createEmptyDb( classes);
+   storeMan.openDbOrCreateEmptyDb( classes);
  } catch (e) {
    console.log( e.constructor.name +": "+ e.message);
  }

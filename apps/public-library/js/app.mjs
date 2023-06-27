@@ -7,6 +7,7 @@ import Person from "./Person.mjs";
 import Publisher from "./Publisher.mjs";
 import Book from "./Book.mjs";
 import {BookCopy, BookCopyStatusEL} from "./BookCopy.mjs";
+import BookReturnReminder from "./BookReturnReminder.mjs";
 import BookLending from "./BookLending.mjs";
 import BookReturn from "./BookReturn.mjs";
 
@@ -18,6 +19,8 @@ const app = new bUSINESSaPP({title:"OEMjs Public Library App",
             storageManager: new sTORAGEmANAGER({adapterName:"IndexedDB", dbName:"PublicLibrary",
                 createLog: true, validateBeforeSave: true})
 });
+// app parameter
+app.lendingPeriod = 28;  // days
 
 Publisher.testData = [{name:"Bantam Books", address:"New York, USA"},
     {name:"Basic Books", address:"New York, USA"}];

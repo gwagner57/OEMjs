@@ -15,7 +15,7 @@ import eNUMERATION from "./eNUMERATION.mjs";
  *  time period can be recorded and can be included in certain app statistics.
  */
 class bUSINESSaCTIVITY extends bUSINESSeVENT {
-  constructor({id, occTime, startTime = (new Date()).getTime(), duration}={}) {
+  constructor({id, occTime, startTime = Date.now(), duration}={}) {
     super({id, occTime, startTime, duration});
   }
   /***************************************************

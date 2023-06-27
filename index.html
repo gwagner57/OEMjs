@@ -141,7 +141,7 @@ Book.properties = {
   "year": {range:"Integer", min: 1459, max: util.nextYear()},
   "edition": {range:"PositiveInteger", optional: true}
 }</pre>
-  <p>Suitable range constraints can be defined by using one of the supported range keywords listed below.</p>
+  <p>Suitable range constraints can be defined by using one of the following range keywords:</p>
   <ul>
   <li>"String", "NonEmptyString", "Identifier", "Email", "URL", "PhoneNumber"</li>
   <li>"Integer", "PositiveInteger", "NonNegativeInteger", "AutoNumber"</li>
@@ -151,13 +151,13 @@ Book.properties = {
   </ul>
 
   <p>The constraints defined for a property in a business object class can be checked on input/change and before submit in an HTML form and, in addition, before commit in the <code>add</code> and <code>update</code> methods of a storage manager, using the generic validation method
-  <code>bUSINESSoBJECT.check</code>, as shown in the following example:</p>
+  <code>dt.check</code>, as shown in the following example:</p>
   <pre>const formEl = document.querySelector("#Book-Create > form");
 // loop over Book.properties and add event listeners for validation on input
 for (const propName of Object.keys( Book.properties)) {
-  const propDecl = Book.properties[propName];
+  const propDef = Book.properties[propName];
   formEl[propName].addEventListener("input", function () {
-    var errMsg = bUSINESSoBJECT.check( propName, propDecl, formEl[propName].value).message;
+    var errMsg = dt.check( propName, propDef, formEl[propName].value).message;
     formEl[propName].setCustomValidity( errMsg);
   });
 });</pre>

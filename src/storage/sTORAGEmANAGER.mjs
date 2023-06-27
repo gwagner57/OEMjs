@@ -56,9 +56,9 @@ class sTORAGEmANAGER {
   async hasDatabaseContents() {
     var result = false;
     try {
-      result = await this.adapter.hasDatabaseContents( this.dbName);
+      result = await this.adapter.hasDatabaseContents( this.dbName, this.adapter.dbx);
     } catch (error) {
-      console.log( error.name +": "+ error.message);
+      console.error( error.name +": "+ error.message);
     }
     return result;
   }
@@ -67,10 +67,11 @@ class sTORAGEmANAGER {
    * @method
    * @param {Array} classes  The business object classes to be persisted
    */
-  async createEmptyDb( classes) {
+  async openDbOrCreateEmptyDb( classes) {
     try {
-      await this.adapter.createEmptyDb( this.dbName, classes);
-      if (this.createLog) console.log(`Database ${this.dbName} with empty tables ${classes.map(c=>c.name)} created`);
+      // get DB connection
+      this.adapter.dbx = await this.adapter.openDbOrCreateEmptyDb( this.dbName, classes);
+      if (this.createLog) console.log(`Connection to database ${this.dbName} established.`);
     } catch (error) {
       console.log( error.name +": "+ error.message);
     }
@@ -83,10 +84,10 @@ class sTORAGEmANAGER {
   async deleteDatabase( dbName) {
     try {
       dbName = dbName || this.dbName;
-      await this.adapter.deleteDatabase( dbName);
+      await this.adapter.deleteDatabase( dbName, this.adapter.dbx);
       if (this.createLog) console.log(`Database ${dbName} deleted`);
     } catch (error) {
-      console.log( error.name +": "+ error.message);
+      console.error( error.name +": "+ error.message);
     }
   }
   /**
@@ -132,12 +133,19 @@ class sTORAGEmANAGER {
       }
     }
     try {
-      await this.adapter.add( this.dbName, Class, recordsToAdd);
+      await this.adapter.add( this.dbName, this.adapter.dbx, Class, recordsToAdd);
       if (this.createLog) console.log(`${recordsToAdd.length} ${Class.name}(s) added.`);
     } catch (error) {
-      if (error.name === "NotFoundError") {
+      switch (error.name) {
+      case "NotFoundError":
         console.error(`Object store ${Class.name} not found!`);
-      } else console.error(`${error.name}: ${error.message}`);
+        break;
+      case "DataError":
+        console.error(`Missing ID value in ${Class.name} record: ${recordsToAdd}`);
+        break;
+      default:
+        console.error(`${error.name}: ${error.message}`);
+      }
     }
   };
   /**
@@ -152,7 +160,7 @@ class sTORAGEmANAGER {
     const checkRefInt = dt.checkReferentialIntegrity;
     dt.checkReferentialIntegrity = false;  // disable referential integrity checking
     try {
-      const rec = await this.adapter.retrieve( this.dbName, Class, id);
+      const rec = await this.adapter.retrieve( this.dbName, this.adapter.dbx, Class, id);
       if (!rec) {
         console.error(`Retrieval of ${Class.name} ${id} failed!`);
       } else {
@@ -204,7 +212,7 @@ class sTORAGEmANAGER {
     const checkRefInt = dt.checkReferentialIntegrity;  // store the setting
     dt.checkReferentialIntegrity = false;  // disable referential integrity checking
     try {
-      const entityRecords = await this.adapter.retrieveAll( this.dbName, Class);
+      const entityRecords = await this.adapter.retrieveAll( this.dbName, this.adapter.dbx, Class);
       alreadyRetrievedClasses.push( Class.name);
       Class.lastRetrievalTime = (new Date()).getTime();
       //console.log("Entity records: ", JSON.stringify(entityRecords));
@@ -322,7 +330,7 @@ class sTORAGEmANAGER {
       if (noConstraintViolated) {
         if (updatedProperties.length > 0) {
           try {
-            this.adapter.update( this.dbName, Class, id, updRec);
+            this.adapter.update( this.dbName, this.adapter.dbx, Class, id, updRec);
             // update in-memory object
             if (id in Class.instances) {
               for (const p of Object.keys( slots)) {
@@ -349,7 +357,8 @@ class sTORAGEmANAGER {
   async destroy( Class, id) {
     const dbName = this.dbName;
     try {
-      this.adapter.destroy( dbName, Class, id);
+      this.adapter.destroy( dbName, this.adapter.dbx, Class, id);
+      delete Class.instances[id];
       console.log(`${Class.name} ${id} deleted.`);
     } catch (error) {
       console.log(`${error.name}: ${error.message}`);
@@ -360,7 +369,7 @@ class sTORAGEmANAGER {
    * @method
    */
   async clearTable( Class) {
-    await this.adapter.clearTable( this.dbName, Class);
+    await this.adapter.clearTable( this.dbName, this.adapter.dbx, Class);
   }
   /**
    * Generic method for clearing a DB (clearing all of its tables)
@@ -395,7 +404,7 @@ sTORAGEmANAGER.adapters = {};
  ****************************************************************************/
 sTORAGEmANAGER.adapters["LocalStorage"] = {
   //-----------------------------------------------------------------
-  createEmptyDb: function (dbName, modelClasses) {  // nothing to do
+  openDbOrCreateEmptyDb: function (dbName, modelClasses) {  // nothing to do
   //-----------------------------------------------------------------
   },
   //------------------------------------------------
@@ -635,15 +644,16 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     return obj;
   },
   //------------------------------------------------
-  hasDatabaseContents: async function (dbName) {
+  hasDatabaseContents: async function (dbName, dbx) {
   //------------------------------------------------
-    const db = await openDB( dbName),
-          result = db.objectStoreNames.length > 0;
-    db.close();
+    var result = false;
+    const firstTableName = dbx.objectStoreNames[0];
+    const count = await dbx.transaction([firstTableName], "readonly").objectStore(firstTableName).count();
+    result = count > 0;
     return result;
   },
   //------------------------------------------------
-  createEmptyDb: async function (dbName, modelClasses) {
+  openDbOrCreateEmptyDb: async function (dbName, modelClasses) {
   //------------------------------------------------
     return await openDB( dbName, 1, {
       upgrade(db) {
@@ -651,31 +661,38 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
           const tn = mc.tableName || util.class2TableName( mc.name);
           if (!db.objectStoreNames.contains( tn)) {
             db.createObjectStore( tn, {keyPath: mc.idAttribute});
+            console.log(`Object store ${tn} created.`);
           }
         }
+      },
+      blocked( currentVersion, blockedVersion, event) {
+        console.log(`Old version ${blockedVersion} still open, so version ${currentVersion} cannot open.`);
+      },
+      blocking( currentVersion, blockedVersion, event) {
+        console.log(`Version ${currentVersion} still open, blocking the attempt to open ${blockedVersion}.`);
+      },
+      terminated() {
+        console.log(`Connection for database ${dbName} abnormally terminated.`);
       }
     });
   },
   //------------------------------------------------
-  deleteDatabase: async function (dbName) {
+  deleteDatabase: async function (dbName, dbx) {
   //------------------------------------------------
-    /*
-    const db = await openDB( dbName);
-    db.close();
-    */
+    dbx.close();
     await deleteDB( dbName, {
-      blocked() {
-        console.log(`Database ${dbName} can only be deleted after open connections are being closed.`)
+      blocked( currentVersion) {
+        console.log(`Database ${dbName} can only be deleted after the open connection to version ${currentVersion} is closed.`)
       },
     });
   },
   //------------------------------------------------
-  add: async function (dbName, Class, records) {
+  add: async function (dbName, dbx, Class, records) {
   //------------------------------------------------
-    const db = await openDB( dbName);
+    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     // create a transaction involving only the table with the provided name
-    const tx = db.transaction( tableName, "readwrite");
+    const tx = dbx.transaction( tableName, "readwrite");
     // create a list of add invocation expressions
     const addInvocationExpressions = records.map( r => tx.store.add( r));
     // invoke all of them in parallel and wait for their completion
@@ -684,56 +701,57 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     await tx.done;
   },
   //------------------------------------------------
-  retrieve: async function (dbName, Class, id) {
+  retrieve: async function (dbName, dbx, Class, id) {
   //------------------------------------------------
-    const db = await openDB( dbName);
+    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    return db.get( tableName, id);
+    return dbx.get( tableName, id);
   },
   //------------------------------------------------
-  retrieveAll: async function (dbName, Class) {
+  retrieveAll: async function (dbName, dbx, Class) {
   //------------------------------------------------
-    const db = await openDB( dbName);
+    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    return db.getAll( tableName);
+    return dbx.getAll( tableName);
   },
   //------------------------------------------------
-  update: async function (dbName, Class, id, slots) {
+  update: async function (dbName, dbx, Class, id, slots) {
   //------------------------------------------------
-    const db = await openDB( dbName);
+    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    const record = await db.get( tableName, id);
+    // retrieve the object/record concerned
+    const record = await dbx.get( tableName, id);
     // update the properties concerned
     for (const propName of Object.keys( slots)) {
       record[propName] = slots[propName];
     }
-    // save updated object
-    db.put( tableName, record);
+    // save updated object/record
+    dbx.put( tableName, record);
   },
   //------------------------------------------------
-  destroy: async function (dbName, Class, id) {
+  destroy: async function (dbName, dbx, Class, id) {
   //------------------------------------------------
-    const db = await openDB( dbName);
+    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     // slots[Class.idAttribute] = id;
-    db.delete( tableName, id);
+    dbx.delete( tableName, id);
   },
   //------------------------------------------------
-  clearTable: async function (dbName, Class) {
+  clearTable: async function (dbName, dbx, Class) {
   //------------------------------------------------
-    const db = await openDB( dbName);
+    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    await db.clear( tableName);
+    await dbx.clear( tableName);
   },
   //------------------------------------------------
-  clearDB: async function (dbName) {
+  clearDB: async function (dbName, dbx) {
   //------------------------------------------------
-    const db = await openDB( dbName);
+    //const db = await openDB( dbName);
     // create a transaction involving all tables of the database
-    const tx = db.transaction( db.objectStoreNames, "readwrite");
+    const tx = dbx.transaction( db.objectStoreNames, "readwrite");
     // create a list of clear invocation expressions
     const clearInvocationExpressions =
-        Array.from( db.objectStoreNames, osName => tx.objectStore( osName).clear());
+        Array.from( dbx.objectStoreNames, osName => tx.objectStore( osName).clear());
     // invoke all of them in parallel and wait for their completion
     await Promise.all( clearInvocationExpressions);
     // wait for the completion of the transaction tx
