@@ -6,7 +6,7 @@
  * @license The MIT License (MIT)
  *
  * TODO: + Reset select-multiple-items widget after save for "c" and "U"
- * + Check ID constraint in "C"
+ * + Check ID constraint in "CREATE"
  * + Show AutoNumberID in output field in "C"
  */
 
@@ -25,8 +25,8 @@ import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
  * with fields (typically bound to model class properties) and methods (typically
  * implementing user actions and possibly bound to model class methods).
  *
- * A view is a logical representation of the interaction elements of a UI, which in
- * most cases correspond to properties and methods of a business object (or model)
+ * A view is a logical representation of the information items and interaction elements
+ * of a UI, which in most cases correspond to properties and methods of a business object
  * class. It consists of fields and user action types, which are either pre-defined
  * (like "back", "createRecord", "setViewModelObject", updateRecord" and
  * "deleteRecord") or developer-defined.
@@ -43,11 +43,12 @@ import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
  * CRUD views are special views with an underlying business object class and a
  * "viewType" identified by one of the characters "C", "R", "U" and "D".
  *
- * A view field has an I/O mode of either "I/O" (input/output) or "O". The
- * value of a view field complies with its range, while the values of HTML
- * input/output and select elements are always strings. This has to be taken
- * into consideration in the two-way data binding between view fields and their
- * HTML UI elements.
+ * A view field has an I/O mode of either "I/O" (input/output) or "O". The value of
+ * a view field (in view.fieldValues) complies with its range, except for reference
+ * fields whose values are ID references (instead of object references). As opposed
+ * to view field values, the values of the corresponding HTML input/output and
+ * select elements are always strings. This has to be taken into consideration
+ * in the two-way data binding between view fields and their HTML UI elements.
  *
  * When a view is rendered, its fields are rendered as UI elements in the
  * following way:
@@ -72,10 +73,6 @@ import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
  * A user action type is a named JS function where the name indicates the intended 
  * meaning of the user action (such as "save"). It binds a UI event type, such as
  * clicking on a button, to a view method as its "event handler".
- *
- * TODO: When a view field is bound to a model class property and the view is
- * bound to a model object, the value of the corresponding form field is updated 
- * whenever the corresponding property value of the model object is updated.
  *
  * A view can be rendered in different ways:
  * 1) By creating all required DOM elements (form elements with controls), and 
@@ -413,8 +410,7 @@ class vIEW {
             } else {
               containerEl.appendChild( createLabeledYesNoField( fld));
             }
-          } else if ((typeof range === "string" && range in dt.classes ||
-                     range.constructor === bUSINESSoBJECT)) { // a bUSINESSoBJECT reference field
+          } else if ((range in dt.classes || range.constructor === bUSINESSoBJECT)) { // a bUSINESSoBJECT reference field
             const Class = typeof range === "string" ? dt.classes[range] : range,
                   labelEl = document.createElement("label");
             labelEl.textContent = fldDef.label;
@@ -540,16 +536,7 @@ class vIEW {
       }));
       break;
     case "C":  //================ CREATE ============================
-      for (const f of Object.keys( fieldDefs)) {
-        if (fieldDefs[f].maxCard && fieldDefs[f].maxCard > 1) {
-          if (fieldDefs[f].range in dt.classes) this.fldValues[f] = {};
-          else this.fldValues[f] = [];
-        } else if (fieldDefs[f].range in dt.classes) {
-          this.fldValues[f] = null;
-        } else {
-          this.fldValues[f] = dt.getDefaultValue( fieldDefs[f].range);
-        }
-      }
+      this.resetViewFields();
       // create form fields for all view fields
       createUiElemsForViewFields();
       // create save and back buttons
@@ -597,7 +584,7 @@ class vIEW {
         if (formEl.checkValidity())  {
           view.userActions["createRecord"]( slots);
           // clear view fields, otherwise they are sent again even if the form is empty!
-          for (const fName in slots) view.fldValues[fName] = undefined;
+          view.resetViewFields();
         }
       });
       break;
@@ -725,16 +712,7 @@ class vIEW {
       });
       break;
     default:  // activity UI
-      for (const f of Object.keys( fieldDefs)) {
-        if (fieldDefs[f].maxCard && fieldDefs[f].maxCard > 1) {
-          if (fieldDefs[f].range in dt.classes) this.fldValues[f] = {};
-          else this.fldValues[f] = [];
-        } else if (fieldDefs[f].range in dt.classes) {
-          this.fldValues[f] = null;
-        } else {
-          this.fldValues[f] = dt.getDefaultValue( fieldDefs[f].range);
-        }
-      }
+      this.resetViewFields();
       // create form fields for all view fields
       createUiElemsForViewFields();
       // create delete and back buttons
@@ -743,45 +721,49 @@ class vIEW {
         classValues:"button-group"
       }));
       // handle OK button click events
-      formEl["submitButton"].addEventListener("click", function () {
+      formEl["submitButton"].addEventListener("click", async function () {
         const slots = {};
         for (const f of Object.keys( fieldDefs)) {
-          if (fieldDefs[f].optional && view.fldValues[f] || !fieldDefs[f].optional) {
-            // perform validation on save
-            const range = fieldDefs[f].range;
-            let msg="";
-            slots[f] = view.fldValues[f];
-            if (!(range instanceof eNUMERATION) && !(range in dt.classes)) {
-              const constrVio = dt.check( f, fieldDefs[f], slots[f]);
-              if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
-                slots[f] = constrVio[0].checkedValue;
-              } else {
-                msg = constrVio[0].message;
+          const fldDef = fieldDefs[f];
+          if (fldDef.optional && view.fldValues[f] || !fldDef.optional) {
+            const range = fldDef.range;
+            slots[f] = view.fldValues[f];  // for "performActivity"
+            if (!(range in dt.classes)) {  // no validation for reference properties
+              if (fldDef.inputOutputMode === "O") continue;  // no validation
+              let msg="";
+              // perform validation on save
+              if (range instanceof eNUMERATION) {
+                /* Either a field set with child input elements, or
+                   a select element with attribute data-bind="property-name".
+                   Since browsers do not render validation of fieldset, we have to use
+                   the first input element instead, and call its setCustomValidity
+                */
+                const elem = formEl.querySelector(`[data-bind=${f}] input:first-of-type`) ||
+                    formEl.querySelector(`select[data-bind=${f}]`);
+                const constrVio = dt.check( f, fldDef, slots[f]);
+                if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
+                  slots[f] = constrVio[0].checkedValue;
+                } else {
+                  msg = constrVio[0].message;
+                }
+                elem.setCustomValidity( msg);
+              } else {  // for alphanumeric, Boolean, date and complex value ranges
+                const constrVio = dt.check( f, fldDef, slots[f]);
+                if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
+                  slots[f] = constrVio[0].checkedValue;
+                } else {
+                  msg = constrVio[0].message;
+                }
+                formEl[f].setCustomValidity( msg);
               }
-              formEl[f].setCustomValidity( msg);
-            } else if (range instanceof eNUMERATION) {
-              /* Either a field set with child input elements, or
-                 a select element with attribute data-bind="property-name".
-                 Since browsers do not render validation of fieldset, we have to use
-                 the first input element instead, and call its setCustomValidity
-              */
-              const elem = formEl.querySelector(`[data-bind=${f}] input:first-of-type`) ||
-                  formEl.querySelector(`select[data-bind=${f}]`);
-              const constrVio = dt.check( f, fieldDefs[f], slots[f]);
-              if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
-                slots[f] = constrVio[0].checkedValue;
-              } else {
-                msg = constrVio[0].message;
-              }
-              elem.setCustomValidity( msg);
             }
           }
         }
         if (formEl.checkValidity())  {
           // map UI event to a user action defined by the view
-          view.userActions["performActivity"]( slots);
+          await view.userActions["performActivity"]( slots);
           // clear view fields, otherwise they are sent again even if the form is empty!
-          for (const fName in slots) view.fldValues[fName] = undefined;
+          view.resetViewFields();
         }
       });
     }
@@ -790,11 +772,32 @@ class vIEW {
       formEl["backButton"].addEventListener("click", this.userActions["back"]);
     }
  	  //TODO: only for local storage???
-/*
+    /*
     window.addEventListener("beforeunload", function () {
         modelClass.saveAll(); 
     });
-*/
+    */
+  }
+  /**
+   * Generic setter for view fields, takes also care of bottom-up data-binding
+   * (from view field to corresponding UI widget)
+   * this = view object
+   * @method
+   * @author Gerd Wagner
+   * TODO: support derived and dependent view fields
+   */
+  resetViewFields() {
+    for (const f of Object.keys( this.fields)) {
+      const fldDef = this.fields[f];
+      if (fldDef.maxCard > 1) {
+        if (fldDef.range in dt.classes) this.fldValues[f] = {};
+        else this.fldValues[f] = [];
+      } else if (fldDef.range in dt.classes) {
+        this.fldValues[f] = undefined;  // view field holds ID strings
+      } else {
+        this.fldValues[f] = dt.getDefaultValue( fldDef.range);
+      }
+    }
   }
   /**
    * Generic setter for view fields, takes also care of bottom-up data-binding
@@ -808,13 +811,9 @@ class vIEW {
     var el=null, elems=null;
     const fldDef = this.fields[f],
           uiEl = this.dataBinding[f];
-    if (v === undefined) {
-      if (fldDef?.maxCard) v = [];
-      this.fldValues[f] = v;
-      return;
-    }
     // assign view field
     if (Array.isArray(v)) this.fldValues[f] = [...v];  // clone
+    else if (typeof v === "object") this.fldValues[f] = {...v};  // clone
     else this.fldValues[f] = v;
     // bottom-up data-binding: render the view field value in the UI element/widget
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
@@ -861,10 +860,20 @@ class vIEW {
    * @param {string} id  the object's standard ID value
    */
   setModelObject( id) {
+    const propDefs = this.modelClass.properties;
+    let val;
     this.modelObject = this.modelClass.instances[id];
-    for (const propName of Object.keys( this.modelClass.properties)) {
+    for (const propName of Object.keys( propDefs)) {
       // assign view field value if the view has a field based on the model property
-      if (propName in this.fields) this.setViewField( propName, this.modelObject[propName]);
+      if (propName in this.fields) {
+        if (propDefs.range in dt.classes && propDefs.maxCard > 1) {
+          // a single-valued reference field holds an ID reference
+          val = this.modelObject[propName][propDefs.range.idAttribute];
+        } else {
+          val = this.modelObject[propName];
+        }
+        this.setViewField( propName, val);
+      }
     }
   }
 
@@ -1178,8 +1187,7 @@ class vIEW {
         await vIEW.app.storageManager.retrieveAll( modelClass);
       }
       dom.fillSelectWithOptionsFromEntityTable( selectEl,
-          modelClass.instances,
-          modelClass.idAttribute);
+          modelClass.instances, modelClass.idAttribute, modelClass.displayAttribute);
       if (operationCode === "U") {
         for (const refProp of modelClass.referenceProperties) {
           // refresh the options of the corresponding selection list
@@ -1227,7 +1235,7 @@ class vIEW {
       console.error(`Table in UI section ${className}-R does not have the required structure!`);
       return;
     }
-    tblEl.tBodies[0].innerHTML = "";
+    tblEl.tBodies[0].innerHTML = "";  // drop current table contents
     const columns = tblEl.tHead.rows[0].cells;
     for (const entityId of Object.keys( mc.instances)) {
       const obj = mc.instances[entityId],
@@ -1255,7 +1263,7 @@ class vIEW {
           if (range === "Date") {
             content = dom.createTime( val).outerHTML;
           } else if (range in dt.classes) {  // reference property
-            if (propDef.maxCard && propDef.maxCard > 1) {
+            if (propDef.maxCard > 1) {
               let objList=[];
               if (!Array.isArray( val)) objList = Object.values( val);
               else objList = val;

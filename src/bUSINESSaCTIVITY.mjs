@@ -24,6 +24,8 @@ class bUSINESSaCTIVITY extends bUSINESSeVENT {
   static setup() {
     const Class = this,
           propDefs = Class.properties || {};  // property definitions
+    super.setup( Class);
+    /*
     // initialize the Class.instances map
     if (!Class.isAbstract) Class.instances = {};
     const admissibleRanges = [...dt.supportedDatatypes, ...Object.keys( dt.classes),
@@ -50,8 +52,9 @@ class bUSINESSaCTIVITY extends bUSINESSeVENT {
         enumerable: true
       });
     }
+    */
     if (!Class.idAttribute) {
-      Class.properties["id"] = {range:"Integer"};
+      Class.properties["id"] = {range:"AutoIdNumber"};
       Class.idAttribute = "id";
     }
   }

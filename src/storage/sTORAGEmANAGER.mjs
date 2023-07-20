@@ -5,9 +5,9 @@
  *   Brandenburg University of Technology, Germany.
  * @license The MIT License (MIT)
  *
- * TODO: + take care of proper Date conversions in IndexedDB obj2rec and rec2obj
- * + set a "lastRetrievalTime" for each record/object in Class.instances to be used for avoiding secondary storage reads
- * + add the (re-)construction of inverse ref props in RetrieveAll in a loop over all inverse ref props of the current class
+ * TODO: + take care of proper Date conversions in IndexedDB objSlots2recSlots and rec2obj
+ * + check ID constraints in CREATE view and storageManager.add
+ * +
  */
 import util from "../../lib/util.mjs";
 import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
@@ -63,7 +63,7 @@ class sTORAGEmANAGER {
     return result;
   }
   /**
-   * Generic method for creating an empty database (with a set of empty tables)
+   * Generic method for opening an existing DB or creating an empty DB (with a set of empty tables)
    * @method
    * @param {Array} classes  The business object classes to be persisted
    */
@@ -94,17 +94,17 @@ class sTORAGEmANAGER {
    * Generic method for "persisting" a list of object records
    * @method
    * @param {object} Class  The business object class concerned
-   * @param {object} rec  A record or record list
+   * @param {object} recordOrRecordList  A record, or a record list, of object attribute values
    */
-  async add( Class, rec) {
+  async add( Class, recordOrRecordList) {
     var recordsToAdd=[];
-    if (!Class) throw new Error(`Cannot add ${JSON.stringify(rec)} without a Class argument`);
-    if (typeof rec === "object" && !Array.isArray(rec)) {
-      recordsToAdd = [this.adapter.obj2rec( rec, Class)];
-    } else if (Array.isArray(rec) && rec.every( r => typeof r === "object" && !Array.isArray(r))) {
-      recordsToAdd = rec.map( r => this.adapter.obj2rec( r, Class));
+    if (!Class) throw new Error(`Cannot add ${JSON.stringify(recordOrRecordList)} without a Class argument`);
+    if (typeof recordOrRecordList === "object" && !Array.isArray(recordOrRecordList)) {
+      recordsToAdd = [this.adapter.objSlots2recSlots( recordOrRecordList, Class)];
+    } else if (Array.isArray(recordOrRecordList) && recordOrRecordList.every( r => typeof r === "object" && !Array.isArray(r))) {
+      recordsToAdd = recordOrRecordList.map( r => this.adapter.objSlots2recSlots( r, Class));
     } else throw new Error("2nd argument of 'add' must be a record or record list! Invalid value: "+
-                           JSON.stringify(rec));
+                           JSON.stringify(recordOrRecordList));
     //console.log("recordsToAdd: ", JSON.stringify( recordsToAdd));
     const idAttr = Class.idAttribute;
     // create auto-IDs if required
@@ -113,6 +113,7 @@ class sTORAGEmANAGER {
         if (!r[idAttr]) {  // do not overwrite assigned ID values
           if (typeof Class.getAutoId === "function") r[idAttr] = Class.getAutoId();
           else if (Class.idCounter !== undefined) r[idAttr] = ++Class.idCounter;
+          else r[idAttr] = Class.idCounter = 1001;
         }
       }
     }
@@ -120,15 +121,17 @@ class sTORAGEmANAGER {
     if (this.validateBeforeSave) {
       for (let i=0; i < recordsToAdd.length; i++) {
         const r = recordsToAdd[i];
-        let newObj=null;
-        try {
-          newObj = new Class( r);  // check constraints
-        } catch (e) {
-          if (e instanceof ConstraintViolation) {
+        for (const f of Object.keys( r)) {
+          const checkRefInt = dt.checkReferentialIntegrity;
+          dt.checkReferentialIntegrity = false;
+          const validationResults = dt.check( f, Class.properties[f], r[f]);
+          dt.checkReferentialIntegrity = checkRefInt;
+          if (!(validationResults[0] instanceof NoConstraintViolation)) {
+            const e = validationResults[0];  //TODO: support multiple errors
             console.error( e.constructor.name +": "+ e.message);
-          } else console.error( e);
-          // remove record from the records to add
-          recordsToAdd.splice( i, 1);
+            // remove record from the records to add
+            recordsToAdd.splice( i, 1);
+          }
         }
       }
     }
@@ -176,11 +179,12 @@ class sTORAGEmANAGER {
           let idRefs=[];
           if (AssociatedClass === Class ||
               (currentTime - AssociatedClass.lastRetrievalTime < this.cacheExpirationTime)) continue;
-          if (refPropDef.maxCard && refPropDef.maxCard > 1) idRefs = rec[refProp];
+          if (refPropDef.maxCard > 1) idRefs = rec[refProp];
           else  idRefs = [rec[refProp]];
           for (const idRef of idRefs) {
             const lastRetrievalTime = AssociatedClass.instances[idRef]?.lastRetrievalTime ?? 0;
             if (currentTime - lastRetrievalTime > this.cacheExpirationTime) {
+              console.log(`AssociatedClass: ${AssociatedClass.name},idRef: ${idRef}`);
               const associatedObject = await this.retrieve( AssociatedClass, idRef);
               if (associatedObject) {
                 associatedObject.lastRetrievalTime = (new Date()).getTime();
@@ -283,10 +287,10 @@ class sTORAGEmANAGER {
   async update( Class, id, slots) {
     var updatedProperties=[], noConstraintViolated = true;
     // convert special values to storage representation (e.g., objRefs -> idRefs)
-    const updRec = this.adapter.obj2rec( slots, Class);
+    const updRec = this.adapter.objSlots2recSlots( slots, Class);
     // check if an object record with this ID exists and its values have been changed
     const objectBeforeUpdate = await this.retrieve( Class, id),
-          recordBeforeUpdate = this.adapter.obj2rec( objectBeforeUpdate, Class);
+          recordBeforeUpdate = this.adapter.objSlots2recSlots( objectBeforeUpdate, Class);
     if (objectBeforeUpdate) {
       for (const prop of Object.keys( updRec)) {
         const oldVal = recordBeforeUpdate[prop],
@@ -558,18 +562,18 @@ sTORAGEmANAGER.adapters["LocalStorage"] = {
 
 sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
-  obj2rec: function (slots, Class) {
+  objSlots2recSlots: function (slots, Class) {
   //------------------------------------------------
     let rec={}, valuesToConvert=[], convertedValues=[];
     if ("lastRetrievalTime" in slots) delete slots.lastRetrievalTime;
     for (let p of Object.keys( slots)) {
+      const val = slots[p];
       // remove underscore prefix from internal property name
       if (p.charAt(0) === "_") p = p.slice(1);
-      const val = slots[p],
-            propDef = Class.properties[p],
+      const propDef = Class.properties[p],
             range = propDef.range;
       // create a list of values to convert
-      if (propDef.maxCard && propDef.maxCard > 1) {
+      if (propDef.maxCard > 1) {
         if (range in dt.classes) { // object reference(s)
           if (Array.isArray( val)) {
             valuesToConvert = [...val];  // clone;
@@ -578,24 +582,24 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
           }
         } else if (Array.isArray( val)) {
           valuesToConvert = [...val];  // clone;
-        } else console.error("Invalid collection in obj2rec:", JSON.stringify(val));
+        } else console.error("Invalid collection in objSlots2recSlots:", JSON.stringify(val));
       } else {  // maxCard=1
         valuesToConvert = [val];
       }
       if (dt.supportedDatatypes.includes( range) || range instanceof eNUMERATION) {
         convertedValues = valuesToConvert;
-      } else if (range in dt.classes) { // object reference(s)
+      } else if (range in dt.classes) {  // object reference(s)
         // get ID attribute of referenced class
         const idAttr = dt.classes[range].idAttribute;
         convertedValues = valuesToConvert.map( v => typeof v === "object" ? v["_"+idAttr] : v);
-        //console.log("valuesToConvert: ", JSON.stringify( valuesToConvert));
-        //console.log("convertedValues: ", JSON.stringify( convertedValues));
+        console.log("objSlots2recSlots valuesToConvert: ", JSON.stringify( valuesToConvert));
+        console.log("objSlots2recSlots convertedValues: ", JSON.stringify( convertedValues));
         /*
       } else if (range === "Date") {
         valuesToConvert[i] = dt.dataTypes["Date"].val2str( v);
          */
       } else {
-        console.log(`The range ${range} is not yet considered in obj2rec.`);
+        console.log(`The range ${range} is not yet considered in objSlots2recSlots.`);
         convertedValues = valuesToConvert;
       }
       if (!propDef.maxCard || propDef.maxCard <= 1) {
@@ -610,22 +614,44 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   rec2obj: function (rec, Class) {
   //------------------------------------------------
     const obj = new Class( rec);  // may throw exception caught in calling procedure
-    // convert ID references to internal object references
+    console.log("rec2obj rec: ", JSON.stringify( rec));
+    console.log("rec2obj obj: ", JSON.stringify( obj));
     for (const refProp of Class.referenceProperties) {
       const propDef = Class.properties[refProp],
+            val = obj[refProp],
             AssociatedClass = dt.classes[propDef.range];
-      let idRefs=[], objRefs=[];
-      if (!Array.isArray(obj[refProp])) {  // single-valued reference property
-        if (obj[refProp] !== undefined) idRefs = [obj[refProp]];
-      } else {  // multi-valued reference property (stored as list of ID references)
-        idRefs = obj[refProp];
+      let assObjColl=[];
+      if (propDef.maxCard > 1) assObjColl = val;
+      else assObjColl = [val];
+      for (const associatedObject of assObjColl) {
+        if (associatedObject && !(associatedObject instanceof AssociatedClass)) {
+          console.error(`The value ${JSON.stringify( associatedObject)} of refprop ${refProp} is not an instance of ${AssociatedClass.name}.`,
+              `Instead, it's an instance of ${associatedObject.constructor.name}`);
+        }
       }
-      for (const idRef of idRefs) {
-        const associatedEntity = AssociatedClass.instances[idRef];
+    }
+    // convert ID references to internal object references
+    /*
+    for (const refProp of Class.referenceProperties) {
+      const propDef = Class.properties[refProp],
+            val = obj[refProp],
+            AssociatedClass = dt.classes[propDef.range];
+      let references=[], objRefs=[];
+      if (!propDef.maxCard || propDef.maxCard === 1) {  // single-valued reference property
+        if (val !== undefined) {
+          references = [obj[refProp]];
+        }
+      } else {  // multi-valued reference property (stored as list of ID references)
+        references = obj[refProp];
+      }
+      for (const ref of references) {
+        if (typeof ref === "object") continue;
+        // ref is an ID reference
+        const associatedEntity = AssociatedClass.instances[ref];
         if (associatedEntity) {
           objRefs.push( associatedEntity);
         } else {
-          console.error(`The ID reference ${idRef} of ${Class.name} ${obj[Class.idAttribute]} `+
+          console.error(`The ID reference ${ref} of ${Class.name} ${obj[Class.idAttribute]} `+
               `does not reference an existing ${AssociatedClass.name} entity`);
           return null;
         }
@@ -641,6 +667,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         obj[refProp] = assObjMap;  // a map of associated objects
       }
     }
+    */
     return obj;
   },
   //------------------------------------------------

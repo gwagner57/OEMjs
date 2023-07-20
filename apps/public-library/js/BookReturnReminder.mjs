@@ -6,15 +6,15 @@ import {dt} from "../../../src/datatypes.mjs";
  * @class
  */
 class BookReturnReminder extends bUSINESSoBJECT {
-  constructor ({dueDate, borrower, bookCopies}) {
-    super();
+  constructor ({id, dueDate, borrower, bookCopies}) {
+    super( id);
     this.dueDate = dueDate;
     this.borrower = borrower;
     this.bookCopies = bookCopies;
   }
 }
 BookReturnReminder.properties = {
-  "id": {range:"AutoIdNumber", label:"ID"},
+  "id": {range:"AutoIdNumber", label:"ID", isIdAttribute: true},
   "dueDate": {range:"Date", label:"Due date"},
   "borrower": {range:"Person", label:"Borrower"},
   "bookCopies": {range:"BookCopy", label:"Borrowed book copies", minCard: 1, maxCard: Infinity}

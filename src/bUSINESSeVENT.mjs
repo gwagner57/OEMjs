@@ -1,10 +1,11 @@
+import bUSINESSeNTITY from "./bUSINESSeNTITY.mjs";
+
 /**
  * An event may be instantaneous or it may have a non-zero duration.
  */
-class bUSINESSeVENT {
+class bUSINESSeVENT extends bUSINESSeNTITY {
   constructor({id, occTime, startTime, duration}) {
-    if (id) this.id = id;
-    else this.id = this.constructor.idCounter++;
+    super( id);
     if (typeof occTime === "number") {
       this.occTime = occTime;
     } else if (typeof startTime === "number") {  // an activity
@@ -44,6 +45,12 @@ class bUSINESSeVENT {
     else evtStr = eventTypeName;
     evtStr = `${evtStr}@${math.round(this.occTime,decPl)}`;
     return evtStr;
+  }
+  /***************************************************
+   * To be invoked for each event class definition
+   ***************************************************/
+  static setup( Class) {
+    super.setup( Class);
   }
 }
 

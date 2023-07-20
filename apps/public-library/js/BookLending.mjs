@@ -24,9 +24,9 @@ class BookLending extends bUSINESSaCTIVITY {
           dueDate: new Date( this.date.getTime() + app.lendingPeriod * 24 * 60 * 60 * 1000),  // days to milliseconds
           borrower: this.borrower,
           bookCopies: this.bookCopies});
-      app.storageManager.add( BookReturnReminder, app.storageManager.adapter.obj2rec( brr, BookReturnReminder));
+      app.storageManager.add( BookReturnReminder, brr);
     } catch (e) {
-      console.error( e);
+      console.error(`${e.name}: ${e.message}`);
     }
   }
 }

@@ -10,6 +10,7 @@ class bUSINESSaPP {
     this.bidirectionalAssociations = {};
     this.crudViews = {};
     this.activityViews = {};
+    this.testData = {};
   }
   async setup() {
     // set up all business object classes and their CRUD views
@@ -47,9 +48,12 @@ class bUSINESSaPP {
   }
   async createTestData() {
     try {
-      const busObjClasses = Object.values( dt.classes);
-      for (const Class of busObjClasses) {
-        if ("testData" in Class) await this.storageManager.add( Class, Class.testData);
+      for (const classEntry of this.testData) {
+        const className = Object.keys( classEntry)[0],  // classEntry is a single-entry map
+              records = classEntry[className],
+              Class = dt.classes[className];
+        await this.storageManager.add( Class, records);
+        Class.lastRetrievalTime = 0;
       }
     } catch (e) {
       console.error(`${e.constructor.name}: ${e.message}`);

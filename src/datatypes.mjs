@@ -17,7 +17,7 @@ Array.prototype.isEqualTo = function (a2) {
 
 const dt = {
   classes: {},
-  checkReferentialIntegrity: false,  // flag for disabling referential integrity checking
+  checkReferentialIntegrity: true,  // flag for disabling referential integrity checking
   defaultDecimalPlaces: 2,
   maxLevelOfComplexDatatypeNesting: 3,
   // define lists of datatype names
@@ -441,7 +441,9 @@ const dt = {
       else constrVio.push( new MandatoryValueConstraintViolation(
             `A value for ${attr} is required!`));
     }
-    if (maxCard === 1) {  // single-valued attribute
+    if (maxCard === 1) {  // single-valued property
+      valuesToCheck = [val];
+      /*
       if (range === "JSON-Array" && Array.isArray(val)) {
         valuesToCheck = [[...val]];
       } else if (range === "JSON-Object" && typeof val === "object") {
@@ -449,22 +451,26 @@ const dt = {
       } else {
         valuesToCheck = [val];
       }
-    } else {  // multi-valued properties (can be array-valued or map-valued)
+      */
+    } else {  // multi-valued property (value can be an array or a map)
       if (Array.isArray( val) ) {
+        valuesToCheck = val;
+        /*
         if (range === "JSON-Array" && val.every( el => Array.isArray(el))) {
           valuesToCheck = val.map( a => [...a]);
         } else if (range === "JSON-Object" && val.every( el => typeof el === "object")) {
-          valuesToCheck = val.map( function (o) {return {...o};});
+          valuesToCheck = val.map( o => ({...o}));
         } else {
           valuesToCheck = val;
         }
-      } else if (typeof val === "object" && typeof range === "string" && range in dt.classes) {
+        */
+      } else if (typeof val === "object" && range in dt.classes) {
         if (!attrDef.isOrdered) valuesToCheck = val;
         else constrVio.push( new RangeConstraintViolation(
-            `The ordered-collection-valued attribute ${attr} must not have a map value like ${val}`));
+              `The ordered-collection-valued attribute ${attr} must not have a map value like ${val}.`));
       } else {
-        valuesToCheck = [val];
-      }
+        constrVio.push( new RangeConstraintViolation(
+            `The value ${val} does not represent a collection value for attribute ${attr}.`));      }
     }
     /***************************************************************
      ***  Convert value strings to values  *************************
@@ -552,19 +558,21 @@ const dt = {
                 `The ${attr} value ${v} is not in ad-hoc enumeration ${range.toString()}`));
           }
         }
-      } else if (range in dt.classes && dt.checkReferentialIntegrity) {
+      } else if (range in dt.classes) {
         const RangeClass = dt.classes[range];  // a bUSINESSoBJECT class
         if (Array.isArray( valuesToCheck)) {
           valuesToCheck.forEach( function (v, i) {
-            if (!(v instanceof RangeClass)) {
-              if (typeof v === "object") {
+            if (typeof v === "object") {
+              if (!(v instanceof RangeClass)) {
                 constrVio.push( new ReferentialIntegrityConstraintViolation(
                     `The object ${JSON.stringify(v)} referenced by attribute ${attr} is not from its range ${range}`));
+              }
+            } else {
+              if (v in RangeClass.instances) {  // convert IdRef to object reference
+                valuesToCheck[i] = RangeClass.instances[v];
               } else {
-                // convert IdRef to object reference
-                if (RangeClass.instances[v]) {
-                  valuesToCheck[i] = RangeClass.instances[v];
-                } else {
+                valuesToCheck[i] = v;  // temporarily store ID reference
+                if (dt.checkReferentialIntegrity && !(v in RangeClass.instances)) {
                   constrVio.push( new ReferentialIntegrityConstraintViolation(
                       `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
                 }
@@ -770,5 +778,8 @@ class rECORDtYPE {
     this.fieldTypes = fieldNameTypePairs;
   }
 }
+
+// A flag for disabling constraint checking
+dt.checkConstraints = true;
 
 export {dt, lISTtYPE, rECORDtYPE};
