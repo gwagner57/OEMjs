@@ -6,20 +6,32 @@
     <title>First Steps</title>
   </head>
 
-  <body><p>For setting up an OEMjs app, you have to write</p><ol>
+  <body><p>For setting up a CRUD data management app with OEMjs, you have to
+  write</p><ol>
       <li>a class module file for each of the business object types of your
       app;</li>
 
       <li>an <kbd>app.mjs</kbd> module file for creating an <code>app</code>
-      object that includes a definition of test data;</li>
+      object that imports the app's business object classes and includes a
+      definition of test data;</li>
 
       <li>an <kbd>index.html</kbd> file for being able to run your app in a
       browser.</li>
     </ol><p>For all three types of files, you may use a copy from one of the
-  example apps as your model or starting point.</p><h3>The class module file
-  <kbd>Book.mjs</kbd></h3><p>The "Book Data Management" app has one class
-  module <kbd>Book.mjs</kbd> for defining the business object class
-  <i>Book</i>:</p><pre class="role-listing-1">import bUSINESSoBJECT from "../../../src/bUSINESSoBJECT.mjs";
+  example apps (available at the OEMjs GitHub repo) as your model or starting
+  point. In this tutorial, we use the "Book Data Management" app from the
+  <kbd>apps/minimal</kbd> folder.</p><blockquote
+  class="role-attention"><p>While you can directly run an OEMjs app from a
+  remote website (e.g., from the OEMjs GitHub website) or from a local web
+  server, you can only run it from your <em>local file system</em> after
+  changing your browser's default configuration. For FireFox, you have to set
+  the configuration property <code>privacy.file_unique_origin</code> to
+  <i>false</i> by entering <code>about:config</code> in the browser's web
+  address bar.</p></blockquote><h3>The class module file
+  <kbd>Book.mjs</kbd></h3><p>The "Book Data Management" app has only one class
+  module, <kbd>Book.mjs</kbd>, which defines the business object class
+  <i>Book</i> (with seven properties) in the following way:</p><pre
+  class="role-listing-1">import bUSINESSoBJECT from "../../../src/bUSINESSoBJECT.mjs";
 import {dt} from "../../../src/datatypes.mjs";
 
 class <b>Book</b> extends bUSINESSoBJECT {
@@ -75,7 +87,31 @@ export default Book;</pre><p>For any other business object class, the same
       <li>"Boolean"</li>
 
       <li>"Date", "DateTime"</li>
-    </ul><h3>The <kbd>app.mjs</kbd> module file</h3><p>For the simple "Book
+    </ul><p>In addition to the ordinary alphanumeric attributes "isbn",
+  "title", "year" and "edition", which are rendered in the UI in the form of
+  <i>input</i> fields, the <i>Book</i> class has three attributes with special
+  ranges:</p><dl>
+      <dt>purchaseDate</dt>
+
+      <dd>This attribute has the range <i>Date</i>. A <i>Date</i> value is
+      internally represented as a JS Date object, while it is "stringified" in
+      the UI as an <em>ISO date string</em>, or rendered with the help of a
+      <em>date picker</em>, which<em> </em>is a browser-built-in widget
+      allowing the user to input a date by picking it from a calendar. </dd>
+
+      <dt>recordCreatedOn</dt>
+
+      <dd> This attribute has the range <i>DateTime</i>. A <i>DateTime</i>
+      value is internally represented as a JS Date object, while it is
+      "stringified" in the UI as an <em>ISO date time string</em>.</dd>
+
+      <dt>isReserved</dt>
+
+      <dd>This attribute has the range <i>Boolean</i>. A <i>Boolean</i> value
+      is internally represented as either <i>true</i> or <i>false</i>, while
+      it is "stringified" in the UI as "yes" or "no", or rendered with the
+      help of a <i>checkbox</i> field.</dd>
+    </dl><h3>The <kbd>app.mjs</kbd> module file</h3><p>For the simple "Book
   Data Management" app in the folder <kbd>apps/minimal/</kbd>, the
   <kbd>js/app.mjs</kbd> module has the following content:</p><pre
   class="role-listing-1">// import the app's business object classes
@@ -126,6 +162,6 @@ export default app;</pre><p>For any other app, the same code sections are
   <code>script</code> element, in which first the framework library
   <kbd>vIEW.mjs</kbd> and then the <kbd>app.mjs</kbd> module described above
   is loaded, followed by adding an event listener that calls the user
-  interface setup procedure <code>vIEW.setupUI</code>.after the HTML document
+  interface setup procedure <code>vIEW.setupUI</code> after the HTML document
   has been loaded.</p></body>
 </html>

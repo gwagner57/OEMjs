@@ -39,7 +39,7 @@
   </headcommon>
 
   <head>
-    <title>Low Code Web App Development with OEMjs</title>
+    <title>Building Low-Code Web Apps with OEMjs</title>
 
     <html:style><!-- styles for the title page -->
 div.role-book-title-div {
