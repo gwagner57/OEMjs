@@ -12,8 +12,8 @@ OEMjs supports
 4. **storage adapters** that facilitate switching from one storage technology (such as IndexedDB) 
    to another one (such as Google FireStore or CloudFlare D1);
 5. **view models** for declarative user interface definitions;
-6. model-based generation of CRUD and event/activity-based user interfaces.
-
+6. model-based **generation of user interfaces** (UIs), including both CRUD data management UIs and event/activity UIs.
+   
 You can take a look at the OEMjs example apps at [the project's website](https://gwagner57.github.io/OEMjs/).
 
 ## Use Case 1: Enumerations

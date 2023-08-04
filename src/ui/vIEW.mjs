@@ -790,8 +790,7 @@ class vIEW {
     for (const f of Object.keys( this.fields)) {
       const fldDef = this.fields[f];
       if (fldDef.maxCard > 1) {
-        if (fldDef.range in dt.classes) this.fldValues[f] = {};
-        else this.fldValues[f] = [];
+        this.fldValues[f] = [];
       } else if (fldDef.range in dt.classes) {
         this.fldValues[f] = undefined;  // view field holds ID strings
       } else {
@@ -812,9 +811,20 @@ class vIEW {
     const fldDef = this.fields[f],
           uiEl = this.dataBinding[f];
     // assign view field
-    if (Array.isArray(v)) this.fldValues[f] = [...v];  // clone
-    else if (typeof v === "object") this.fldValues[f] = {...v};  // clone
-    else this.fldValues[f] = v;
+    if (fldDef.range in dt.classes) {
+      const RangeClass = dt.classes[fldDef.range],
+            idAttr = RangeClass.idAttribute;
+      if (fldDef.maxCard > 1) {  // multi-valued reference property
+        if (Array.isArray(v)) this.fldValues[f] = v.map( o => o[idAttr]);
+        else this.fldValues[f] = Object.keys( v);
+      } else {  // single-valued reference property
+        this.fldValues[f] = v[idAttr];
+      }
+    } else if (Array.isArray(v)) {
+      this.fldValues[f] = [...v];  // clone
+    } else {
+      this.fldValues[f] = v;
+    }
     // bottom-up data-binding: render the view field value in the UI element/widget
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
       if (uiEl.type === "checkbox") {
