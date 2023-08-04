@@ -180,21 +180,18 @@ class SelectMultipleItemsWidget extends HTMLElement {
     this.removeEventListener("click", this.handleSelectionListAddButtonClickEvents);
   }
   fillSelectedItemsList() {
-    var selectedItems = [];
     this.selectedItemsListEl.innerHTML = "";  // delete old contents
-    if (Array.isArray( this.selection)) selectedItems = this.selection;
-    else selectedItems = Object.values( this.selection);
-    for (const item of selectedItems) {
+    for (const item of this.selection) {
       let el=null, key, text;
       const listItemEl = document.createElement("li");
-      if (typeof item === "object") {  // a bUSSINESSoBJECT
-        key = item[this.idAttr];  // the ID of the object
-        text = item.toShortString();  // defined for bUSSINESSoBJECTs
-      } else if (this.selectionRange instanceof eNUMERATION) {
+      if (this.selectionRange instanceof eNUMERATION) {
         text = this.selectionRange.labels[item-1];
         key = item;
-      } else {
+      } else if (Array.isArray( this.selectionRange)) {
         key = text = item;
+      } else {  // a map of bUSSINESSoBJECTs
+        key = item;  // the ID of the object
+        text = this.selectionRange[key].toShortString();  // defined for bUSSINESSoBJECTs
       }
       listItemEl.setAttribute("data-value", key);
       el = document.createElement("span");
@@ -205,7 +202,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
     }
   }
   fillSelectionListWithOptions() {
-    var selectionItems=[], key, text, alreadySelected=false, el=null;
+    var selectionItems=[], key, text, el=null;
     const selRange = this.selectionRange,
           selRangeFilter = this.selectionRangeFilter;
     // delete old contents
@@ -228,25 +225,21 @@ class SelectMultipleItemsWidget extends HTMLElement {
       // if there is a filter condition, skip if filter condition does not hold
       if (typeof selRangeFilter === "function" && !selRangeFilter( item)) continue;
       if (Array.isArray( selRange)) {
-        if (typeof item === "object") {
-          key = item[this.idAttr];
+        if (typeof item === "object") {  // selRange is an ordered collection of object references
+          key = String( item[this.idAttr]);
           text = item.toShortString();  // defined for bUSSINESSoBJECTs
-          alreadySelected = this.selection.includes( item);
         } else {
           key = text = item;
-          alreadySelected = this.selection.includes( key);
         }
       } else if (selRange instanceof eNUMERATION) {
         key = i+1;  // enum index
-        alreadySelected = this.selection.includes( key);
         text = item;
       } else {  // map of objects
-        key = item[this.idAttr];
+        key = String( item[this.idAttr]);
         text = item.toShortString();  // defined for bUSSINESSoBJECTs
-        alreadySelected = key in this.selection;
       }
       // only add items that are not yet selected
-      if (!alreadySelected) {
+      if (!this.selection.includes( key)) {
         el = document.createElement("option");
         el.value = key;
         el.text = text;
