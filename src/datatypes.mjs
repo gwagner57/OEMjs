@@ -454,7 +454,8 @@ const dt = {
       */
     } else {  // multi-valued property (value can be an array or a map)
       if (Array.isArray( val) ) {
-        valuesToCheck = val;
+        if (range in dt.classes) valuesToCheck = [...val];
+        else valuesToCheck = val;
         /*
         if (range === "JSON-Array" && val.every( el => Array.isArray(el))) {
           valuesToCheck = val.map( a => [...a]);
@@ -560,26 +561,24 @@ const dt = {
         }
       } else if (range in dt.classes) {
         const RangeClass = dt.classes[range];  // a bUSINESSoBJECT class
-        if (Array.isArray( valuesToCheck)) {
-          valuesToCheck.forEach( function (v, i) {
-            if (typeof v === "object") {
-              if (!(v instanceof RangeClass)) {
-                constrVio.push( new ReferentialIntegrityConstraintViolation(
-                    `The object ${JSON.stringify(v)} referenced by attribute ${attr} is not from its range ${range}`));
-              }
+        valuesToCheck.forEach( function (v, i) {
+          if (typeof v === "object") {
+            if (!(v instanceof RangeClass)) {
+              constrVio.push( new ReferentialIntegrityConstraintViolation(
+                  `The object ${JSON.stringify(v)} referenced by attribute ${attr} is not from its range ${range}`));
+            }
+          } else {
+            if (v in RangeClass.instances) {  // convert IdRef to object reference
+              valuesToCheck[i] = RangeClass.instances[v];
             } else {
-              if (v in RangeClass.instances) {  // convert IdRef to object reference
-                valuesToCheck[i] = RangeClass.instances[v];
-              } else {
-                valuesToCheck[i] = v;  // temporarily store ID reference
-                if (dt.checkReferentialIntegrity && !(v in RangeClass.instances)) {
-                  constrVio.push( new ReferentialIntegrityConstraintViolation(
-                      `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
-                }
+              valuesToCheck[i] = v;  // temporarily store ID reference
+              if (dt.checkReferentialIntegrity && !(v in RangeClass.instances)) {
+                constrVio.push( new ReferentialIntegrityConstraintViolation(
+                    `The value ${v} of attribute "${attr}" is not an ID of any ${range} object!`));
               }
             }
-          });
-        }
+          }
+        });
 /*
       } else if (RangeClass.isComplexDatatype && typeof v === "object") {
             v = Object.assign({}, v);  // use a clone

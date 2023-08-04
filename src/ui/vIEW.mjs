@@ -98,7 +98,7 @@ class vIEW {
        */
       this.fields = {};
       this.fieldOrder = [];
-      this.fldValues = {};
+      this.fldValues = [];
       if (fields) {  // fields is an array while this.fields is a map
         for (const el of fields) {
           var elList = [], fieldNames = [];
@@ -563,10 +563,11 @@ class vIEW {
                 }
                 formEl[f].setCustomValidity( msg);
               } else if (range instanceof eNUMERATION) {
-                /* Either a field set with child input elements, or
-                   a select element with attribute data-bind="property-name".
-                   Since browsers do not render validation of fieldset, we have to use
-                   the first input element instead, and call its setCustomValidity
+                /* Either the first input element in an element with attribute data-bind="property-name",
+                   or a select element with attribute data-bind="property-name", or a select element in
+                   an element with attribute data-bind="property-name". Since browsers do not support
+                   the validation of fieldset, we have to use the first input element instead, and call
+                   its setCustomValidity, in the first case.
                 */
                 const elem = formEl.querySelector(`[data-bind=${f}] input:first-of-type`) ||
                                  formEl.querySelector(`select[data-bind=${f}]`);
@@ -576,7 +577,8 @@ class vIEW {
                 } else {
                   msg = constrVio[0].message;
                 }
-                elem.setCustomValidity( msg);
+                // setCustomValidity cannot be invoked for select-multiple-items elements
+                if (elem) elem.setCustomValidity( msg);
               }
             }
           }
@@ -636,11 +638,7 @@ class vIEW {
           if (fieldDefs[f].inputOutputMode === "I/O" && f !== idProp) {
             const value = view.fldValues[f];
             if (fieldDefs[f].optional && value !== undefined || !fieldDefs[f].optional) {
-              if (Array.isArray( value)) {
-                slots[f] = [...value];  // clone
-              } else if (typeof value === "object" && !(value instanceof Date)) {
-                slots[f] = {...value};  // clone
-              } else slots[f] = value;
+              slots[f] = value;
               // check constraints for non-select fields
               if (!(fieldDefs[f].range instanceof eNUMERATION) &&
                   !(fieldDefs[f].range in dt.classes)) {
@@ -663,8 +661,7 @@ class vIEW {
           if (dt.isIntegerType( stdIdRange)) id = parseInt( id);
           // map UI event to a user action defined by the view
           view.userActions["updateRecord"]( id, slots);
-          // clear values
-          for (const fName in slots) view.fldValues[fName] = undefined;
+          view.resetViewFields();
         }
       });
       break;
@@ -818,10 +815,8 @@ class vIEW {
         if (Array.isArray(v)) this.fldValues[f] = v.map( o => o[idAttr]);
         else this.fldValues[f] = Object.keys( v);
       } else {  // single-valued reference property
-        this.fldValues[f] = v[idAttr];
+        if (v) this.fldValues[f] = v[idAttr];
       }
-    } else if (Array.isArray(v)) {
-      this.fldValues[f] = [...v];  // clone
     } else {
       this.fldValues[f] = v;
     }
@@ -852,7 +847,10 @@ class vIEW {
       //else if (fldDef.range instanceof eNUMERATION) val = v-1;
       else val = v;
       for (const option of uiEl.options) {
-        if (option.value === String(val)) uiEl.selectedIndex = option.index;
+        if (option.value === String(val)) {
+          uiEl.selectedIndex = option.index;
+          break;
+        }
       }
       if (uiEl.className === "select-reference") uiEl.updateViewField();
     } else if (uiEl.tagName === "SELECT-MULTIPLE-ITEMS") {
@@ -876,9 +874,14 @@ class vIEW {
     for (const propName of Object.keys( propDefs)) {
       // assign view field value if the view has a field based on the model property
       if (propName in this.fields) {
-        if (propDefs.range in dt.classes && propDefs.maxCard > 1) {
-          // a single-valued reference field holds an ID reference
-          val = this.modelObject[propName][propDefs.range.idAttribute];
+        const propDef = propDefs[propName];
+        if (propDef.range in dt.classes) {
+          if (propDef.maxCard > 1) {
+            val = Object.keys( this.modelObject[propName]);
+          } else {
+            // a single-valued reference field holds an ID reference
+            val = this.modelObject[propName][propDef.range.idAttribute];
+          }
         } else {
           val = this.modelObject[propName];
         }

@@ -101,7 +101,8 @@ class sTORAGEmANAGER {
     if (!Class) throw new Error(`Cannot add ${JSON.stringify(recordOrRecordList)} without a Class argument`);
     if (typeof recordOrRecordList === "object" && !Array.isArray(recordOrRecordList)) {
       recordsToAdd = [this.adapter.objSlots2recSlots( recordOrRecordList, Class)];
-    } else if (Array.isArray(recordOrRecordList) && recordOrRecordList.every( r => typeof r === "object" && !Array.isArray(r))) {
+    } else if (Array.isArray(recordOrRecordList) && recordOrRecordList.every(
+        r => typeof r === "object" && !Array.isArray(r))) {
       recordsToAdd = recordOrRecordList.map( r => this.adapter.objSlots2recSlots( r, Class));
     } else throw new Error("2nd argument of 'add' must be a record or record list! Invalid value: "+
                            JSON.stringify(recordOrRecordList));
@@ -137,6 +138,9 @@ class sTORAGEmANAGER {
     }
     try {
       await this.adapter.add( this.dbName, this.adapter.dbx, Class, recordsToAdd);
+      for (const rec of recordsToAdd) {
+        Class.instances[rec[Class.idAttribute]] = new Class( rec);
+      }
       if (this.createLog) console.log(`${recordsToAdd.length} ${Class.name}(s) added.`);
     } catch (error) {
       switch (error.name) {

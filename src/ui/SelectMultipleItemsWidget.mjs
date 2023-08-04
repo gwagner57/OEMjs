@@ -68,8 +68,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
         // update the widget's value (this.selection)
         const foundIndex = this.selection.indexOf( value);
         if (foundIndex >= 0) this.selection.splice( foundIndex, 1);
-        else console.error(
-            `The value '${valueStr}' of the 'data-value' attribute of listItemEl NOT found in ${JSON.stringify(this.selection)}`);
+        else console.error(`The value '${valueStr}' of the 'data-value' attribute of listItemEl NOT found in ${JSON.stringify(this.selection)}`);
         if (listItemEl.classList.contains("added")) {  // undo a previous addition
           // removing a previously added item requires moving it back to the selection list
           listItemEl.parentNode.removeChild( listItemEl);
@@ -81,7 +80,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
           listItemEl.classList.add("removed");
           // change button text
           btnEl.textContent = "⎌";  // Unicode "undo" character
-          btnEl.title = "undo";
+          btnEl.title = "Undo";
         }
       }
     }
@@ -258,7 +257,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
   refresh() {
     if (this.view) {
       if (this.view.viewType === "U") this.view.fldValues[this.name] = this.selection;
-      else this.selection = this.view.fldValues[this.name] = {};
+      else this.selection = this.view.fldValues[this.name] = [];
     }
     this.fillSelectedItemsList();
     this.fillSelectionListWithOptions();
