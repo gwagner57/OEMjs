@@ -13,7 +13,7 @@ class Author extends bUSINESSoBJECT {
 }
 Author.properties = {
   "authorId": {range:"NonNegativeInteger", isIdAttribute: true, label:"Author ID"},
-  "name": {range:"NonEmptyString", min: 2, max: 20, label:"Name"}
+  "name": {range:"NonEmptyString", min: 2, max: 20, label:"Name", fieldSize: 20}
 }
 // register class
 dt.classes["Author"] = Author;

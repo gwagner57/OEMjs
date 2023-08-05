@@ -3,7 +3,7 @@
   "short_name": "UnidirectionalAssociation App",
   "icons": [{
   "src": "apple-touch-icon.png",
-  "sizes": "512x512"
+  "sizes": "180x180"
 }],
   "background_color": "#ffffff",
   "theme_color": "#ffffff",

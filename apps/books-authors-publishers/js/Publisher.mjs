@@ -13,7 +13,7 @@ class Publisher extends bUSINESSoBJECT {
 }
 Publisher.properties = {
   "name": {range:"NonEmptyString", isIdAttribute: true, label:"Name", min: 2, max: 20},
-  "address": {range:"NonEmptyString", label:"Address", min: 5, max: 50}
+  "address": {range:"NonEmptyString", label:"Address", min: 5, max: 50, fieldSize: 30}
 }
 Publisher.attributesToDisplayInLists = ["name","address"];
 // register class
