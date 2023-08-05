@@ -53,8 +53,16 @@ class SelectMultipleItemsWidget extends HTMLElement {
       const btnEl = e.target,
             listItemEl = btnEl.parentElement,
             valueStr = listItemEl.getAttribute("data-value"),
-            value = this.selectionRange instanceof eNUMERATION ? parseInt( valueStr) : valueStr,
             selectedItemsListEl = listItemEl.parentElement;
+      let value;
+      if (this.selectionRange instanceof eNUMERATION) value = parseInt( valueStr);
+      else if (Array.isArray( this.selectionRange)) value = valueStr;
+      else {
+        const selRange = this.selectionRange,
+              Class = selRange[Object.keys(selRange)[0]].constructor,
+              idAttr = Class.idAttribute;
+        value = selRange[valueStr][idAttr];
+      }
       if (selectedItemsListEl.children.length <= this.minCard) {
         alert(`Selection must have at least ${this.minCard} items!`);
         return;
@@ -101,16 +109,24 @@ class SelectMultipleItemsWidget extends HTMLElement {
       const addBtnEl = e.target,
             selectContainerEl = addBtnEl.parentElement,
             selectEl = selectContainerEl.firstElementChild,
-            value = this.selectionRange instanceof eNUMERATION ? parseInt( selectEl.value) : selectEl.value;
-      if (selectEl.value) {
-        addItemToListOfSelectedItems( this.selectedItemsListEl, value,
-            selectEl.options[selectEl.selectedIndex].textContent, "added");
-        // update the widget's value (this.selection)
-        this.selection.push( value);
-        // remove item from selection range list
-        selectEl.remove( selectEl.selectedIndex);
-        selectEl.selectedIndex = 0;
+            valueStr = selectEl.value;
+      if (!valueStr) return;
+      let value;
+      if (this.selectionRange instanceof eNUMERATION) value = parseInt( valueStr);
+      else if (Array.isArray( this.selectionRange)) value = valueStr;
+      else {
+        const selRange = this.selectionRange,
+              Class = selRange[Object.keys(selRange)[0]].constructor,
+              idAttr = Class.idAttribute;
+        value = selRange[valueStr][idAttr];
       }
+      addItemToListOfSelectedItems( this.selectedItemsListEl, value,
+          selectEl.options[selectEl.selectedIndex].textContent, "added");
+      // update the widget's value (this.selection)
+      this.selection.push( value);
+      // remove item from selection range list
+      selectEl.remove( selectEl.selectedIndex);
+      selectEl.selectedIndex = 0;
     }
   }
   // use for initializing element (e.g., for setting up event listeners)
@@ -235,7 +251,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
         key = i+1;  // enum index
         text = item;
       } else {  // map of objects
-        key = String( item[this.idAttr]);
+        key = item[this.idAttr];
         text = item.toShortString();  // defined for bUSSINESSoBJECTs
       }
       // only add items that are not yet selected

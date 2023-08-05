@@ -808,18 +808,7 @@ class vIEW {
     const fldDef = this.fields[f],
           uiEl = this.dataBinding[f];
     // assign view field
-    if (fldDef.range in dt.classes) {
-      const RangeClass = dt.classes[fldDef.range],
-            idAttr = RangeClass.idAttribute;
-      if (fldDef.maxCard > 1) {  // multi-valued reference property
-        if (Array.isArray(v)) this.fldValues[f] = v.map( o => o[idAttr]);
-        else this.fldValues[f] = Object.keys( v);
-      } else {  // single-valued reference property
-        if (v) this.fldValues[f] = v[idAttr];
-      }
-    } else {
-      this.fldValues[f] = v;
-    }
+    this.fldValues[f] = v;
     // bottom-up data-binding: render the view field value in the UI element/widget
     if (uiEl.tagName === "INPUT" || uiEl.tagName === "OUTPUT") {
       if (uiEl.type === "checkbox") {
@@ -869,18 +858,25 @@ class vIEW {
    */
   setModelObject( id) {
     const propDefs = this.modelClass.properties;
-    let val;
+    let val;  // view field value
     this.modelObject = this.modelClass.instances[id];
     for (const propName of Object.keys( propDefs)) {
       // assign view field value if the view has a field based on the model property
       if (propName in this.fields) {
         const propDef = propDefs[propName];
         if (propDef.range in dt.classes) {
+          const RangeClass = dt.classes[propDef.range],
+                idAttr = RangeClass.idAttribute;
           if (propDef.maxCard > 1) {
-            val = Object.keys( this.modelObject[propName]);
-          } else {
-            // a single-valued reference field holds an ID reference
-            val = this.modelObject[propName][propDef.range.idAttribute];
+            const refCollection = this.modelObject[propName];
+            if (Array.isArray( refCollection)) val = refCollection.map( o => o[idAttr]);
+            else val = Object.keys( refCollection).map( id => RangeClass.instances[id][idAttr]);
+          } else {  // a single-valued reference field holds an ID reference
+            if (typeof this.modelObject[propName] === "object") {
+              val = this.modelObject[propName][idAttr];
+            } else {
+              val = undefined;
+            }
           }
         } else {
           val = this.modelObject[propName];
