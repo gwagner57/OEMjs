@@ -21,6 +21,6 @@ app.testData = [
       {isbn:"0465030793", title:"I Am A Strange Loop", year: 2000, purchaseDate:"2020-03-31"}
     ]}
 ];
-app.setup();
+await app.setup();
 
 export default app;

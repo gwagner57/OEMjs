@@ -49,7 +49,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
         this.handleSelectionListAddButtonClickEvents.bind( this);
   }
   handleSelectedItemsListButtonClickEvents(e) {
-    if (e.target.tagName === "BUTTON") {  // delete/undo button
+    if (e.target.tagName === "BUTTON") {  // delete or undo button
       const btnEl = e.target,
             listItemEl = btnEl.parentElement,
             valueStr = listItemEl.getAttribute("data-value"),
@@ -63,20 +63,12 @@ class SelectMultipleItemsWidget extends HTMLElement {
               idAttr = Class.idAttribute;
         value = selRange[valueStr][idAttr];
       }
-      if (selectedItemsListEl.children.length <= this.minCard) {
-        alert(`Selection must have at least ${this.minCard} items!`);
-        return;
-      }
       if (listItemEl.classList.contains("removed")) {  // undo a previous removal
         this.selection.push( value);
         listItemEl.classList.remove("removed");
         // change button text
         btnEl.textContent = SelectMultipleItemsWidget.deleteButtonIconCharacter;
       } else {  // undo a previous addition or delete an item
-        // update the widget's value (this.selection)
-        const foundIndex = this.selection.indexOf( value);
-        if (foundIndex >= 0) this.selection.splice( foundIndex, 1);
-        else console.error(`The value '${valueStr}' of the 'data-value' attribute of listItemEl NOT found in ${JSON.stringify(this.selection)}`);
         if (listItemEl.classList.contains("added")) {  // undo a previous addition
           // removing a previously added item requires moving it back to the selection list
           listItemEl.parentNode.removeChild( listItemEl);
@@ -85,11 +77,19 @@ class SelectMultipleItemsWidget extends HTMLElement {
           optionEl.text = listItemEl.firstElementChild.textContent;
           this.selectEl.add( optionEl);
         } else {  // delete an item
+          if (selectedItemsListEl.children.length <= this.minCard) {
+            alert(`Selection must have at least ${this.minCard} items!`);
+            return;
+          }
           listItemEl.classList.add("removed");
           // change button text
           btnEl.textContent = "⎌";  // Unicode "undo" character
           btnEl.title = "Undo";
         }
+        // update the widget's value (this.selection)
+        const foundIndex = this.selection.indexOf( value);
+        if (foundIndex >= 0) this.selection.splice( foundIndex, 1);
+        else console.error(`The value '${valueStr}' of the 'data-value' attribute of listItemEl NOT found in ${JSON.stringify(this.selection)}`);
       }
     }
   }
@@ -120,8 +120,17 @@ class SelectMultipleItemsWidget extends HTMLElement {
               idAttr = Class.idAttribute;
         value = selRange[valueStr][idAttr];
       }
+      if (this.selection.length >= this.maxCard) {
+        alert(`Selection must not have more than ${this.maxCard} items!`);
+        return;
+      }
       addItemToListOfSelectedItems( this.selectedItemsListEl, value,
           selectEl.options[selectEl.selectedIndex].textContent, "added");
+      if (this.selection.length === this.minCard-1 && this.classList.contains("invalid")) {
+        // change validity state to valid
+        this.errorMessageEl.textContent = "";
+        this.classList.remove("invalid");
+      }
       // update the widget's value (this.selection)
       this.selection.push( value);
       // remove item from selection range list
@@ -135,7 +144,7 @@ class SelectMultipleItemsWidget extends HTMLElement {
           selectContainerEl = document.createElement("div"),
           selectEl = document.createElement("select"),
           addButtonEl = document.createElement("button"),
-          self = this;
+          errorMessageEl = document.createElement("p");
     this.shadowRoot.innerHTML =
       `<style>
       :host {
@@ -172,11 +181,18 @@ class SelectMultipleItemsWidget extends HTMLElement {
         display: inline-block;
         margin-left: 1em;
       }
+      p.errorMessage {
+        font-size: smaller;
+        color: crimson;
+        padding: 5px;
+        margin: 0
+      }
       </style>`;
     if (this.name) this.setAttribute("data-bind", this.name);
     // store element references
     this.selectedItemsListEl = selectedItemsListEl;
     this.selectEl = selectEl;
+    this.errorMessageEl = errorMessageEl;
     this.fillSelectedItemsList();
     selectedItemsListEl.addEventListener("click", this.handleSelectedItemsListButtonClickEvents);
     this.shadowRoot.appendChild( selectedItemsListEl);
@@ -189,12 +205,15 @@ class SelectMultipleItemsWidget extends HTMLElement {
     // create select options from selectionRange minus selection
     this.fillSelectionListWithOptions();
     this.shadowRoot.appendChild( selectContainerEl);
+    errorMessageEl.className = "errorMessage";
+    this.shadowRoot.appendChild( errorMessageEl);
   }
   disconnectedCallback() {
     // remove event listeners for cleaning up
     this.removeEventListener("click", this.handleSelectedItemsListButtonClickEvents);
     this.removeEventListener("click", this.handleSelectionListAddButtonClickEvents);
   }
+  checkValidity() {}  //TODO: is this useful?
   fillSelectedItemsList() {
     this.selectedItemsListEl.innerHTML = "";  // delete old contents
     for (const item of this.selection) {

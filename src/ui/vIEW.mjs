@@ -720,39 +720,45 @@ class vIEW {
       // handle OK button click events
       formEl["submitButton"].addEventListener("click", async function () {
         const slots = {};
-        for (const f of Object.keys( fieldDefs)) {
+        for (const f of Object.keys( fieldDefs)) {  // perform validation
           const fldDef = fieldDefs[f];
-          if (fldDef.optional && view.fldValues[f] || !fldDef.optional) {
-            const range = fldDef.range;
-            slots[f] = view.fldValues[f];  // for "performActivity"
-            if (!(range in dt.classes)) {  // no validation for reference properties
-              if (fldDef.inputOutputMode === "O") continue;  // no validation
-              let msg="";
-              // perform validation on save
-              if (range instanceof eNUMERATION) {
-                /* Either a field set with child input elements, or
-                   a select element with attribute data-bind="property-name".
-                   Since browsers do not render validation of fieldset, we have to use
-                   the first input element instead, and call its setCustomValidity
-                */
-                const elem = formEl.querySelector(`[data-bind=${f}] input:first-of-type`) ||
-                    formEl.querySelector(`select[data-bind=${f}]`);
-                const constrVio = dt.check( f, fldDef, slots[f]);
-                if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
-                  slots[f] = constrVio[0].checkedValue;
-                } else {
-                  msg = constrVio[0].message;
-                }
-                elem.setCustomValidity( msg);
-              } else {  // for alphanumeric, Boolean, date and complex value ranges
-                const constrVio = dt.check( f, fldDef, slots[f]);
-                if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
-                  slots[f] = constrVio[0].checkedValue;
-                } else {
-                  msg = constrVio[0].message;
-                }
-                formEl[f].setCustomValidity( msg);
-              }
+          if (fldDef.inputOutputMode === "O" || fldDef.optional && view.fldValues[f]===undefined) continue;  // no validation
+          const range = fldDef.range;
+          slots[f] = view.fldValues[f];  // for "performActivity"
+          let msg="", widgetEl=null;
+          if (range in dt.classes) {  // check cardinality constraints
+            const constrVio = dt.checkCardinality( f, fldDef, slots[f]);
+            if (!(constrVio[0] instanceof NoConstraintViolation)) {
+              msg = constrVio[0].message;
+            }
+            widgetEl = view.dataBinding[f];
+          } else {
+            if (range instanceof eNUMERATION) {
+              /* Either a field set with child input elements, or
+                 a select element with attribute data-bind="property-name".
+                 Since browsers do not render validation of fieldset, we have to use
+                 the first input element instead, and call its setCustomValidity
+              */
+              widgetEl = formEl.querySelector(`[data-bind=${f}] input:first-of-type`) ||
+                  formEl.querySelector(`select[data-bind=${f}]`);
+            } else {  // for alphanumeric, Boolean, date and complex value ranges
+              widgetEl = formEl[f];
+            }
+            const constrVio = dt.check( f, fldDef, slots[f]);
+            if (constrVio.length === 1 && constrVio[0] instanceof NoConstraintViolation) {
+              slots[f] = constrVio[0].checkedValue;
+            } else {
+              msg = constrVio[0].message;
+            }
+          }
+          if ("setCustomValidity" in widgetEl) widgetEl.setCustomValidity( msg);
+          else {
+            if (msg) {
+              widgetEl.errorMessageEl.textContent = msg;
+              widgetEl.classList.add("invalid");
+            } else {
+              widgetEl.errorMessageEl.textContent = "";
+              widgetEl.classList.remove("invalid");
             }
           }
         }
@@ -1123,8 +1129,12 @@ class vIEW {
         const view = vIEW.app.activityViews[actName];
         view.userActions = {
           "performActivity": function (record) {
-             const activity = new ActivityClass( record);
-             activity.onActivityEnd();
+             try {
+               const activity = new ActivityClass( record);
+               activity.onActivityEnd();
+             } catch (error) {
+               console.error(`${error.name}: ${error.message}`);
+             }
           },
           "back": function () { vIEW.refreshUI("ActOverview");}
         };

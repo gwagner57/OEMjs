@@ -406,6 +406,60 @@ const dt = {
     return jsDataType;
   },
   /**
+   * Generic method for checking the cardinality constraints defined in attribute declarations.
+
+   * optional: true if property is single-valued and optional (false by default)
+   * minCard/maxCard: minimum/maximum cardinality of a multi-valued property
+   *     By default, maxCard is 1, implying that the property is single-valued, in which
+   *     case minCard is meaningless/ignored. maxCard may be Infinity.
+   *
+   * @method
+   * @author Gerd Wagner
+   * @param {string} attr  The attribute for which a value is to be checked.
+   * @param {object} attrDef  The attribute's declaration.
+   * @param val  The value to be checked.
+   * @return {object}  The constraint violation object.
+   */
+  checkCardinality( attr, attrDef, val) {
+    var range = attrDef.range,
+        constrVio=[], valuesToCheck=[];
+    const maxCard = attrDef.maxCard || 1,  // by default, an attribute is single-valued
+          // by default, an attribute is mandatory
+          minCard = attrDef.minCard !== "undefined" ? attrDef.minCard : (attrDef.optional ? 0 : 1);
+    // check Mandatory Value Constraint
+    if (val === undefined || val === "") {
+      if (attrDef.optional || "inverseOf" in attrDef) constrVio.push(new NoConstraintViolation());
+      else constrVio.push(new MandatoryValueConstraintViolation(
+          `A value for ${attr} is required!`));
+    }
+    if (maxCard > 1) { // (a multi-valued attribute can be array- or map-valued)
+      if (typeof val === "object" && range in dt.classes) {  // entity table/map
+        valuesToCheck = Object.keys( val);
+      } else if (Array.isArray( val)) {
+        valuesToCheck = val;
+      } else {
+        constrVio.push( new RangeConstraintViolation(
+            `The value ${val} does not represent a collection value for attribute ${attr}.`));
+      }
+      // check minimum cardinality constraint
+      if (minCard > 0 && valuesToCheck.length < minCard) {
+        constrVio.push( new CardinalityConstraintViolation(
+          `A set of ${minCard} or more values is required for ${attr}.`));
+        console.error(`A set of ${minCard} or more values is required for ${attr}. Invalid value: ${JSON.stringify(val)}`);
+      }
+      // check maximum cardinality constraint
+      if (valuesToCheck.length > maxCard) {
+        constrVio.push( new CardinalityConstraintViolation("A collection value for "+
+            attr +" must not have more than "+ maxCard +" members!"));
+      }
+    }
+    if (constrVio.length === 0) {
+      // return de-serialized value available in validationResult.checkedValue
+      constrVio.push( new NoConstraintViolation( maxCard === 1 ? valuesToCheck[0] : valuesToCheck));
+    }
+    return constrVio;
+  },
+  /**
    * Generic method for checking the integrity constraints defined in attribute declarations.
    * The values to be checked are first parsed if provided as strings.
    * Copied from the cOMPLEXtYPE class of oNTOjs
@@ -454,7 +508,7 @@ const dt = {
       */
     } else {  // multi-valued property (value can be an array or a map)
       if (Array.isArray( val) ) {
-        if (range in dt.classes) valuesToCheck = [...val];
+        if (range in dt.classes) valuesToCheck = [...val];  // clone
         else valuesToCheck = val;
         /*
         if (range === "JSON-Array" && val.every( el => Array.isArray(el))) {
@@ -465,13 +519,14 @@ const dt = {
           valuesToCheck = val;
         }
         */
-      } else if (typeof val === "object" && range in dt.classes) {
-        if (!attrDef.isOrdered) valuesToCheck = val;
+      } else if (typeof val === "object" && range in dt.classes) {  // entity table/map
+        if (!attrDef.isOrdered) valuesToCheck = Object.values( val);
         else constrVio.push( new RangeConstraintViolation(
               `The ordered-collection-valued attribute ${attr} must not have a map value like ${val}.`));
       } else {
         constrVio.push( new RangeConstraintViolation(
-            `The value ${val} does not represent a collection value for attribute ${attr}.`));      }
+            `The value ${val} does not represent a collection value for attribute ${attr}.`));
+      }
     }
     /***************************************************************
      ***  Convert value strings to values  *************************

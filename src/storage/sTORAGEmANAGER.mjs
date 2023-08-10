@@ -241,7 +241,7 @@ class sTORAGEmANAGER {
         }
       }
     } catch (error) {
-      console.log(`${error.constructor.name}: ${error.message}`);
+      console.error(`${error.constructor.name}: ${error.message}`);
       dt.checkReferentialIntegrity = checkRefInt;  // restore previous setting
       return;
     }
@@ -618,8 +618,8 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   rec2obj: function (rec, Class) {
   //------------------------------------------------
     const obj = new Class( rec);  // may throw exception caught in calling procedure
-    console.log("rec2obj rec: ", JSON.stringify( rec));
-    console.log("rec2obj obj: ", JSON.stringify( obj));
+    //console.log("rec2obj rec: ", JSON.stringify( rec));
+    //console.log("rec2obj obj: ", JSON.stringify( obj));
     for (const refProp of Class.referenceProperties) {
       const propDef = Class.properties[refProp],
             val = obj[refProp],

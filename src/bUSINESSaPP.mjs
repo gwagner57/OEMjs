@@ -15,6 +15,7 @@ class bUSINESSaPP {
   async setup() {
     // set up all business object classes and their CRUD views
     for (const Class of Object.values( dt.classes)) {
+      if (Class.isAbstract || Class.isComplexDatatype) continue;
       Class.setup();
       Class.lastRetrievalTime = 0;
       this.crudViews[Class.name] = {};

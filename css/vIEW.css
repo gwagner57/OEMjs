@@ -218,9 +218,9 @@ menu li button {
 form {
   position: relative;
 }
-form :invalid {
+form :invalid, .invalid {
   box-shadow: none;  /* neutralizing FF */
-  outline: dotted red;      
+  outline: dotted crimson;
 }
 form > h1 {  /* form title */
   font-size: 120%;
