@@ -595,8 +595,8 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
         // get ID attribute of referenced class
         const idAttr = dt.classes[range].idAttribute;
         convertedValues = valuesToConvert.map( v => typeof v === "object" ? v["_"+idAttr] : v);
-        console.log("objSlots2recSlots valuesToConvert: ", JSON.stringify( valuesToConvert));
-        console.log("objSlots2recSlots convertedValues: ", JSON.stringify( convertedValues));
+        //console.log("objSlots2recSlots valuesToConvert: ", JSON.stringify( valuesToConvert));
+        //console.log("objSlots2recSlots convertedValues: ", JSON.stringify( convertedValues));
         /*
       } else if (range === "Date") {
         valuesToConvert[i] = dt.dataTypes["Date"].val2str( v);

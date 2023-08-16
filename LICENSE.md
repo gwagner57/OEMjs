@@ -8,11 +8,9 @@ Portions of this software are licensed as follows:
 - All third party components incorporated into the software are licensed under the original license
   provided by the owner of the applicable component.
 - Content outside of the above mentioned files or restrictions is available under the "Sustainable Use
-  License" as defined below.
+  License" as defined below, complying with the [Fair-code software model](https://faircode.io/).
 
-## Sustainable Use License
-
-Version 1.0
+## Sustainable Use License Version 1.0
 
 ### Acceptance
 

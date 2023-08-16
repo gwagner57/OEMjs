@@ -1,4 +1,4 @@
-# Object Event Modeling JavaScript App Development Framework (OEMjs)
+# Object Event Modeling JavaScript App Development (OEMjs)
 ## A Framework for Low-Code Business App Development
 
 OEMjs implements the ***Object Event Modeling*** paradigm for model-based business application engineering, based on the ideas of the MVC architecure paradigm, the [Onion Architecture](http://jeffreypalermo.com/blog/the-onion-architecture-part-1/) metaphor, and the [Event Modeling](https://eventmodeling.org/posts/what-is-event-modeling/) approach. See also [Object Event Modeling for DES and IS Engineering](https://ceur-ws.org/Vol-3211/CR_099.pdf) for more on the scientific basis of OEMjs, including its relationship to [Object Event Simulation](https://github.com/gwagner57/oes). 
@@ -65,11 +65,11 @@ We loop over the enumeration `WeatherStateEL` with a `for` loop counting from 1 
    
 ## Use Case 2: Declarative Constraint Valdiation
 
-<details><summary>Define Constraints in the Model and Validate Them in the View and Storage</summary>
+<details><summary>Define Constraints in the Model and Validate Them in the View and Storage Code</summary>
 
 OEMjs allows defining property constraints for a business object class:
 
-    class Book extends bUSINESSoBJECT {
+    class Book extends bUSINESSoBJECT { 
       constructor ({isbn, title, year, edition}) {
         super( isbn); 
         this.title = title;

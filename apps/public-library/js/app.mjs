@@ -27,7 +27,11 @@ app.testData = [
       {name:"Basic Books", address:"New York, USA"}]},
   {"Person": [{id: 1, name:"Daniel Dennett", birthDate:"1943-03-28"},
       {id: 2, name:"Douglas Hofstadter", birthDate:"1945-02-15"},
-      {id: 3, name:"Immanuel Kant", birthDate:"1724-04-22"}]},
+      {id: 3, name:"Immanuel Kant", birthDate:"1724-04-22"},
+      {id: 4, name:"Tom Hanson", birthDate:"1984-07-12", roles:[1], libraryUserId:"1001",
+          address:"210 Mammoth Ave., New York, NY 10040"},
+      {id: 5, name:"Susan Marconi", birthDate:"1999-11-17", roles:[1], libraryUserId:"1002",
+          address:"780 Lantern Rd., Brooklyn, NY 11238"}]},
   {"Book": [
       {isbn:"0553345842", title:"The Mind's I", year: 1982, authors:[1,2], publisher:"Bantam Books"},
       {isbn:"1463794762", title:"The Critique of Pure Reason",year: 2011, authors:[3]},

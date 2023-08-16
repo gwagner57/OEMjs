@@ -1,3 +1,14 @@
+/**
+ * @fileOverview  The "datatypes" library
+ * @author Gerd Wagner
+ * @copyright Copyright 2022-2023 Gerd Wagner, Chair of Internet Technology,
+ *   Brandenburg University of Technology, Germany.
+ * @license The MIT License (MIT)
+ *
+ * TODO: + take care of proper Date conversions in IndexedDB objSlots2recSlots and rec2obj
+ * + check ID constraints in CREATE view and storageManager.add
+ * +
+ */
 import eNUMERATION from "./eNUMERATION.mjs";
 import { NoConstraintViolation,
   MandatoryValueConstraintViolation, RangeConstraintViolation,
@@ -428,7 +439,7 @@ const dt = {
           minCard = attrDef.minCard !== "undefined" ? attrDef.minCard : (attrDef.optional ? 0 : 1);
     // check Mandatory Value Constraint
     if (val === undefined || val === "") {
-      if (attrDef.optional || "inverseOf" in attrDef) constrVio.push(new NoConstraintViolation());
+      if (attrDef.optional || attrDef.minCard===0 || "inverseOf" in attrDef) constrVio.push(new NoConstraintViolation());
       else constrVio.push(new MandatoryValueConstraintViolation(
           `A value for ${attr} is required!`));
     }

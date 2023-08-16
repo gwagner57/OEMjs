@@ -26,7 +26,7 @@ class BookLending extends bUSINESSaCTIVITY {
           bookCopies: this.bookCopies});
       app.storageManager.add( BookReturnReminder, brr);
     } catch (e) {
-      console.error(`${e.name}: ${e.message}`);
+      console.error(`${e.constructor.name}: ${e.message}`);
     }
   }
 }

@@ -24,7 +24,7 @@ Book.properties = {
   "year": {range:"Integer", label:"Year", min: 1459, max: () => (new Date()).getFullYear()+1},
   "edition": {range:"PositiveInteger", label:"Edition", optional: true},
   "purchaseDate": {range:"Date", label:"Purchase date", widget:"browser-date-picker"},
-  "recordCreatedOn": {range:"DateTime", label:"Record created on", fieldSize: 25},
+  "recordCreatedOn": {range:"DateTime", label:"Record created on", optional: true, fieldSize: 25},
   "isReserved": {range: "Boolean", label:"Is reserved"}
 }
 Book.displayAttribute = "title";  // used in toShortString()

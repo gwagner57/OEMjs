@@ -2,9 +2,6 @@ import {NoConstraintViolation, MandatoryValueConstraintViolation} from "./constr
 import {dt, lISTtYPE, rECORDtYPE} from "./datatypes.mjs";
 import eNUMERATION from "./eNUMERATION.mjs";
 
-/**
- * An event may be instantaneous or it may have a non-zero duration.
- */
 class bUSINESSeNTITY {
   constructor( id) {
     const Class = this.constructor,
@@ -35,9 +32,7 @@ class bUSINESSeNTITY {
       }
     }
     // store instances for non-abstract classes
-    if (!Class.isAbstract) {
-      Class.instances[this[idAttr]] = this;
-    }
+    // if (!Class.isAbstract) Class.instances[this[idAttr]] = this;
   }
   static setup( Class) {
     function checkIfIdAttribute() {
