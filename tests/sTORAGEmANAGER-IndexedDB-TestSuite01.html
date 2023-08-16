@@ -72,26 +72,39 @@
   } catch (e) {
     console.log( e.constructor.name +": "+ e.message);
   }
- /*
   //*** Test 5 - Destroy ********************
   document.body.appendChild(dom.createElement("h2", {content:"Test 5: Destroy"}));
   try {
-    // Book b2 already updated in previous test case, compare only ISBN
-    const bookDestroy = await app.storageManager.retrieve( Book, b2.isbn);
-    if (JSON.stringify(bookDestroy.isbn)===JSON.stringify(b2.isbn)) {
+    const bookId = "0553345842";
+    await app.storageManager.destroy( Book, bookId);
+    const book = await app.storageManager.retrieve( Book, bookId);
+    if (!book) {
       document.body.appendChild(dom.createElement("p",
-          {content: `Book is still available. Retrieved book: ${JSON.stringify(bookDestroy)}`}));
-    }
-    const destroyed = await app.storageManager.destroy(Book, await bookDestroy.isbn);
-    if (destroyed) {
-      document.body.appendChild(dom.createElement("p",
-          {content: `Book is detroyed: ${JSON.stringify(bookUpdate)}`}));
+          {content: `Book ${bookId} is destroyed.`}));
     }
   } catch (e) {
     console.log( e.constructor.name +": "+ e.message);
   }
+ //*** Test 6 - deleteDatabase ********************
+ document.body.appendChild(dom.createElement("h2", {content: "Test 7: deleteDatabase"}));
+ try {
+     await app.storageManager.retrieveAll( Book);
+     if (Object.keys( Book.instances).length > 0) {
+         document.body.appendChild(dom.createElement("p",
+             {content: "Database contains entries, deleting DB now!"}));
+         await app.storageManager.deleteDatabase();
+         document.body.appendChild(dom.createElement("p",
+             {content: "Database has been deleted!"}));
+     } else {
+         document.body.appendChild(dom.createElement("p",
+             {content: "Database already empty!"}));
+     }
+ } catch (e) {
+     console.log( e.constructor.name +": "+ e.message);
+ }
 
-  //*** Test 6 - ClearTable ********************
+ /*
+  //*** Test 7 - ClearTable ********************
   document.body.appendChild(dom.createElement("h2", {content: "Test 6: ClearTable"}));
   try {
     let bookRecords = await app.storageManager.retrieveAll(Book);
@@ -101,43 +114,17 @@
           {content: `Clearing Books: ${JSON.stringify(bookRecords)}`}));
     } else {
       document.body.appendChild(dom.createElement("p",
-          {content: `Expacted two books in table, received ${bookRecords.length}`}));
+          {content: `Expected two books in table, received ${bookRecords.length}`}));
     }
     // clear Book table
     await app.storageManager.clearTable(Book);
-    // check no book awailable
+    // check no book available
     bookRecords = await app.storageManager.retrieveAll(Book);
     if (bookRecords.length === 0) {
       document.body.appendChild(dom.createElement("p",
           {content: "Success, table `Book` is empty!"}));
     }
     
-  } catch (e) {
-   console.log( e.constructor.name +": "+ e.message);
-  }
-
-  //*** Test 7 - ClearDB ********************
-  document.body.appendChild(dom.createElement("h2", {content: "Test 7: ClearDB"}));
-  try {
-    let pubs = await app.storageManager.retrieveAll(Publisher);
-    if (pubs.length > 0) {
-      document.body.appendChild(dom.createElement("p",
-          {content: "Database contains entries, clearing DB now!"}));
-    } else {
-      document.body.appendChild(dom.createElement("p",
-          {content: "Failed: Database already empty!"}));
-    }
-    await app.storageManager.clearDB();
-    pubs = await app.storageManager.retrieveAll(Publisher);
-    let books = await app.storageManager.retrieveAll(Book);
-    if (pubs.length === 0 && books.length === 0) {
-      document.body.appendChild(dom.createElement("p",
-          {content: "Success: Database empty!"}));
-    } else {
-      document.body.appendChild(dom.createElement("p",
-          {content: "Failed: Database not cleared!"}));
-    }
-
   } catch (e) {
    console.log( e.constructor.name +": "+ e.message);
   }

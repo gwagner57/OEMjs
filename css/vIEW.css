@@ -37,7 +37,17 @@
     --accentcol-l: var(--accentcol-l-darkmode);
   }
 }
+noscript > p {
+  font-size: 1.2em;
+  color: red;
+}
 
+/* When the browser canvas is not wider than 800px and above */
+@media screen and (max-width: 1000px) {
+  aside {
+    display: none;
+  }
+}
 body {
   display: grid;
   grid-template-areas: var(--layout);
@@ -49,25 +59,22 @@ body {
   color: var(--font-color);
   accent-color: var(--accent-color);
 }
-noscript > p {
-  font-size: 1.2em;
-  color: red;
-}
 header {
   grid-area: head;
 }
 main {
   grid-area: main;
+  display: flex;
+  justify-content: space-between;
+}
+aside {
+  margin-left: 2em;
 }
 footer {
   grid-area: foot;
-  margin-top: 5rem;
-  border-top: 1px solid currentColor;
-}
-
-footer {
-  margin-top: 1em;
   font-size: smaller;
+  margin-top: 2rem;
+  border-top: 1px solid currentColor;
 }
 
 button {

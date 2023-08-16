@@ -470,7 +470,7 @@ class vIEW {
         uiContainerEl = dom.createElement("section", {id: mc.name, classValues:"UI",
             content:`<h2>${mc.activityPhrase}</h2>`});
       }
-      const mainEl = document.querySelector("html>body>main"),
+      const mainEl = document.querySelector("#main") || document.querySelector("html>body>main"),
             footerEl = document.querySelector("html>body>footer");
       if (mainEl) {
         mainEl.appendChild( uiContainerEl);
@@ -893,7 +893,7 @@ class vIEW {
   }
 
   static setupUI( app) {
-    var mainEl = document.querySelector("html>body>main"),
+    var mainEl = document.querySelector("#main") || document.querySelector("html>body>main"),
         footerEl = document.querySelector("html>body>footer");
     function setupActivitiesOverviewUI() {
       var uiContainerEl = document.querySelector("#ActOverview"),
@@ -1194,7 +1194,7 @@ class vIEW {
           await vIEW.app.storageManager.retrieveAll( AssociatedClass);
         }
         if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
-        else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh();
+        else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh( AssociatedClass.instances);
       }
       break;
     case "U":
@@ -1209,10 +1209,15 @@ class vIEW {
           modelClass.instances, modelClass.idAttribute, modelClass.displayAttribute);
       if (operationCode === "U") {
         for (const refProp of modelClass.referenceProperties) {
+          if (!(refProp in view.fields)) continue;
           // refresh the options of the corresponding selection list
-          const selRefEl = view.dataBinding[refProp];  // a select-reference element
+          const AssociatedClass = dt.classes[view.fields[refProp].range],
+                selRefEl = view.dataBinding[refProp];  // a select-reference(s) widget
+          if (currentTime - AssociatedClass.lastRetrievalTime > vIEW.app.storageManager.cacheExpirationTime) {
+            await vIEW.app.storageManager.retrieveAll( AssociatedClass);
+          }
           if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
-          else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh();
+          else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh( AssociatedClass.instances);
         }
       }
       break;

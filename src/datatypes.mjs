@@ -774,7 +774,7 @@ const dt = {
       // check minimum cardinality constraint
       if (minCard > 0 && valuesToCheck.length < minCard) {
         constrVio.push( new CardinalityConstraintViolation(
-            `A collection of at least ${minCard} values is required for ${attr}. Invalid value: ${JSON.stringify(val)}`));
+            `A set of ${minCard} or more values is required for ${attr}. Invalid value: ${JSON.stringify(val)}`));
       }
       // check maximum cardinality constraint
       if (valuesToCheck.length > maxCard) {

@@ -1,4 +1,5 @@
 body {
+    display: flex;
     font: 1rem 'Arial', sans-serif;
     line-height: 1.2;
     max-width: 50em;

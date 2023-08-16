@@ -10,12 +10,11 @@
  * +
  */
 import util from "../../lib/util.mjs";
-import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
-import { openDB, deleteDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
+import {deleteDB, openDB} from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
 //import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
 import {dt} from "../datatypes.mjs";
-import {NoConstraintViolation, ConstraintViolation} from "../constraint-violation-error-types.mjs";
+import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
 
 /**
  * The sTORAGEmANAGER class provides/ storage management methods for a number of predefined
@@ -58,7 +57,7 @@ class sTORAGEmANAGER {
     try {
       result = await this.adapter.hasDatabaseContents( this.dbName, this.adapter.dbx);
     } catch (error) {
-      console.error( error.name +": "+ error.message);
+      console.error( error.constructor.name +": "+ error.message);
     }
     return result;
   }
@@ -73,7 +72,7 @@ class sTORAGEmANAGER {
       this.adapter.dbx = await this.adapter.openDbOrCreateEmptyDb( this.dbName, classes);
       if (this.createLog) console.log(`Connection to database ${this.dbName} established.`);
     } catch (error) {
-      console.log( error.name +": "+ error.message);
+      console.log( error.constructor.name +": "+ error.message);
     }
   }
   /**
@@ -87,7 +86,7 @@ class sTORAGEmANAGER {
       await this.adapter.deleteDatabase( dbName, this.adapter.dbx);
       if (this.createLog) console.log(`Database ${dbName} deleted`);
     } catch (error) {
-      console.error( error.name +": "+ error.message);
+      console.error( error.constructor.name +": "+ error.message);
     }
   }
   /**
@@ -143,7 +142,7 @@ class sTORAGEmANAGER {
       }
       if (this.createLog) console.log(`${recordsToAdd.length} ${Class.name}(s) added.`);
     } catch (error) {
-      switch (error.name) {
+      switch (error.constructor.name) {
       case "NotFoundError":
         console.error(`Object store ${Class.name} not found!`);
         break;
@@ -151,7 +150,7 @@ class sTORAGEmANAGER {
         console.error(`Missing ID value in ${Class.name} record: ${recordsToAdd}`);
         break;
       default:
-        console.error(`${error.name}: ${error.message}`);
+        console.error(`${error.constructor.name}: ${error.message}`);
       }
     }
   };
@@ -184,7 +183,7 @@ class sTORAGEmANAGER {
           if (AssociatedClass === Class ||
               (currentTime - AssociatedClass.lastRetrievalTime < this.cacheExpirationTime)) continue;
           if (refPropDef.maxCard > 1) idRefs = rec[refProp];
-          else  idRefs = [rec[refProp]];
+          else if (rec[refProp] !== undefined) idRefs = [rec[refProp]];
           for (const idRef of idRefs) {
             const lastRetrievalTime = AssociatedClass.instances[idRef]?.lastRetrievalTime ?? 0;
             if (currentTime - lastRetrievalTime > this.cacheExpirationTime) {
@@ -216,9 +215,9 @@ class sTORAGEmANAGER {
    * @param {object} Class  The business object class concerned
    */
   async retrieveAll( Class, alreadyRetrievedClasses=[]) {
-    var entityTable = {};
     const checkRefInt = dt.checkReferentialIntegrity;  // store the setting
     dt.checkReferentialIntegrity = false;  // disable referential integrity checking
+    Class.instances = {};  // delete current Class population
     try {
       const entityRecords = await this.adapter.retrieveAll( this.dbName, this.adapter.dbx, Class);
       alreadyRetrievedClasses.push( Class.name);
@@ -348,7 +347,7 @@ class sTORAGEmANAGER {
             const singPlurSuffix = updatedProperties.length > 1 ? "ies":"y";
             console.log(`Propert${singPlurSuffix} ${updatedProperties.toString()} of ${Class.name} ${id} updated.`);
           } catch (error) {
-            console.log(`${error.name}: ${error.message}`);
+            console.log(`${error.constructor.name}: ${error.message}`);
           }
         } else {
           console.log(`No property value changed for ${Class.name} ${id}!`);
@@ -369,7 +368,7 @@ class sTORAGEmANAGER {
       delete Class.instances[id];
       console.log(`${Class.name} ${id} deleted.`);
     } catch (error) {
-      console.log(`${error.name}: ${error.message}`);
+      console.log(`${error.constructor.name}: ${error.message}`);
     }
   }
   /**
@@ -627,10 +626,10 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       let assObjColl=[];
       if (propDef.maxCard > 1) assObjColl = val;
       else assObjColl = [val];
-      for (const associatedObject of assObjColl) {
-        if (associatedObject && !(associatedObject instanceof AssociatedClass)) {
-          console.error(`The value ${JSON.stringify( associatedObject)} of refprop ${refProp} is not an instance of ${AssociatedClass.name}.`,
-              `Instead, it's an instance of ${associatedObject.constructor.name}`);
+      for (const assObj of assObjColl) {
+        if (assObj && !(assObj instanceof AssociatedClass)) {
+          console.error(`The value ${JSON.stringify( assObj)} of reference property ${Class.name}::${refProp} is not an instance of ${AssociatedClass.name}.`,
+              `Instead, it's an instance of ${assObj.constructor.name}`);
         }
       }
     }
@@ -677,11 +676,9 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   hasDatabaseContents: async function (dbName, dbx) {
   //------------------------------------------------
-    var result = false;
     const firstTableName = dbx.objectStoreNames[0];
-    const count = await dbx.transaction([firstTableName], "readonly").objectStore(firstTableName).count();
-    result = count > 0;
-    return result;
+    const count = await dbx.transaction([firstTableName], "readonly").objectStore( firstTableName).count();
+    return count > 0;
   },
   //------------------------------------------------
   openDbOrCreateEmptyDb: async function (dbName, modelClasses) {
@@ -720,7 +717,6 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   add: async function (dbName, dbx, Class, records) {
   //------------------------------------------------
-    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     // create a transaction involving only the table with the provided name
     const tx = dbx.transaction( tableName, "readwrite");
@@ -734,21 +730,18 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   retrieve: async function (dbName, dbx, Class, id) {
   //------------------------------------------------
-    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     return dbx.get( tableName, id);
   },
   //------------------------------------------------
   retrieveAll: async function (dbName, dbx, Class) {
   //------------------------------------------------
-    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     return dbx.getAll( tableName);
   },
   //------------------------------------------------
   update: async function (dbName, dbx, Class, id, slots) {
   //------------------------------------------------
-    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     // retrieve the object/record concerned
     const record = await dbx.get( tableName, id);
@@ -762,24 +755,20 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   destroy: async function (dbName, dbx, Class, id) {
   //------------------------------------------------
-    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
-    // slots[Class.idAttribute] = id;
     dbx.delete( tableName, id);
   },
   //------------------------------------------------
   clearTable: async function (dbName, dbx, Class) {
   //------------------------------------------------
-    //const db = await openDB( dbName);
     const tableName = Class.tableName || util.class2TableName( Class.name);
     await dbx.clear( tableName);
   },
   //------------------------------------------------
   clearDB: async function (dbName, dbx) {
   //------------------------------------------------
-    //const db = await openDB( dbName);
     // create a transaction involving all tables of the database
-    const tx = dbx.transaction( db.objectStoreNames, "readwrite");
+    const tx = dbx.transaction( dbx.objectStoreNames, "readwrite");
     // create a list of clear invocation expressions
     const clearInvocationExpressions =
         Array.from( dbx.objectStoreNames, osName => tx.objectStore( osName).clear());
