@@ -6,8 +6,9 @@
  * @license The MIT License (MIT)
  *
  * TODO: + Reset select-multiple-items widget after save for "c" and "U"
- * + Check ID constraint in "CREATE"
- * + Show AutoNumberID in output field in "C"
+ * + Check ID and key constraints in "CREATE" on Save
+ * + Show AutoIdNumber in output field in "C"
+ * + Render textarea elements for range:Text
  */
 
 import {dt} from "../datatypes.mjs";
@@ -419,10 +420,10 @@ class vIEW {
               containerEl.appendChild( createLabeledTextOrDateField( fld));
             } else if (!fldDef.maxCard || fldDef.maxCard===1) {
                 // A single-valued reference field (functional association)
-                widgetEl = new SelectReferenceWidget( fld, Class, view);
+                widgetEl = new SelectReferenceWidget( fld, Class, view, fldDef.selectionRangeFilter);
                 containerEl.className = "select";
                 labelEl.appendChild( widgetEl);
-                containerEl.appendChild( labelEl);
+                containerEl.appendChild( labelEl);fldDef
                 // store data binding assignment of UI element to view model field
                 dataBinding[fld] = widgetEl;
             } else {  // A multi-valued reference field (non-functional association)
@@ -722,17 +723,17 @@ class vIEW {
         const slots = {};
         for (const f of Object.keys( fieldDefs)) {  // perform validation
           const fldDef = fieldDefs[f];
+          slots[f] = view.fldValues[f];  // collect slots for "performActivity"
           if (fldDef.inputOutputMode === "O" || fldDef.optional && view.fldValues[f]===undefined) continue;  // no validation
           const range = fldDef.range;
-          slots[f] = view.fldValues[f];  // for "performActivity"
           let msg="", widgetEl=null;
-          if (range in dt.classes) {  // check cardinality constraints
+          if (range in dt.classes) {  // check cardinality constraints only
             const constrVio = dt.checkCardinality( f, fldDef, slots[f]);
             if (!(constrVio[0] instanceof NoConstraintViolation)) {
               msg = constrVio[0].message;
             }
             widgetEl = view.dataBinding[f];
-          } else {
+          } else { // check all constraints for non-reference properties
             if (range instanceof eNUMERATION) {
               /* Either a field set with child input elements, or
                  a select element with attribute data-bind="property-name".
@@ -975,7 +976,7 @@ class vIEW {
           liEl.appendChild( btnEl);
         }
       }
-      if (app.createTestData) {
+      if (vIEW.app.createTestData) {
         if (!menuEl.querySelector("li#createTestData")) {
           const liEl = dom.createElement("li", {id:"createTestData"});
           liEl.style.marginTop = "1em";
@@ -1004,18 +1005,18 @@ class vIEW {
         const selectedMenuOption = selectedMenuItemEl.id;
         switch (selectedMenuOption) {
           case "createTestData":
-            if (await app.storageManager.hasDatabaseContents()) {
+            if (await vIEW.app.storageManager.hasDatabaseContents()) {
               console.log("Test data cannot be created since database is not empty.");
             } else {
-              app.createTestData();
+              vIEW.app.createTestData();
             }
             break;
           case "clearDatabase":
-            if (app.clearDatabase) {
-              app.clearDatabase();
+            if (vIEW.app.clearDatabase) {
+              vIEW.app.clearDatabase();
             } else {
               Object.keys( dt.classes).forEach( function (className) {
-                app.storageManager.clearData( dt.classes[className]);
+                vIEW.app.storageManager.clearData( dt.classes[className]);
               });
             }
             break;
@@ -1079,14 +1080,14 @@ class vIEW {
       }));
     }
 
-    vIEW.app = app;  // save handle to app object
+    if (app) vIEW.app = app;  // save handle to app object
     setupDataManagementOverviewUI();
     for (const className of Object.keys( dt.classes)) {
       const modelClass = dt.classes[className];
       // set up the CRUD menu UI page
       setupManageDataUI( className);
       for (const crudCode of ["R","C","U","D"]) {
-        const view = app.crudViews[className][crudCode];
+        const view = vIEW.app.crudViews[className][crudCode];
         switch (crudCode) {
         case "R":  //================ RETRIEVE ==========================
           view.userActions = {
@@ -1096,25 +1097,25 @@ class vIEW {
         case "C":  //================ CREATE ============================
           view.userActions = {
             "createRecord": function (record) {
-               app.storageManager.add( modelClass, record);},
+              vIEW.app.storageManager.add( modelClass, record);},
             "back": function () { vIEW.refreshUI( className +"-M");}
           };
           break;
         case "U":  //================ UPDATE ============================
           view.userActions = {
             "setViewModelObject": function (id) {  // ON object selection
-               app.crudViews[className]["U"].setModelObject( id);},
+              vIEW.app.crudViews[className]["U"].setModelObject( id);},
             "updateRecord": function (id, slots) {
-               app.storageManager.update( modelClass, id, slots);},
+              vIEW.app.storageManager.update( modelClass, id, slots);},
             "back": function () { vIEW.refreshUI( className +"-M");}
           };
           break;
         case "D":  //================ DELETE ============================
           view.userActions = {
             "setViewModelObject": function (id) {  // ON object selection
-               app.crudViews[className]["D"].setModelObject( id);},
+              vIEW.app.crudViews[className]["D"].setModelObject( id);},
             "deleteRecord": function (id) {
-               app.storageManager.destroy( modelClass, id);},
+              vIEW.app.storageManager.destroy( modelClass, id);},
             "back": function () { vIEW.refreshUI( className +"-M");}
           };
           break;
@@ -1150,7 +1151,6 @@ class vIEW {
    * Switch to a new UI (and refresh its contents)
    * @method
    * @author Gerd Wagner
-   * @param {object} app              the app object
    * @param {string} userInterfaceId  <ClassName>-<Operation>|"DataManOverview"|"ActOverview"|<ActivityName>
    */
   static async refreshUI( userInterfaceId) {
@@ -1243,7 +1243,7 @@ class vIEW {
             await vIEW.app.storageManager.retrieveAll( AssociatedClass);
           }
           if (selRefEl instanceof SelectReferenceWidget) selRefEl.refreshOptions();
-          else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh();
+          else if (selRefEl instanceof SelectMultipleItemsWidget) selRefEl.refresh( AssociatedClass.instances);
         }
       }
     }

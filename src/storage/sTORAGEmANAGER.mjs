@@ -11,8 +11,8 @@
  */
 import util from "../../lib/util.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
-import {deleteDB, openDB} from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
-//import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
+//import {deleteDB, openDB} from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
+import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
 import {dt} from "../datatypes.mjs";
 import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
 

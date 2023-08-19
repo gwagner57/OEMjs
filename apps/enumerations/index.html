@@ -14,12 +14,6 @@
 
   <link rel="stylesheet" href="../../css/normalize.css"/>
   <link rel="stylesheet" href="../../css/vIEW.css"/>
-
-  <script type="module">
-    import vIEW from "../../src/ui/vIEW.mjs";
-    import app from "./js/app.mjs";
-    window.addEventListener("load", vIEW.setupUI( app) );
-  </script>
 </head>
 <body>
 <header>
@@ -32,8 +26,14 @@
 </header>
 <main></main>
 <footer>
-  <p>This app has been created with <a href="https://gwagner57.github.io/OEMjs/">OEMjs</a>, an Open Source JS library
+  <p>This app has been created with <a href="https://gwagner57.github.io/OEMjs/">OEMjs</a>, an open JS library
     for low-code app development.</p>
 </footer>
+<script type="module">
+  import vIEW from "../../src/ui/vIEW.mjs";
+  import app from "./js/app.mjs";
+  vIEW.app = app;  // save handle to app object
+  vIEW.setupUI();
+</script>
 </body>
 </html>

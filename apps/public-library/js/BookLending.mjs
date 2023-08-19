@@ -33,7 +33,7 @@ class BookLending extends bUSINESSaCTIVITY {
 BookLending.properties = {
   "date": {range:"Date", label:"Date",
       derivationExpression: () => new Date((new Date()).toDateString())},  // truncate time
-  "borrower": {range:"Person", label:"Borrower"},
+  "borrower": {range:"Person", selectionRangeFilter: p => p.roles && p.roles.includes(1), label:"Borrower"},
   "bookCopies": {range:"BookCopy", label:"Lended book copies", minCard: 1, maxCard: Infinity,
                  selectionRangeFilter: bc => bc.status === BookCopyStatusEL.AVAILABLE}
 }
