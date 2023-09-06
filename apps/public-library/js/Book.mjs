@@ -6,13 +6,14 @@ import {dt} from "../../../src/datatypes.mjs";
  * @class
  */
 class Book extends bUSINESSoBJECT {
-  constructor ({isbn, title, year, publisher, authors, reserved=false}) {
+  constructor ({isbn, title, year, publisher, authors, reserved=false, bookCopies}) {
     super( isbn);
     this.title = title;
     this.year = year;
     this.authors = authors;
     if (publisher) this.publisher = publisher;
     this.reserved = reserved;
+    if (bookCopies) this.publisher = bookCopies;
   }
 }
 Book.properties = {

@@ -537,7 +537,6 @@ class vIEW {
       }));
       break;
     case "C":  //================ CREATE ============================
-      this.resetViewFields();
       // create form fields for all view fields
       createUiElemsForViewFields();
       // create save and back buttons
@@ -586,8 +585,8 @@ class vIEW {
         }
         if (formEl.checkValidity())  {
           view.userActions["createRecord"]( slots);
-          // clear view fields, otherwise they are sent again even if the form is empty!
-          view.resetViewFields();
+          formEl.reset();
+          view.reset();
         }
       });
       break;
@@ -604,14 +603,7 @@ class vIEW {
       selectEl = formEl[slots.name];
       // when an entity is selected, populate the form with its data
       selectEl.addEventListener("change", async function () {
-        const formFields = formEl.elements;
         var id = selectEl.value;
-        // reset form fields
-        formEl.reset();
-        // reset custom validity
-        for (let i=0; i < formFields.length; i++) {
-          formFields[i].setCustomValidity("");
-        }
         if (id) {  // parse id if integer value
           if (dt.isIntegerType( stdIdRange)) id = parseInt( id);
           const obj = await vIEW.app.storageManager.retrieve( mc, id);
@@ -662,7 +654,8 @@ class vIEW {
           if (dt.isIntegerType( stdIdRange)) id = parseInt( id);
           // map UI event to a user action defined by the view
           view.userActions["updateRecord"]( id, slots);
-          view.resetViewFields();
+          formEl.reset();
+          view.reset();
         }
       });
       break;
@@ -707,10 +700,11 @@ class vIEW {
         if (selectEl && id) {
           selectEl.remove( selectEl.selectedIndex);
         }
+        formEl.reset();
+        view.reset();
       });
       break;
     default:  // activity UI
-      this.resetViewFields();
       // create form fields for all view fields
       createUiElemsForViewFields();
       // create delete and back buttons
@@ -766,8 +760,8 @@ class vIEW {
         if (formEl.checkValidity())  {
           // map UI event to a user action defined by the view
           await view.userActions["performActivity"]( slots);
-          // clear view fields, otherwise they are sent again even if the form is empty!
-          view.resetViewFields();
+          formEl.reset();
+          view.reset();
         }
       });
     }
@@ -783,9 +777,7 @@ class vIEW {
     */
   }
   /**
-   * Generic setter for view fields, takes also care of bottom-up data-binding
-   * (from view field to corresponding UI widget)
-   * this = view object
+   * Reset view fields
    * @method
    * @author Gerd Wagner
    * TODO: support derived and dependent view fields
@@ -793,6 +785,27 @@ class vIEW {
   resetViewFields() {
     for (const f of Object.keys( this.fields)) {
       const fldDef = this.fields[f];
+      if (fldDef.maxCard > 1) {
+        this.fldValues[f] = [];
+      } else if (fldDef.range in dt.classes) {
+        this.fldValues[f] = undefined;  // view field holds ID strings
+      } else {
+        this.fldValues[f] = dt.getDefaultValue( fldDef.range);
+      }
+    }
+  }
+  /**
+   * Reset view
+   * @method
+   * @author Gerd Wagner
+   * TODO: support derived and dependent view fields
+   */
+  reset() {
+    for (const f of Object.keys( this.fields)) {
+      const fldDef = this.fields[f],
+            uiEl = this.dataBinding[f];
+      if ("setCustomValidity" in uiEl) uiEl.setCustomValidity("");
+      else uiEl.reset();
       if (fldDef.maxCard > 1) {
         this.fldValues[f] = [];
       } else if (fldDef.range in dt.classes) {

@@ -9,7 +9,7 @@ import Book from "./Book.mjs";
 import {BookCopy, BookCopyStatusEL} from "./BookCopy.mjs";
 import BookReturnReminder from "./BookReturnReminder.mjs";
 import BookLending from "./BookLending.mjs";
-import BookReturn from "./BookReturn.mjs";
+import BookTakeBack from "./BookTakeBack.mjs";
 
 // import framework code files
 import sTORAGEmANAGER from "../../../src/storage/sTORAGEmANAGER.mjs";

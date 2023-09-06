@@ -291,6 +291,10 @@ class SelectMultipleItemsWidget extends HTMLElement {
     this.fillSelectedItemsList();
     this.fillSelectionListWithOptions();
   }
+  reset() {
+    this.selection = [];
+    this.refresh();
+  }
   static createDeleteButton() {
     const el = document.createElement("button");
     el.type = "button";
