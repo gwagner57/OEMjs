@@ -1,7 +1,7 @@
 # Object Event Modeling JavaScript App Development (OEMjs)
 ## A Framework for Low-Code Business App Development
 
-OEMjs implements the ***Object Event Modeling*** paradigm for model-based business application engineering, based on the ideas of the MVC architecure paradigm, the [Onion Architecture](http://jeffreypalermo.com/blog/the-onion-architecture-part-1/) metaphor, and the [Event Modeling](https://eventmodeling.org/posts/what-is-event-modeling/) approach. See also [Object Event Modeling for DES and IS Engineering](https://ceur-ws.org/Vol-3211/CR_099.pdf) for more on the scientific basis of OEMjs, including its relationship to [Object Event Simulation](https://github.com/gwagner57/oes). 
+OEMjs implements the ***Object Event Modeling*** paradigm for model-based business application engineering, based on the ideas of the MVC architecure paradigm, the [Onion Architecture](http://jeffreypalermo.com/blog/the-onion-architecture-part-1/) metaphor, and the [Event Modeling](https://eventmodeling.org/posts/what-is-event-modeling/) approach. See also [Object Event Modeling for Low-Code Business App Development](https://modeling-languages.com/object-event-modeling-for-low-code-business-apps/) for more on OEM and OEMjs, including its relationship to [Object Event Simulation](https://github.com/gwagner57/oes). 
 
 OEMjs supports 
 
