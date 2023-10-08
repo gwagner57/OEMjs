@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <base href="." />
+  <meta charset="utf-8">
+  <title>sTORAGEmANAGER-IndexedDB Test Suite 01</title>
+  <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
+  <link rel="stylesheet" href="../css/normalize.css" />
+  <style>
+    body {
+      padding: 8px;
+    }
+
+    .failure {
+      color: red;
+    }
+
+    .info {
+      color: blue;
+    }
+
+    .okay {
+      color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>sTORAGEmANAGER-Cloudflare-D1 DB Test Suite 01: Basic Issues</h1>
+
+  <script type="module">
+    import dom from "../lib/dom.mjs";
+    //import sTORAGEmANAGER_CloudflareD1 from "../src/storage/CloudflareD1.mjs";
+    import CloudflareD1Adaptor from "../src/storage/CloudflareD1Adaptor.mjs";
+    import Book from "../apps/minimal/js/Book.mjs";
+    import bUSINESSoBJECT from "../src/bUSINESSoBJECT.mjs";
+
+
+    // let cloudD1 = new sTORAGEmANAGER_CloudflareD1();
+    let cloudD1 = new CloudflareD1Adaptor();
+    await cloudD1.setup();
+    var status;
+
+
+
+    function display(status) {
+      if (status && status.success) {
+        if (status.result) {
+          document.body.appendChild(dom.createElement("p",
+            { content: `` + JSON.stringify(status.result) }));
+        } else {
+          document.body.appendChild(dom.createElement("p",
+            { content: `Execution completed successfully: ` + status.success }));
+        }
+      } else {
+        if (status.errors) {
+          for (let i in Object.keys(status.errors)) {
+            document.body.appendChild(dom.createElement("p",
+              { content: `` + status.errors[i].message }));
+          }
+        }
+      }
+    }
+
+
+    //*** Test 1 - Create Database **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 1: Creating a database" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `creating database MiniApp:` }));
+    status = await cloudD1.createEmptyDb("MiniApp")
+    display(status);
+
+    //*** Test 2 - Get Databases **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 2: Get databases" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `Available Databases:` }));
+    status = await cloudD1.getDatabases();
+    display(status);
+
+    //*** Test 3 - Create Table **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 3: Create a Table" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `Create Table Book:` }));
+    status = await cloudD1.createTable(Book);
+    display(status);
+
+    //*** Test 4 - get Tables **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 4: Get all the tables in a Database" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `Tables in database:` }));
+    status = await cloudD1.getTables();
+    display(status);
+
+    //*** Test 5 - insert **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 5: Insert record into table Book" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `inserting record into table Book:` }));
+    document.body.appendChild(dom.createElement("p",
+      { content: '{"isbn":"0553345842", "title":"The Mind I", "year": 1982, "edition": 2, "purchaseDate":"2012-05-25"}' }));
+    status = await cloudD1.add(Book, '{"isbn":"0553345842", "title":"The Mind I", "year": 1982, "edition": 2, "purchaseDate":"2012-05-25"}');
+    display(status);
+    document.body.appendChild(dom.createElement("p",
+      { content: '{"isbn":"0553345843", "title":"No Man\'s Land", "year": 1988, "edition": 1, "purchaseDate":"2007-10-30"}' }));
+    status = await cloudD1.add(Book, '{"isbn":"0553345843", "title":"No Man\'s Land", "year": 1988, "edition": 1, "purchaseDate":"2007-10-30"}');
+    display(status);
+
+    //*** Test 6 - retrieve **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 6: Retrieve records from table Book" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `records in table Book:` }));
+    status = await cloudD1.retrieveAll(Book);
+    display(status);
+
+    //*** Test 7 - Update **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 7: Update record from table Book" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `update isbn "0553345842" tile to "Postman" in table Book:` }));
+    status = await cloudD1.update(Book, "isbn", "0553345842", '{"title":"Postman"}');
+    display(status);
+
+    //*** Test 8 - retrieve by ID **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 8: Retrieve records from table Book by IDs" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `records by isbn="0553345843":` }));
+    status = await cloudD1.retrieve(Book, "isbn", "0553345843");
+    display(status);
+    document.body.appendChild(dom.createElement("p",
+      { content: `records by isbn="0553345842" and title="The Mind I":` }));
+    status = await cloudD1.retrieve(Book, ["isbn", "title"], ["0553345842", "The Mind I"]);
+    display(status);
+    document.body.appendChild(dom.createElement("p",
+      { content: `records by isbn="0553345842" and title="Postman":` }));
+    status = await cloudD1.retrieve(Book, ["isbn", "title"], ["0553345842", "Postman"]);
+    display(status);
+
+    //*** Test 9 - delete by ID **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 9: Delete records from table Book by IDs" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `records by isbn="0553345842":` }));
+    status = await cloudD1.destroy(Book, "isbn", "0553345842");
+    display(status);
+
+    //*** Test 10 - drop the table **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 10: Drop the table Book" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `Drop table Book":` }));
+    status = await cloudD1.dropTable(Book);
+    display(status);
+
+    //*** Test 11 - Delete Databases **************************
+    document.body.appendChild(dom.createElement("h2", { content: "Test 11: Delete database MiniApp" }));
+    document.body.appendChild(dom.createElement("p",
+      { content: `Delete Database:` }));
+    await cloudD1.getDBUUID()
+      .then(function (result) {
+        let uuid = result.replace('"', "");
+        uuid = uuid.replace('"', "");
+        status = cloudD1.deleteDatabase(uuid);
+        display(status);
+      });
+
+
+
+
+
+
+  </script>
+</body>
+
+</html>
