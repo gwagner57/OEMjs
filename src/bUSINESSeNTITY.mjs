@@ -35,9 +35,6 @@ class bUSINESSeNTITY {
     // if (!Class.isAbstract) Class.instances[this[idAttr]] = this;
   }
   static setup( Class) {
-    function checkIfIdAttribute() {
-
-    }
     const propDefs = Class.properties || {};  // property definitions
     // initialize the Class.instances map
     if (!Class.isAbstract) Class.instances = {};
