@@ -37,7 +37,7 @@ const dt = {
   decimalTypes: ["Number","Decimal","Percent","ClosedUnitInterval","OpenUnitInterval"],
   otherPrimitiveTypes: ["Boolean","Date","DateTime"],
   primitiveReferenceTypes: ["Date","DateTime"],  // values are special JS objects
-  simpleStructuredDataTypes: ["JSON-Array","JSON-Object"],  // JSON arrays and objects
+  JSONCollectionDataTypes: ["JSON-Array","JSON-Object"],  // JSON arrays and objects
   patterns: {
     ID: /^([a-zA-Z0-9][a-zA-Z0-9_\-]+[a-zA-Z0-9])$/,
     // defined in WHATWG HTML5 specification
@@ -63,7 +63,7 @@ const dt = {
         /\d{4}-(0\d|1[0-2])-([0-2]\d|3[0-1])/.test(v) && !isNaN(Date.parse(v));
   },
   isDateTimeString(v) {
-    return typeof(x) === "string" && x.search(/^-?[0-9]+$/) === 0;
+    return typeof(v) === "string" && v.search(/^-?[0-9]+$/) === 0;
   },
   /**
    * Determines the implicit datatype of a value.
@@ -199,6 +199,7 @@ const dt = {
    * The return value is undefined, if the string does not comply with the datatype.
    * @param {string} value - the value to be stringified
    * @param {string} type - one of: Integer, Year, Decimal, List, Record
+   * @param {number} decimalPlaces
    * @return {string}
    */
   stringifyValue( value, type, decimalPlaces=dt.defaultDecimalPlaces) {
@@ -218,7 +219,7 @@ const dt = {
     }
     if (type in dt.dataTypes) {
       if (dt.isDecimalType( type)) {
-        string = valuesToStringify.map( v => round( v, decimalPlaces)).join(", ");
+        string = valuesToStringify.map( v => dt.round( v, decimalPlaces)).join(", ");
       } else {
         string = valuesToStringify.map( v => dt.isOfType( v, type) && "val2str" in dt.dataTypes[type] ?
             dt.dataTypes[type].val2str( v) : String(v)).join(", ");
@@ -505,6 +506,7 @@ const dt = {
       if (attrDef.optional || "inverseOf" in attrDef) constrVio.push( new NoConstraintViolation());
       else constrVio.push( new MandatoryValueConstraintViolation(
             `A value for ${attr} is required!`));
+      return constrVio;
     }
     if (maxCard === 1) {  // single-valued property
       valuesToCheck = [val];
@@ -671,8 +673,7 @@ const dt = {
       } else if (typeof range === "string" && range.includes("|")) {
         // range is a union type
         valuesToCheck.forEach( function (v, i) {
-          var rangeTypes=[];
-          rangeTypes = range.split("|");
+          const rangeTypes = range.split("|");
           if (typeof v === "object") {
             if (!rangeTypes.some( rc => v instanceof dt.classes[rc])) {
               constrVio.push( new ReferentialIntegrityConstraintViolation("The object " + JSON.stringify(v) +
@@ -802,7 +803,7 @@ const dt = {
 }
 dt.numericTypes = dt.integerTypes.concat( dt.decimalTypes);
 dt.primitiveDatatypes = [...dt.stringTypes, ...dt.numericTypes, ...dt.otherPrimitiveTypes];
-dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.simpleStructuredDataTypes];
+dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.JSONCollectionDataTypes];
 
 /*
  * Collection types are defined as instances of lISTtYPE or rECORDtYPE specifying
@@ -820,6 +821,11 @@ dt.supportedDatatypes = [...dt.primitiveDatatypes, ...dt.simpleStructuredDataTyp
                        {type:"business", number:8889912}]
       });
  */
+/**
+ * A list type is defined by an itemType, which may be a (primitive) supported datatype
+ * or a record type or a list type.
+ * @class
+ */
 class lISTtYPE {
   constructor (itemType) {
     if (!dt.supportedDatatypes.includes( itemType) &&
@@ -830,13 +836,35 @@ class lISTtYPE {
     this.itemType = itemType;
   }
 }
+/**
+ * A map type is defined by an item type, which may be a (primitive) supported datatype
+ * or a record type or a list type.
+ * @class
+ */
+class mAPtYPE {
+  constructor (itemType) {
+    if (!dt.supportedDatatypes.includes( itemType) &&
+        !(itemType instanceof lISTtYPE || itemType instanceof rECORDtYPE)) {
+      const fldTypeName = typeof itemType === "string" ? itemType : itemType.name;
+      throw new Error(`${fldTypeName} is not a supported datatype!`);
+    }
+    this.itemType = itemType;
+  }
+}
+/**
+ * A record type is defined by a list of pairs consisting of a field name and a field type,
+ * which may be a (primitive) supported datatype or a record type or a list type.
+ * @class
+ */
 class rECORDtYPE {
   constructor (fieldNameTypePairs) {
     for (const [fldN, fldT] of Object.entries( fieldNameTypePairs)) {
       if (fldN === "fieldTypes") throw new Error("Field name must not be 'fieldTypes'!");
-      if (!dt.supportedDatatypes.includes( fldT) &&
+      if (!dt.supportedDatatypes.includes( fldT) && !Array.isArray( fldT) &&
           !(fldT instanceof lISTtYPE || fldT instanceof rECORDtYPE)) {
-        const fldTypeName = typeof fldT === "string" ? fldT : fldT.name;
+        let fldTypeName="";
+        if ("name" in fldT) fldTypeName = fldT.name;
+        else fldTypeName = fldT;
         throw new Error(`${fldTypeName} is not a supported datatype!`);
       }
     }
@@ -847,4 +875,4 @@ class rECORDtYPE {
 // A flag for disabling constraint checking
 dt.checkConstraints = true;
 
-export {dt, lISTtYPE, rECORDtYPE};
+export {dt, lISTtYPE, mAPtYPE, rECORDtYPE};

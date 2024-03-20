@@ -1,5 +1,6 @@
 import {dt} from "./datatypes.mjs";
 import vIEW from "./ui/vIEW.mjs";
+import {cOUNTER} from "./bUSINESSoBJECT.mjs";
 import bUSINESSaCTIVITY from "./bUSINESSaCTIVITY.mjs";
 
 class bUSINESSaPP {
@@ -8,6 +9,7 @@ class bUSINESSaPP {
     this.storageManager = storageManager;
     this.validateOnInput = validateOnInput;
     this.bidirectionalAssociations = {};
+    this.compositions = {};
     this.crudViews = {};
     this.activityViews = {};
     this.testData = {};
@@ -29,9 +31,15 @@ class bUSINESSaPP {
         for (const invRefProp of Class.inverseReferenceProperties) {
           const invRefPropDef = Class.properties[invRefProp],
                 SourceClassName = invRefPropDef.range;
-          this.bidirectionalAssociations[SourceClassName] ??= {};
-          this.bidirectionalAssociations[SourceClassName][invRefPropDef.inverseOf] =
-              {targetClassName: Class.name, inverseReferenceProperty: invRefProp};
+          if (invRefPropDef.isComponent) {
+            this.compositions[SourceClassName] ??= {};
+            this.compositions[SourceClassName][invRefPropDef.inverseOf] =
+                {targetClassName: Class.name, componentProperty: invRefProp};
+          } else {
+            this.bidirectionalAssociations[SourceClassName] ??= {};
+            this.bidirectionalAssociations[SourceClassName][invRefPropDef.inverseOf] =
+                {targetClassName: Class.name, inverseReferenceProperty: invRefProp};
+          }
         }
       }
     }
@@ -44,6 +52,12 @@ class bUSINESSaPP {
     await this.storageManager.openDbOrCreateEmptyDb( busObjClasses);
     if (!(await this.storageManager.hasDatabaseContents())) {
       console.log("Database is empty.");
+      for (const Class of busObjClasses) {
+        const propDefs = Class.properties;
+        if (propDefs[Class.idAttribute].range === "AutoIdNumber") {
+          this.storageManager.add( cOUNTER, {className: Class.name, autoIdCounter: Class.autoIdNoStartValue||1001});
+        }
+      }
       await this.createTestData();
     }
   }
@@ -61,11 +75,11 @@ class bUSINESSaPP {
     }
   }
   async clearDatabase() {
-    if (confirm( "Do you really want to delete the entire database?")) {
+    if (confirm( "Do you really want to delete the database table contents?")) {
       try {
-        await this.storageManager.deleteDatabase();
-        // rebuild empty database
         const busObjClasses = Object.values( dt.classes);
+        await this.storageManager.deleteDatabaseContents( busObjClasses);
+        // rebuild empty database
         await this.storageManager.openDbOrCreateEmptyDb( busObjClasses);
       } catch (e) {
         console.error(`${e.constructor.name}: ${e.message}`);

@@ -7,18 +7,8 @@ class bUSINESSeNTITY {
     const Class = this.constructor,
           idAttr = Class.idAttribute;
     if (id) this[idAttr] = id;
-    else if (Class.properties[idAttr].range === "AutoIdNumber") {
-      if (typeof Class.getAutoId === "function") {
-        this[idAttr] = Class.getAutoId();
-      } else if (Class.idCounter !== undefined) {
-        this[idAttr] = ++Class.idCounter;
-      } else {
-        this[idAttr] = Class.idCounter = 1001;
-      }
-    } else {
-      throw new MandatoryValueConstraintViolation(
+    else throw new MandatoryValueConstraintViolation(
           `A value for ${Class.name}::${Class.idAttribute} is required!`)
-    }
     for (const p of Object.keys( Class.properties)) {
       const propDef = Class.properties[p];
       if ("initialValue" in propDef) {

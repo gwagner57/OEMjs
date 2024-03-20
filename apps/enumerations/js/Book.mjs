@@ -3,7 +3,7 @@
  * @class
  */
 import eNUMERATION from "../../../src/eNUMERATION.mjs";
-import bUSINESSoBJECT from "../../../src/bUSINESSoBJECT.mjs";
+import {bUSINESSoBJECT} from "../../../src/bUSINESSoBJECT.mjs";
 import {dt} from "../../../src/datatypes.mjs";
 
 const BookCategoryEL = new eNUMERATION("BookCategoryEL", ["novel","biography","textbook","other"]);

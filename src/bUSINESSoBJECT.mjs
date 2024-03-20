@@ -1,5 +1,4 @@
 import {dt} from "./datatypes.mjs";
-import eNUMERATION from "./eNUMERATION.mjs";
 import bUSINESSeNTITY from "./bUSINESSeNTITY.mjs";
 
 /*******************************************************************************
@@ -127,5 +126,17 @@ class bUSINESSoBJECT extends bUSINESSeNTITY {
     }
   }
 }
+class cOUNTER extends bUSINESSoBJECT {
+  constructor ({className, autoIdCounter=1}) {
+    super( className);
+    this.autoIdCounter = autoIdCounter;
+  }
+}
+cOUNTER.properties = {
+  "className": {range:"NonEmptyString", isIdAttribute: true, label:"Class name"},
+  "autoIdCounter": {range:"PositiveInteger", label:"Auto ID counter"}
+}
+// necessary since "setup" is not invoked for cOUNTER
+cOUNTER.idAttribute = "className";
 
-export default bUSINESSoBJECT;
+export { bUSINESSoBJECT, cOUNTER};

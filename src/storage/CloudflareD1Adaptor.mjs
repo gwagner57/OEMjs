@@ -23,7 +23,7 @@ class CloudflareD1Adaptor {
 
 
   /**
-   * The constructor set's the configuration file path.
+   * The constructor sets the configuration file path.
    */
   constructor() {
     let rootUrl = new URL(window.location.href);
@@ -300,7 +300,7 @@ class CloudflareD1Adaptor {
         obj = obj + '"type":"REAL"';
       } else if (dt.otherPrimitiveTypes.includes(Class.properties[colms].range)) {
         obj = obj + '"type":"TEXT"';
-      } else if (dt.simpleStructuredDataTypes.includes(Class.properties[colms].range)) {
+      } else if (dt.JSONCollectionDataTypes.includes(Class.properties[colms].range)) {
         obj = obj + '"type":"BLOB"';
       } else {
         obj = obj + '"type":"BLOB"';

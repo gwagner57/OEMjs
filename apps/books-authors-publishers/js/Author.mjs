@@ -2,7 +2,7 @@
  * Model class Author 
  * @class
  */
-import bUSINESSoBJECT from "../../../src/bUSINESSoBJECT.mjs";
+import {bUSINESSoBJECT} from "../../../src/bUSINESSoBJECT.mjs";
 import {dt} from "../../../src/datatypes.mjs";
 
 class Author extends bUSINESSoBJECT {

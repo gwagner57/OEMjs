@@ -274,6 +274,8 @@ form div.I-O-field > label > input[type="date"],
 form div.I-O-field > label > input[type="number"],
 form div.I-O-field > label > input[type="checkbox"],
 form div.I-O-field > label > output,
+form div.textarea-field > label > textarea,
+form div.textarea-field > label > output,
 form div.select > label > select,
 form div > label > select-multiple-items {
   position: absolute;
@@ -285,6 +287,13 @@ form div.I-O-field > label > input[type="number"] {
   width: 7em;
 }
 */
+form div.textarea-field {
+  min-height: 3em;
+}
+form div.textarea-field > label > textarea {
+  field-sizing: content;
+}
+
 form div.action-group {
   margin-top: 0.5em;
 }

@@ -15,6 +15,7 @@ import eNUMERATION from "../eNUMERATION.mjs";
 import { openDB, deleteDB } from "../../lib/idb7-1.mjs";
 import {dt} from "../datatypes.mjs";
 import {NoConstraintViolation} from "../constraint-violation-error-types.mjs";
+import {cOUNTER} from "../bUSINESSoBJECT.mjs";
 
 /**
  * The sTORAGEmANAGER class provides/ storage management methods for a number of predefined
@@ -50,7 +51,6 @@ class sTORAGEmANAGER {
   /**
    * Generic method for testing if a database exists and has contents
    * @method
-   * @param {Array} classes  The business object classes to be persisted
    */
   async hasDatabaseContents() {
     var result = false;
@@ -76,7 +76,7 @@ class sTORAGEmANAGER {
     }
   }
   /**
-   * Generic method for deleting a database
+   * Generic method for entirely deleting/dropping a database
    * @method
    * @param {string} dbName  The business object classes to be persisted
    */
@@ -88,6 +88,50 @@ class sTORAGEmANAGER {
     } catch (error) {
       console.error( error.constructor.name +": "+ error.message);
     }
+  }
+  /**
+   * Generic method for deleting the contents of all database tables
+   * @method
+   * @param {array} busObjClasses  The business object classes to be persisted
+   */
+  async deleteDatabaseContents( busObjClasses) {
+    try {
+      await this.adapter.clearDB( this.adapter.dbx);
+      // reset auto-ID counters
+      for (const Class of busObjClasses) {
+        const propDefs = Class.properties;
+        if (propDefs[Class.idAttribute].range === "AutoIdNumber") {
+          await this.adapter.add( this.dbName, this.adapter.dbx, cOUNTER,
+              [{className: Class.name, autoIdCounter: Class.autoIdNoStartValue||1001}]);
+        }
+      }
+      if (this.createLog) console.log(`Table contents of database ${this.dbName} deleted`);
+    } catch (error) {
+      console.error( error.constructor.name +": "+ error.message);
+    }
+  }
+  /**
+   * Get a counter value for an auto-ID attribute
+   * @method
+   * @param {object} Class  The business object class concerned
+   */
+  async getAutoIdNumber( Class) {
+    const className= Class.name;
+    var rec={};
+    try {
+      rec = await this.adapter.retrieve( this.dbName, this.adapter.dbx, cOUNTER, className);
+      if (!rec) {
+        console.error(`Retrieval of cOUNTER for ${className} failed!`);
+        return 0;
+      }
+    } catch (error) {
+      console.error(`${error.constructor.name}: ${error.message}`);
+      return 0;
+    }
+    // save incremented autoIdCounter
+    this.adapter.update( this.dbName, this.adapter.dbx, cOUNTER, className,
+        {className: rec.className, autoIdCounter: rec.autoIdCounter+1});
+    return rec.autoIdCounter;
   }
   /**
    * Generic method for "persisting" a list of object records
@@ -111,9 +155,7 @@ class sTORAGEmANAGER {
     if (Class.properties[idAttr].range === "AutoIdNumber") {
       for (const r of recordsToAdd) {
         if (!r[idAttr]) {  // do not overwrite assigned ID values
-          if (typeof Class.getAutoId === "function") r[idAttr] = Class.getAutoId();
-          else if (Class.idCounter !== undefined) r[idAttr] = ++Class.idCounter;
-          else r[idAttr] = Class.idCounter = 1001;
+          r[idAttr] = await this.getAutoIdNumber( Class);
         }
       }
     }
@@ -208,11 +250,11 @@ class sTORAGEmANAGER {
    * to a Class and convert them to instances of that Class, which are then
    * stored in Class.instances (an "entity table"). Also retrieves all
    * records from all associated tables.
-   * TODO: retrieve only those records (from associated tables) that are referenced
-   * by these instances.
+   * TODO: retrieve only those records (from associated tables) that are referenced by these instances.
    *
    * @method
    * @param {object} Class  The business object class concerned
+   * @param {Array} alreadyRetrievedClasses  The names of classes that have already been retrieved
    */
   async retrieveAll( Class, alreadyRetrievedClasses=[]) {
     const checkRefInt = dt.checkReferentialIntegrity;  // store the setting
@@ -224,7 +266,6 @@ class sTORAGEmANAGER {
       Class.lastRetrievalTime = (new Date()).getTime();
       //console.log("Entity records: ", JSON.stringify(entityRecords));
       if (this.createLog) console.log( entityRecords.length +" "+ Class.name +" records retrieved.");
-      const currentTime = (new Date()).getTime();
       // store entity records in Class.instances
       for (const entityRec of entityRecords) {
         const id = entityRec[Class.idAttribute];
@@ -233,6 +274,7 @@ class sTORAGEmANAGER {
       // retrieve all records from all associated tables
       for (const refProp of Class.referenceProperties.concat( Class.inverseReferenceProperties)) {
         const AssociatedClass = dt.classes[Class.properties[refProp].range];
+        const currentTime = (new Date()).getTime();
         if (!alreadyRetrievedClasses.includes( AssociatedClass.name) &&
             currentTime - AssociatedClass.lastRetrievalTime > this.cacheExpirationTime) {
           await this.retrieveAll( AssociatedClass, alreadyRetrievedClasses);
@@ -315,7 +357,7 @@ class sTORAGEmANAGER {
             } else {
               updatedProperties.push( prop);
             }
-          } else {  // no update required
+          } else {  // no update required for this property slot
             delete updRec[prop];
           }
         } else {  // multi-valued
@@ -623,6 +665,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
       const propDef = Class.properties[refProp],
             val = obj[refProp],
             AssociatedClass = dt.classes[propDef.range];
+      if (val === undefined) continue;
       let assObjColl=[];
       if (propDef.maxCard > 1) assObjColl = val;
       else assObjColl = [val];
@@ -676,7 +719,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
   hasDatabaseContents: async function (dbName, dbx) {
   //------------------------------------------------
-    const firstTableName = dbx.objectStoreNames[0];
+    const firstTableName = dbx.objectStoreNames[1];
     const count = await dbx.transaction([firstTableName], "readonly").objectStore( firstTableName).count();
     return count > 0;
   },
@@ -685,6 +728,7 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
   //------------------------------------------------
     return await openDB( dbName, 1, {
       upgrade(db) {
+        db.createObjectStore("COUNTERS", {keyPath: "className"});
         for (const mc of modelClasses) {
           const tn = mc.tableName || util.class2TableName( mc.name);
           if (!db.objectStoreNames.contains( tn)) {
@@ -693,10 +737,10 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
           }
         }
       },
-      blocked( currentVersion, blockedVersion, event) {
+      blocked( currentVersion, blockedVersion) {
         console.log(`Old version ${blockedVersion} still open, so version ${currentVersion} cannot open.`);
       },
-      blocking( currentVersion, blockedVersion, event) {
+      blocking( currentVersion, blockedVersion) {
         console.log(`Version ${currentVersion} still open, blocking the attempt to open ${blockedVersion}.`);
       },
       terminated() {
@@ -759,13 +803,13 @@ sTORAGEmANAGER.adapters["IndexedDB"] = {
     dbx.delete( tableName, id);
   },
   //------------------------------------------------
-  clearTable: async function (dbName, dbx, Class) {
+  clearTable: async function (dbx, Class) {
   //------------------------------------------------
     const tableName = Class.tableName || util.class2TableName( Class.name);
     await dbx.clear( tableName);
   },
   //------------------------------------------------
-  clearDB: async function (dbName, dbx) {
+  clearDB: async function ( dbx) {
   //------------------------------------------------
     // create a transaction involving all tables of the database
     const tx = dbx.transaction( dbx.objectStoreNames, "readwrite");

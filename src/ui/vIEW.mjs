@@ -8,12 +8,11 @@
  * TODO: + Reset select-multiple-items widget after save for "c" and "U"
  * + Check ID and key constraints in "CREATE" on Save
  * + Show AutoIdNumber in output field in "C"
- * + Render textarea elements for range:Text
  */
 
 import {dt} from "../datatypes.mjs";
 import eNUMERATION from "../eNUMERATION.mjs";
-import bUSINESSoBJECT from "../bUSINESSoBJECT.mjs";
+import {bUSINESSoBJECT} from "../bUSINESSoBJECT.mjs";
 import bUSINESSaCTIVITY from "../bUSINESSaCTIVITY.mjs";
 import dom from "../../lib/dom.mjs";
 import util from "../../lib/util.mjs";
@@ -125,7 +124,7 @@ class vIEW {
                 range: fld.range,
                 inputOutputMode: fld.inputOutputMode
               };
-              fieldNames.push(fld.name);
+              fieldNames.push( fld.name);
               if (elList.derivationFunction) {
                 this.fields[fld.name].derivationFunction = fld.derivationFunction;
               }
@@ -193,7 +192,7 @@ class vIEW {
      * value constraint violations, and on change in the case of "Update".
      * @method 
      */
-    function createLabeledTextOrDateField( fld) {
+    function createLabeledStringOrDateField( fld) {
       var fldEl = null;
       const lblEl = document.createElement("label"),
             fldDef = fieldDefs[fld];
@@ -211,7 +210,9 @@ class vIEW {
       }
 
       if (fldDef.inputOutputMode === "O" ||
-          (viewType === "U" && fldDef.isIdAttribute) || viewType === "D") {
+          (viewType === "U" && fldDef.isIdAttribute) ||
+          (viewType === "C" && fldDef.range === "AutoIdNumber") ||
+          viewType === "D") {
         fldEl = document.createElement("output");
         fldEl.style.width = `${fldDef.fieldSize || 8}em`;
       } else {
@@ -263,6 +264,30 @@ class vIEW {
       // store data binding assignment of UI element to view field
       dataBinding[fld] = fldEl;
       fldEl.name = fld;
+      lblEl.textContent = fieldDefs[fld].label;
+      lblEl.appendChild( fldEl);
+      return lblEl;
+    }
+    /**
+     * Create a labeled textarea field.
+     * @method
+     */
+    function createLabeledTextAreaField( fld) {
+      const lblEl = document.createElement("label"),
+            fldEl = document.createElement("textarea");
+      if (fieldDefs[fld].inputOutputMode === "O" || viewType === "D") {
+        fldEl.readOnly = true;
+      } else {
+        fldEl.addEventListener("change", function () {
+          // update view field value
+          view.fldValues[fld] = fldEl.value;
+        });
+      }
+      // store data binding assignment of UI element to view field
+      dataBinding[fld] = fldEl;
+      fldEl.name = fld;
+      fldEl.rows = fieldDefs[fld].rows || 3;
+      fldEl.cols = fieldDefs[fld].cols || 50;
       lblEl.textContent = fieldDefs[fld].label;
       lblEl.appendChild( fldEl);
       return lblEl;
@@ -384,7 +409,7 @@ class vIEW {
           if (range instanceof eNUMERATION) {  // enumeration field
             if (viewType === "D") {
               containerEl.className = "I-O-field";
-              containerEl.appendChild( createLabeledTextOrDateField( fld));
+              containerEl.appendChild( createLabeledStringOrDateField( fld));
             } else {
               if (range.MAX <= maxNmrOfChoiceButtons) {
                 containerEl = createChoiceButtonGroup( fld);
@@ -404,26 +429,19 @@ class vIEW {
                 containerEl.appendChild( createSelectionList( fld));
               }
             }
-          } else if (range === "Boolean") {
-            containerEl.className = "I-O-field";
-            if (viewType === "D") {
-              containerEl.appendChild( createLabeledTextOrDateField( fld));
-            } else {
-              containerEl.appendChild( createLabeledYesNoField( fld));
-            }
           } else if ((range in dt.classes || range.constructor === bUSINESSoBJECT)) { // a bUSINESSoBJECT reference field
             const Class = typeof range === "string" ? dt.classes[range] : range,
                   labelEl = document.createElement("label");
             labelEl.textContent = fldDef.label;
             if (viewType === "D" || fldDef.inputOutputMode === "O") {
               containerEl.className = "I-O-field";
-              containerEl.appendChild( createLabeledTextOrDateField( fld));
+              containerEl.appendChild( createLabeledStringOrDateField( fld));
             } else if (!fldDef.maxCard || fldDef.maxCard===1) {
                 // A single-valued reference field (functional association)
                 widgetEl = new SelectReferenceWidget( fld, Class, view, fldDef.selectionRangeFilter);
                 containerEl.className = "select";
                 labelEl.appendChild( widgetEl);
-                containerEl.appendChild( labelEl);fldDef
+                containerEl.appendChild( labelEl);
                 // store data binding assignment of UI element to view model field
                 dataBinding[fld] = widgetEl;
             } else {  // A multi-valued reference field (non-functional association)
@@ -444,9 +462,23 @@ class vIEW {
               // store data binding assignment of UI element to view model field
               dataBinding[fld] = widgetEl;
             }
+          } else if (range === "Boolean") {
+            containerEl.className = "I-O-field";
+            if (viewType === "D") {
+              containerEl.appendChild( createLabeledStringOrDateField( fld));
+            } else {
+              containerEl.appendChild( createLabeledYesNoField( fld));
+            }
+          } else if (range === "Text") {
+            containerEl.className = "textarea-field";
+            if (viewType === "D") {
+              containerEl.appendChild( createLabeledStringOrDateField( fld));
+            } else {
+              containerEl.appendChild( createLabeledTextAreaField( fld));
+            }
           } else {  // string/numeric property field
             containerEl.className = "I-O-field";
-            containerEl.appendChild( createLabeledTextOrDateField( fld));
+            containerEl.appendChild( createLabeledStringOrDateField( fld));
           }
         }
         formEl.appendChild( containerEl);
@@ -800,16 +832,19 @@ class vIEW {
    * @author Gerd Wagner
    * TODO: support derived and dependent view fields
    */
-  reset() {
+  async reset() {
     for (const f of Object.keys( this.fields)) {
       const fldDef = this.fields[f],
             uiEl = this.dataBinding[f];
       if ("setCustomValidity" in uiEl) uiEl.setCustomValidity("");
-      else uiEl.reset();
+      else uiEl.reset();  // custom widgets need their own reset procedure
       if (fldDef.maxCard > 1) {
         this.fldValues[f] = [];
       } else if (fldDef.range in dt.classes) {
         this.fldValues[f] = undefined;  // view field holds ID strings
+      } else if (fldDef.range === "AutoIdNumber") {
+        this.fldValues[f] = await vIEW.app.storageManager.getAutoIdNumber( this.modelClass);
+        uiEl.value = this.fldValues[f];
       } else {
         this.fldValues[f] = dt.getDefaultValue( fldDef.range);
       }
@@ -836,14 +871,16 @@ class vIEW {
       } else {
         uiEl.value = dt.stringifyValue( v, fldDef.range);
       }
+    } else if (uiEl.tagName === "TEXTAREA") {
+      uiEl.value = v;
     } else if (uiEl.tagName === "FIELDSET" &&
-               uiEl.classList.contains("radio-button-group")) {
+        uiEl.classList.contains("radio-button-group")) {
       elems = uiEl.querySelectorAll("input[type='radio']");
       for (let i=0; i < elems.length; i++) {
         el = elems[i];
         if (el.value === String(v)) el.checked = true;
       }
-    } else if (uiEl.tagName === "FIELDSET" && 
+    } else if (uiEl.tagName === "FIELDSET" &&
         uiEl.classList.contains("checkbox-group")) {
       elems = uiEl.querySelectorAll("input[type='checkbox']");
       for (let i=0; i < elems.length; i++) {
@@ -889,6 +926,10 @@ class vIEW {
                 idAttr = RangeClass.idAttribute;
           if (propDef.maxCard > 1) {
             const refCollection = this.modelObject[propName];
+            if (!refCollection) {
+              console.log(`The property ${propName} is undefined for ${this.modelObject.toShortString()}!`);
+              continue;
+            }
             if (Array.isArray( refCollection)) val = refCollection.map( o => o[idAttr]);
             else val = Object.keys( refCollection).map( id => RangeClass.instances[id][idAttr]);
           } else {  // a single-valued reference field holds an ID reference
@@ -901,7 +942,7 @@ class vIEW {
         } else {
           val = this.modelObject[propName];
         }
-        this.setViewField( propName, val);
+        if (val !== undefined) this.setViewField( propName, val);
       }
     }
   }
@@ -1097,8 +1138,9 @@ class vIEW {
     setupDataManagementOverviewUI();
     for (const className of Object.keys( dt.classes)) {
       const modelClass = dt.classes[className];
-      // set up the CRUD menu UI page
+      // set up the CRUD overview menu page
       setupManageDataUI( className);
+      // set up the CRUD UI pages
       for (const crudCode of ["R","C","U","D"]) {
         const view = vIEW.app.crudViews[className][crudCode];
         switch (crudCode) {
@@ -1198,6 +1240,7 @@ class vIEW {
     case "C":
       formEl = document.querySelector(`section#${className}-${operationCode} > form`);
       formEl.reset();
+      view.reset();
       for (const refProp of modelClass.referenceProperties) {
         if (!(refProp in view.fields)) continue;
         // refresh the options of the corresponding selection list
@@ -1299,6 +1342,8 @@ class vIEW {
           if (val === undefined) return;
           if (range === "Date") {
             content = dom.createTime( val).outerHTML;
+          } else if (dt.isStringType( range)) {
+            content = val;
           } else if (range in dt.classes) {  // reference property
             if (propDef.maxCard > 1) {
               let objList=[];
@@ -1309,7 +1354,7 @@ class vIEW {
               content = val.toShortString();
             }
           } else {
-            content = dt.stringifyValue( obj[prop], range, propDef.displayDecimalPlaces);
+            content = dt.stringifyValue( val, range, propDef.displayDecimalPlaces);
           }
           if (k===0) cellContent = content;
           else cellContent += propSep + content;

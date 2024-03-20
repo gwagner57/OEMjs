@@ -1,4 +1,4 @@
-import bUSINESSoBJECT from "../../../src/bUSINESSoBJECT.mjs";
+import {bUSINESSoBJECT} from "../../../src/bUSINESSoBJECT.mjs";
 import eNUMERATION from "../../../src/eNUMERATION.mjs";
 import {dt} from "../../../src/datatypes.mjs";
 
